@@ -84,14 +84,24 @@ const categoryVisuals = {
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-function highlightVars(str){
-  return str.replace(/\[([^\]]+)\]/g, '<span class="var">[$1]</span>');
+/* Correct for BOTH element text and quoted attribute values, so one function
+   covers every interpolation site. The previous escapeAttr() handled only & and
+   ", which left < > and ' raw — fine for today's data by luck, not by design.
+   Deliberate exceptions: the ICONS constants (trusted inline SVG) and
+   highlightVars(), which escapes first and then adds its own markup. */
+const HTML_ESCAPES = { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" };
+function escapeHTML(value){
+  return String(value == null ? "" : value).replace(/[&<>"']/g, (ch) => HTML_ESCAPES[ch]);
 }
-function escapeAttr(str){
-  return str.replace(/&/g,"&amp;").replace(/"/g,"&quot;");
+
+/* Escape BEFORE wrapping [placeholders], so prompt text can never introduce
+   markup — this fed straight into innerHTML unescaped. Escaping leaves the
+   square brackets alone, so the match still works. */
+function highlightVars(str){
+  return escapeHTML(str).replace(/\[([^\]]+)\]/g, '<span class="var">[$1]</span>');
 }
 function copyButtonHTML(label){
-  return `${ICONS.copy}<span>${label}</span>`;
+  return `${ICONS.copy}<span>${escapeHTML(label)}</span>`;
 }
 function slugify(str){
   return str.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
@@ -299,7 +309,7 @@ function initGallery(){
   const cats = ["All", ...new Set(imagePrompts.map((p) => p.cat))];
   const chipRow = document.getElementById("galleryChips");
   chipRow.innerHTML = cats.map((c) =>
-    `<button class="chip${c === "All" ? " active" : ""}" data-cat="${escapeAttr(c)}">${c}</button>`
+    `<button type="button" class="chip${c === "All" ? " active" : ""}" data-cat="${escapeHTML(c)}">${escapeHTML(c)}</button>`
   ).join("");
 
   chipRow.querySelectorAll(".chip").forEach((chip) => {
@@ -373,12 +383,12 @@ function renderGallery(){
      Children are spans because <button> only admits phrasing content. The img
      is alt="" because the style name sits right beside it in the label. */
   grid.innerHTML = list.map((p, i) => `
-    <button type="button" class="gallery-card reveal swatch-${p.i % 6} ${p.size || ""}" style="transition-delay:${(i % 3) * 60}ms" data-id="${p.i}" aria-label="${escapeAttr(p.style)}, ${escapeAttr(p.cat)}. View prompt.">
+    <button type="button" class="gallery-card reveal swatch-${p.i % 6} ${escapeHTML(p.size || "")}" style="transition-delay:${(i % 3) * 60}ms" data-id="${p.i}" aria-label="${escapeHTML(p.style)}, ${escapeHTML(p.cat)}. View prompt.">
       <span class="swatch-texture"></span>
-      <img class="real-photo" src="images/${p.slug}.jpg" alt="" loading="lazy" onerror="this.remove()">
+      <img class="real-photo" src="images/${encodeURIComponent(p.slug)}.jpg" alt="" loading="lazy" onerror="this.remove()">
       <span class="swatch-content">
-        <span class="badge">${p.cat}</span>
-        <span class="swatch-name">${p.style}</span>
+        <span class="badge">${escapeHTML(p.cat)}</span>
+        <span class="swatch-name">${escapeHTML(p.style)}</span>
       </span>
     </button>`).join("");
 
@@ -423,7 +433,7 @@ function openModal(id){
   const modalSwatch = document.getElementById("modalSwatch");
   modalSwatch.className = `modal-swatch swatch-${id % 6}`;
   /* alt="" — the name is in the heading and in .modal-swatch-name already. */
-  modalSwatch.innerHTML = `<div class="swatch-texture"></div><img class="real-photo" src="images/${p.slug}.jpg" alt="" onerror="this.remove()"><span class="modal-swatch-name">${p.style}</span>`;
+  modalSwatch.innerHTML = `<div class="swatch-texture"></div><img class="real-photo" src="images/${encodeURIComponent(p.slug)}.jpg" alt="" onerror="this.remove()"><span class="modal-swatch-name">${escapeHTML(p.style)}</span>`;
   document.getElementById("modalStyleName").textContent = p.style;
   document.getElementById("modalModel").textContent = p.cat;
   document.getElementById("modalPromptText").innerHTML = highlightVars(p.prompt);
@@ -471,9 +481,9 @@ function initCategoryPage(){
         <span class="prompt-thumb-icon">${ICONS[visual.icon]}</span>
         <span class="prompt-thumb-label">${visual.label}</span>
       </div>
-      <div class="prompt-block-bar"><span class="demo-dot"></span><span>${p.filename}</span></div>
+      <div class="prompt-block-bar"><span class="demo-dot"></span><span>${escapeHTML(p.filename)}</span></div>
       <p class="prompt-text">${highlightVars(p.prompt)}</p>
-      <button class="btn btn-ghost btn-copy btn-sm" data-raw="${escapeAttr(p.prompt)}">${copyButtonHTML("Copy prompt")}</button>
+      <button type="button" class="btn btn-ghost btn-copy btn-sm" data-raw="${escapeHTML(p.prompt)}">${copyButtonHTML("Copy prompt")}</button>
     </div>
   `).join("");
 
@@ -513,9 +523,9 @@ async function runDemoCycle(){
     await sleep(450);
 
     if(pair.type === "image"){
-      resultEl.innerHTML = `<div class="demo-swatch swatch-${pair.hue}"><div class="swatch-texture"></div><img class="real-photo" src="https://loremflickr.com/560/320/${pair.keywords}" alt="Generated result" onerror="this.remove()"><span class="swatch-name">${pair.style}</span></div>`;
+      resultEl.innerHTML = `<div class="demo-swatch swatch-${pair.hue}"><div class="swatch-texture"></div><img class="real-photo" src="https://loremflickr.com/560/320/${encodeURIComponent(pair.keywords)}" alt="Generated result" onerror="this.remove()"><span class="swatch-name">${escapeHTML(pair.style)}</span></div>`;
     } else {
-      resultEl.innerHTML = `<pre class="demo-result-text">${pair.result}</pre>`;
+      resultEl.innerHTML = `<pre class="demo-result-text">${escapeHTML(pair.result)}</pre>`;
     }
     requestAnimationFrame(() => resultEl.classList.add("show"));
 
@@ -654,11 +664,11 @@ function initBuilder(){
   fields.forEach((field) => {
     const select = document.getElementById(`builder-${field}`);
     select.innerHTML = `<option value="">— none —</option>` +
-      builderOptions[field].map((opt) => `<option value="${escapeAttr(opt)}">${opt}</option>`).join("");
+      builderOptions[field].map((opt) => `<option value="${escapeHTML(opt)}">${escapeHTML(opt)}</option>`).join("");
   });
 
   const ratioSelect = document.getElementById("builder-ratio");
-  ratioSelect.innerHTML = builderRatios.map((r) => `<option value="${r}">${r}</option>`).join("");
+  ratioSelect.innerHTML = builderRatios.map((r) => `<option value="${escapeHTML(r)}">${escapeHTML(r)}</option>`).join("");
 
   form.addEventListener("input", buildPrompt);
   form.addEventListener("change", buildPrompt);
@@ -775,7 +785,15 @@ async function generateWithGemini(prompt, apiKey){
     const textPart = parts.find((p) => p.text);
     throw new Error(textPart ? `No image returned — model said: ${textPart.text.slice(0, 160)}` : "No image in response");
   }
-  return `data:${imagePart.inlineData.mimeType || "image/png"};base64,${imagePart.inlineData.data}`;
+  /* mimeType and data come straight off the wire and end up inside a URL, so
+     validate rather than trust. A bad mimeType would otherwise be able to break
+     out of the data: URL it is interpolated into. */
+  const raw = imagePart.inlineData;
+  const mimeType = /^image\/[a-z0-9.+-]+$/i.test(raw.mimeType || "") ? raw.mimeType : "image/png";
+  const base64 = String(raw.data || "").replace(/\s+/g, "");
+  if(!/^[A-Za-z0-9+/]+={0,2}$/.test(base64)) throw new Error("Malformed image data in response");
+
+  return { mimeType, dataUrl: `data:${mimeType};base64,${base64}` };
 }
 
 function initBuilderGenerate(){
@@ -810,9 +828,25 @@ function initBuilderGenerate(){
     previewEl.innerHTML = "";
 
     try {
-      const dataUrl = await generateWithGemini(prompt, apiKey);
-      previewEl.innerHTML = `<img src="${dataUrl}" alt="Generated preview">
-        <a class="btn btn-ghost btn-sm builder-download" href="${dataUrl}" download="promptlib-preview.jpg">Download</a>`;
+      const image = await generateWithGemini(prompt, apiKey);
+
+      /* Built with DOM calls rather than innerHTML — an API-derived URL has no
+         business being parsed as markup. The extension follows the actual
+         mimeType; it used to be hardcoded .jpg while Gemini returns PNG. */
+      const ext = (image.mimeType.split("/")[1] || "png").replace(/[^a-z0-9]/gi, "") || "png";
+
+      const img = document.createElement("img");
+      img.src = image.dataUrl;
+      img.alt = "Generated preview";
+
+      const link = document.createElement("a");
+      link.className = "btn btn-ghost btn-sm builder-download";
+      link.href = image.dataUrl;
+      link.download = `promptlib-preview.${ext}`;
+      link.textContent = "Download";
+
+      previewEl.innerHTML = "";
+      previewEl.append(img, link);
       statusEl.textContent = "Done.";
       statusEl.className = "builder-gen-status is-ok";
     } catch (err) {
