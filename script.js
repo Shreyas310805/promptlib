@@ -270,6 +270,60 @@ function initPageTransitions(){
    ================================================================== */
 let galleryState = { cat: "All", query: "" };
 
+/* ---- URL state -------------------------------------------------------
+   Filters live in the query string, so a filtered view can be linked, shared
+   and bookmarked, and Back undoes a filter instead of leaving the page.
+
+   Category changes push a history entry: they are discrete, deliberate acts,
+   and Back undoing them is exactly what people expect. Typing only replaces
+   the current entry — pushing per debounced keystroke would bury the previous
+   page under a dozen near-identical entries. Say the word if you would rather
+   search be pushed too. */
+function syncUrl(push){
+  const search = document.getElementById("gallerySearch");
+  const params = new URLSearchParams();
+  if(galleryState.cat !== "All") params.set("cat", galleryState.cat);
+  const raw = search ? search.value.trim() : "";
+  if(raw) params.set("q", raw);
+
+  const qs = params.toString();
+  const url = qs ? `?${qs}` : location.pathname;
+  try {
+    history[push ? "pushState" : "replaceState"](null, "", url);
+  } catch(err){
+    /* Some browsers reject history manipulation on file:// origins. Opening
+       the page straight off disk is supported, so degrade quietly: the
+       filters still work, they just are not linkable there. */
+  }
+}
+
+function readStateFromUrl(){
+  const params = new URLSearchParams(location.search);
+  const cat = params.get("cat") || "All";
+  /* A category that is not in the data — a stale link, a typo, a renamed
+     category in build_prompts.py — falls back to All rather than rendering an
+     empty grid the visitor cannot explain. */
+  galleryState.cat = (cat === "All" || imagePrompts.some((p) => p.cat === cat)) ? cat : "All";
+
+  const raw = params.get("q") || "";
+  const search = document.getElementById("gallerySearch");
+  if(search) search.value = raw;
+  galleryState.query = raw.trim().toLowerCase();
+}
+
+/* Push the state we just read back onto the controls, for first load and for
+   Back/Forward, where the chips and the search box are otherwise stale. */
+function syncControlsToState(){
+  const chipRow = document.getElementById("galleryChips");
+  if(chipRow){
+    chipRow.querySelectorAll(".chip").forEach((c) => {
+      const on = c.dataset.cat === galleryState.cat;
+      c.classList.toggle("active", on);
+      c.setAttribute("aria-pressed", String(on));
+    });
+  }
+}
+
 /* prompts-image.js is a separate <script>; if it 404s, is blocked, or fails to
    parse, we arrive here with nothing. Say that plainly — an empty grid plus
    "no prompts match that search" blames the visitor for a load failure. */
@@ -328,6 +382,7 @@ function initGallery(){
       chip.classList.add("active");
       chip.setAttribute("aria-pressed", "true");
       galleryState.cat = chip.dataset.cat;
+      syncUrl(true);
       renderGallery();
     });
   });
@@ -346,6 +401,7 @@ function initGallery(){
     const next = search.value.trim().toLowerCase();
     if(next === galleryState.query) return;
     galleryState.query = next;
+    syncUrl(false);
     renderGallery();
   };
   search.addEventListener("input", () => {
@@ -367,6 +423,17 @@ function initGallery(){
   modalCloseBtn.addEventListener("click", closeModal);
   modalBackdrop.addEventListener("click", (e) => { if(e.target === modalBackdrop) closeModal(); });
   modalCopyBtn.addEventListener("click", function(){ copyText(this.dataset.raw, this); });
+
+  /* Adopt whatever the incoming URL asked for before the first paint. */
+  readStateFromUrl();
+  syncControlsToState();
+
+  window.addEventListener("popstate", () => {
+    closeModal();
+    readStateFromUrl();
+    syncControlsToState();
+    renderGallery();
+  });
 
   renderGallery();
 }
