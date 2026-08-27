@@ -289,6 +289,11 @@ function initGallery(){
     return;
   }
 
+  /* Stamp each entry with its permanent position in imagePrompts, once.
+     renderGallery() used to recover this per card with imagePrompts.indexOf(p)
+     inside a .map() over the filtered list — quadratic, on every keystroke. */
+  imagePrompts.forEach((p, i) => { p.i = i; });
+
   /* Category chips are derived from the data, so adding a new category in
      build_prompts.py makes a new filter appear with no edit here. */
   const cats = ["All", ...new Set(imagePrompts.map((p) => p.cat))];
@@ -346,20 +351,17 @@ function renderGallery(){
     return;
   }
 
-  /* Index into imagePrompts is stored on the card so the modal can find the
-     original entry even while a filter is active. */
-  grid.innerHTML = list.map((p, i) => {
-    const realIndex = imagePrompts.indexOf(p);
-    return `
-    <div class="gallery-card reveal swatch-${realIndex % 6} ${p.size || ""}" style="transition-delay:${(i % 3) * 60}ms" data-id="${realIndex}">
+  /* p.i (stamped in initGallery) is the index into imagePrompts, carried on the
+     card so the modal can find the original entry while a filter is active. */
+  grid.innerHTML = list.map((p, i) => `
+    <div class="gallery-card reveal swatch-${p.i % 6} ${p.size || ""}" style="transition-delay:${(i % 3) * 60}ms" data-id="${p.i}">
       <div class="swatch-texture"></div>
       <img class="real-photo" src="images/${p.slug}.jpg" alt="${escapeAttr(p.style)} example" loading="lazy" onerror="this.remove()">
       <div class="swatch-content">
         <span class="badge">${p.cat}</span>
         <span class="swatch-name">${p.style}</span>
       </div>
-    </div>`;
-  }).join("");
+    </div>`).join("");
 
   grid.querySelectorAll(".gallery-card").forEach((card) => {
     card.addEventListener("click", () => openModal(Number(card.dataset.id)));
