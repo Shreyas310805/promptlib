@@ -1,0 +1,10 @@
+# Generated thumbnails — repopulate with fetch-stock.js or generate-images.js
+images/*.jpg
+images/*.jpeg
+images/*.png
+images/CREDITS.md
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+desktop.ini

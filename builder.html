@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prompt builder — PromptLib</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0c0e'/%3E%3Cpath d='M10 10l7 6-7 6' stroke='%23ffb238' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="logo">
+      <svg class="logo-mark" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="7" fill="#15161b"/><path d="M10 10l7 6-7 6" stroke="#ffb238" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>promptlib</span>
+    </a>
+    <button class="nav-toggle" id="navToggle" aria-label="Toggle menu" aria-expanded="false"><span></span><span></span><span></span></button>
+    <div class="nav-links" id="navLinks">
+      <a href="index.html" class="nav-link" data-page="index.html">home</a>
+      <a href="images.html" class="nav-link" data-page="images.html">images</a>
+      <a href="text.html" class="nav-link" data-page="text.html">text</a>
+      <a href="builder.html" class="nav-link" data-page="builder.html">builder</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+  <div class="section-inner">
+    <p class="eyebrow">$ build --prompt --from-keywords</p>
+    <h1 class="section-title">Prompt builder</h1>
+    <p class="section-sub">Describe your subject, pick the look, and the prompt assembles itself as you go.</p>
+
+    <div class="builder-layout">
+      <div class="builder-form" id="builderForm">
+        <div class="builder-field builder-field-wide">
+          <label for="builder-subject">Subject <span class="builder-req">required</span></label>
+          <input type="text" id="builder-subject" placeholder="a lighthouse on a rocky cliff during a storm" autocomplete="off">
+          <p class="builder-hint">The what. Be specific — "a lighthouse on a rocky cliff" beats "a building".</p>
+        </div>
+
+        <div class="builder-field">
+          <label for="builder-style">Art style</label>
+          <select id="builder-style"></select>
+        </div>
+
+        <div class="builder-field">
+          <label for="builder-lighting">Lighting</label>
+          <select id="builder-lighting"></select>
+        </div>
+
+        <div class="builder-field">
+          <label for="builder-composition">Composition</label>
+          <select id="builder-composition"></select>
+        </div>
+
+        <div class="builder-field">
+          <label for="builder-mood">Mood</label>
+          <select id="builder-mood"></select>
+        </div>
+
+        <div class="builder-field">
+          <label for="builder-palette">Color palette</label>
+          <select id="builder-palette"></select>
+        </div>
+
+        <div class="builder-field">
+          <label for="builder-finish">Finish</label>
+          <select id="builder-finish"></select>
+        </div>
+
+        <div class="builder-field">
+          <label for="builder-model">Target model</label>
+          <select id="builder-model">
+            <option value="Midjourney">Midjourney</option>
+            <option value="Stable Diffusion">Stable Diffusion</option>
+            <option value="DALL-E">DALL·E</option>
+            <option value="Gemini">Gemini</option>
+          </select>
+        </div>
+
+        <div class="builder-field">
+          <label for="builder-ratio">Aspect ratio</label>
+          <select id="builder-ratio"></select>
+        </div>
+
+        <div class="builder-field builder-field-wide">
+          <label for="builder-extra">Extra details <span class="builder-opt">optional</span></label>
+          <input type="text" id="builder-extra" placeholder="seabirds circling, foam spray, distant ship" autocomplete="off">
+          <p class="builder-hint">Anything else you want in frame, comma separated.</p>
+        </div>
+      </div>
+
+      <div class="builder-output-panel">
+        <div class="prompt-block">
+          <div class="prompt-block-bar">
+            <span class="demo-dot"></span>
+            <span>your-prompt.txt</span>
+            <span class="builder-count" id="builderCount">0 words</span>
+          </div>
+          <p class="prompt-text builder-output" id="builderOutput"></p>
+        </div>
+        <div class="builder-actions">
+          <button class="btn btn-primary btn-copy btn-sm" id="builderCopyBtn"></button>
+          <button class="btn btn-ghost btn-sm" id="builderRandomBtn">Surprise me</button>
+          <button class="btn btn-ghost btn-sm" id="builderResetBtn">Reset</button>
+        </div>
+        <p class="builder-note">The builder runs entirely in your browser — nothing is sent anywhere.</p>
+
+        <div class="builder-gen">
+          <div class="builder-gen-head">
+            <h3>Generate a preview</h3>
+            <span class="badge">optional</span>
+          </div>
+          <p class="builder-hint">Uses Google's Gemini image model. Get a free key at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>.</p>
+          <input type="password" id="builderApiKey" placeholder="Paste Gemini API key" autocomplete="off" spellcheck="false">
+          <p class="builder-hint builder-warn">Held in this tab only — never saved to a file and never included in the site's code. Don't paste your key into script.js; anything in there is visible to every visitor.</p>
+          <button class="btn btn-ghost btn-sm" id="builderGenBtn"></button>
+          <p class="builder-gen-status" id="builderGenStatus"></p>
+          <div class="builder-preview" id="builderPreview"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="footer">
+  <p class="footer-line">// end of file — copy a prompt and go make something.</p>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>

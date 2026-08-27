@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Image prompts — PromptLib</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0c0e'/%3E%3Cpath d='M10 10l7 6-7 6' stroke='%23ffb238' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="logo">
+      <svg class="logo-mark" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="7" fill="#15161b"/><path d="M10 10l7 6-7 6" stroke="#ffb238" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>promptlib</span>
+    </a>
+    <button class="nav-toggle" id="navToggle" aria-label="Toggle menu" aria-expanded="false"><span></span><span></span><span></span></button>
+    <div class="nav-links" id="navLinks">
+      <a href="index.html" class="nav-link" data-page="index.html">home</a>
+      <a href="images.html" class="nav-link" data-page="images.html">images</a>
+      <a href="text.html" class="nav-link" data-page="text.html">text</a>
+      <a href="builder.html" class="nav-link" data-page="builder.html">builder</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+  <div class="section-inner">
+    <p class="eyebrow">$ browse --transform --upload-your-own</p>
+    <h1 class="section-title">Image transformation prompts</h1>
+    <p class="section-sub">Upload your own photo, paste one of these, and the AI restyles it. Every prompt already tells the model what to preserve — face, pose, composition — so your subject stays recognisable.</p>
+
+    <div class="gallery-controls">
+      <div class="gallery-search-wrap">
+        <input type="search" id="gallerySearch" placeholder="Search 266 prompts — try &quot;sketch&quot;, &quot;drone&quot;, &quot;pixel&quot;…" autocomplete="off">
+        <span class="gallery-count" id="galleryCount"></span>
+      </div>
+      <div class="chip-row" id="galleryChips"></div>
+    </div>
+
+    <div class="gallery-grid" id="galleryGrid"></div>
+  </div>
+</main>
+
+<footer class="footer">
+  <p class="footer-line">// end of file — copy a prompt and go make something.</p>
+  <p class="footer-line footer-credit">Thumbnails via <a href="https://www.pexels.com" target="_blank" rel="noopener">Pexels</a>.</p>
+</footer>
+
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Prompt detail">
+    <button class="modal-close" id="modalClose" aria-label="Close"></button>
+    <div class="modal-image-wrap"><div class="modal-swatch" id="modalSwatch"></div></div>
+    <div class="modal-body">
+      <div class="modal-meta">
+        <span class="badge badge-model" id="modalModel"></span>
+      </div>
+      <h3 class="modal-style-name" id="modalStyleName"></h3>
+      <div class="prompt-block">
+        <div class="prompt-block-bar"><span class="demo-dot"></span><span>prompt.txt</span></div>
+        <p class="prompt-text" id="modalPromptText"></p>
+      </div>
+      <button class="btn btn-primary btn-copy" id="modalCopyBtn"></button>
+      <p class="modal-howto">Attach your own photo in ChatGPT, Gemini, or any image editor that accepts a reference image, then paste this prompt alongside it.</p>
+    </div>
+  </div>
+</div>
+
+<script src="prompts-image.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
