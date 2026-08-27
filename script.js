@@ -369,15 +369,19 @@ function renderGallery(){
 
   /* p.i (stamped in initGallery) is the index into imagePrompts, carried on the
      card so the modal can find the original entry while a filter is active. */
+  /* A real <button>, not a div+click: keyboard reachable, Enter/Space activate
+     it for free, and it is exposed to assistive tech as an actionable control.
+     Children are spans because <button> only admits phrasing content. The img
+     is alt="" because the style name sits right beside it in the label. */
   grid.innerHTML = list.map((p, i) => `
-    <div class="gallery-card reveal swatch-${p.i % 6} ${p.size || ""}" style="transition-delay:${(i % 3) * 60}ms" data-id="${p.i}">
-      <div class="swatch-texture"></div>
-      <img class="real-photo" src="images/${p.slug}.jpg" alt="${escapeAttr(p.style)} example" loading="lazy" onerror="this.remove()">
-      <div class="swatch-content">
+    <button type="button" class="gallery-card reveal swatch-${p.i % 6} ${p.size || ""}" style="transition-delay:${(i % 3) * 60}ms" data-id="${p.i}" aria-label="${escapeAttr(p.style)}, ${escapeAttr(p.cat)}. View prompt.">
+      <span class="swatch-texture"></span>
+      <img class="real-photo" src="images/${p.slug}.jpg" alt="" loading="lazy" onerror="this.remove()">
+      <span class="swatch-content">
         <span class="badge">${p.cat}</span>
         <span class="swatch-name">${p.style}</span>
-      </div>
-    </div>`).join("");
+      </span>
+    </button>`).join("");
 
   grid.querySelectorAll(".gallery-card").forEach((card) => {
     card.addEventListener("click", () => openModal(Number(card.dataset.id)));

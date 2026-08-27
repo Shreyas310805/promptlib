@@ -223,9 +223,13 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent-blue); out
   display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr));
   grid-auto-rows:10px; grid-auto-flow:dense; column-gap:20px; row-gap:0;
 }
+/* Cards are <button> elements — reset the UA chrome but leave background alone,
+   the .swatch-N rules below own that. */
 .gallery-card{
+  appearance:none; -webkit-appearance:none;
+  font:inherit; color:inherit; text-align:left; width:100%; padding:0;
   position:relative; overflow:hidden; border-radius:var(--radius); border:1px solid var(--border-subtle);
-  cursor:pointer; grid-row-end:span 30; margin-bottom:20px;
+  cursor:pointer; grid-row-end:span 30; margin:0 0 20px;
   transition:transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 .gallery-card.tall{ grid-row-end:span 38; }
@@ -245,6 +249,7 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent-blue); out
   position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0;
 }
 .swatch-texture{
+  display:block;
   position:absolute; inset:0; pointer-events:none;
   background-image:
     linear-gradient(rgba(255,255,255,.12) 1px, transparent 1px),
@@ -258,6 +263,7 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent-blue); out
   background:linear-gradient(180deg, transparent 0%, rgba(6,7,9,.6) 75%);
 }
 .swatch-name{
+  display:block;
   font-family:var(--font-display); font-weight:700; font-size:19px; color:#fff;
   text-shadow:0 2px 14px rgba(0,0,0,.4); line-height:1.25;
 }
