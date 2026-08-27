@@ -2,3 +2,5 @@
 .DS_Store
 Thumbs.db
 desktop.ini
+# Local run logs
+fetch-log.txt
