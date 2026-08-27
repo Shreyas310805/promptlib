@@ -341,7 +341,6 @@ function initGallery(){
 
   modalCloseBtn.addEventListener("click", closeModal);
   modalBackdrop.addEventListener("click", (e) => { if(e.target === modalBackdrop) closeModal(); });
-  document.addEventListener("keydown", (e) => { if(e.key === "Escape") closeModal(); });
   modalCopyBtn.addEventListener("click", function(){ copyText(this.dataset.raw, this); });
 
   renderGallery();
@@ -389,24 +388,69 @@ function renderGallery(){
   observeReveals();
 }
 
+/* The card that opened the dialog, so focus can go back to it on close. */
+let modalReturnFocus = null;
+
+function modalFocusables(){
+  const modal = document.querySelector("#modalBackdrop .modal");
+  if(!modal) return [];
+  return [...modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')]
+    .filter((el) => !el.disabled && el.getClientRects().length);
+}
+
+/* Only bound while the dialog is open. Escape closes; Tab wraps at both ends so
+   focus cannot escape into the page behind the overlay. */
+function onModalKeydown(e){
+  if(e.key === "Escape"){ e.preventDefault(); closeModal(); return; }
+  if(e.key !== "Tab") return;
+
+  const list = modalFocusables();
+  if(!list.length) return;
+  const first = list[0];
+  const last = list[list.length - 1];
+
+  if(e.shiftKey && document.activeElement === first){
+    e.preventDefault();
+    last.focus();
+  } else if(!e.shiftKey && document.activeElement === last){
+    e.preventDefault();
+    first.focus();
+  }
+}
+
 function openModal(id){
   const p = imagePrompts[id];
   const modalSwatch = document.getElementById("modalSwatch");
   modalSwatch.className = `modal-swatch swatch-${id % 6}`;
-  modalSwatch.innerHTML = `<div class="swatch-texture"></div><img class="real-photo" src="images/${p.slug}.jpg" alt="${escapeAttr(p.style)} example" onerror="this.remove()"><span class="modal-swatch-name">${p.style}</span>`;
+  /* alt="" — the name is in the heading and in .modal-swatch-name already. */
+  modalSwatch.innerHTML = `<div class="swatch-texture"></div><img class="real-photo" src="images/${p.slug}.jpg" alt="" onerror="this.remove()"><span class="modal-swatch-name">${p.style}</span>`;
   document.getElementById("modalStyleName").textContent = p.style;
   document.getElementById("modalModel").textContent = p.cat;
   document.getElementById("modalPromptText").innerHTML = highlightVars(p.prompt);
   document.getElementById("modalCopyBtn").dataset.raw = p.prompt;
+
+  modalReturnFocus = document.querySelector(`.gallery-card[data-id="${id}"]`) || document.activeElement;
+
   document.getElementById("modalBackdrop").classList.add("open");
   document.body.style.overflow = "hidden";
+  document.addEventListener("keydown", onModalKeydown, true);
+  /* Move focus into the dialog, or the trap has nothing to hold and a screen
+     reader never learns the dialog opened. */
+  document.getElementById("modalClose").focus();
 }
 
 function closeModal(){
   const backdrop = document.getElementById("modalBackdrop");
-  if(!backdrop) return;
+  if(!backdrop || !backdrop.classList.contains("open")) return;
+
   backdrop.classList.remove("open");
   document.body.style.overflow = "";
+  document.removeEventListener("keydown", onModalKeydown, true);
+
+  /* Back to the card that opened it — otherwise focus falls to <body> and a
+     keyboard user restarts from the top of a 266-card grid. */
+  if(modalReturnFocus && document.contains(modalReturnFocus)) modalReturnFocus.focus();
+  modalReturnFocus = null;
 }
 
 /* ==================================================================

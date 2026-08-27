@@ -317,9 +317,18 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent-blue); out
 .modal-backdrop{
   position:fixed; inset:0; z-index:200; background:rgba(6,7,9,.78); backdrop-filter:blur(4px);
   display:flex; align-items:center; justify-content:center; padding:24px;
-  opacity:0; pointer-events:none; transition:opacity var(--transition-fast);
+  opacity:0; pointer-events:none;
+  /* visibility, not opacity alone: a transparent-but-visible dialog keeps its
+     close and copy buttons in the tab order and the accessibility tree, so
+     keyboard users tabbed through two invisible controls on every visit.
+     Delayed by the fade duration so the close animation still plays. */
+  visibility:hidden;
+  transition:opacity var(--transition-fast), visibility 0s linear var(--transition-fast);
 }
-.modal-backdrop.open{ opacity:1; pointer-events:auto; }
+.modal-backdrop.open{
+  opacity:1; pointer-events:auto; visibility:visible;
+  transition:opacity var(--transition-fast), visibility 0s;
+}
 .modal{
   background:var(--bg-panel); border:1px solid var(--border-subtle); border-radius:var(--radius-lg);
   max-width:880px; width:100%; max-height:88vh; overflow-y:auto; display:grid; grid-template-columns:1fr 1fr;
