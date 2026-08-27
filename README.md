@@ -3,6 +3,17 @@
 A multi-page AI prompt library — browse image prompts as a gallery, browse text
 prompt templates by category, and build your own prompt from keywords.
 
+- **266 image-to-image prompts**, filterable and searchable, every one written
+  for an uploaded photo and detailed enough to direct the model (250+ chars).
+- **456 text prompt templates** — 114 each for slides, essays, reports and
+  emails — with `[bracketed]` fill-in variables.
+- **Light and dark themes**, toggled from the nav and remembered per browser.
+  Dark is the default.
+- Filters and search live in the URL, so a filtered view can be shared and the
+  back button undoes a filter.
+- Works with JavaScript disabled (content still renders), off the filesystem
+  over `file://`, and on any static host.
+
 ## Running it
 
 No build step, no server needed. Keep all files together in one folder and open
@@ -41,6 +52,7 @@ Upload the whole folder as-is.
 | `build_prompts.py` | Source of truth for image prompts; re-run to regenerate |
 | `partials/` + `build_pages.py` | Shared nav/footer/head markup; re-run after editing a partial |
 | `build-manifest.js` | Records which thumbnails exist so the gallery does not request missing ones |
+| `images/manifest.js` | Generated list of present thumbnails — rebuild with `node build-manifest.js` |
 | `fetch-stock.js` | Bulk-download free stock thumbnails from Pexels |
 | `generate-images.js` | Local script to fill `images/` via the Gemini API |
 | `images/` | Gallery thumbnails + a README listing every filename |

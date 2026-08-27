@@ -156,3 +156,20 @@ Stock thumbnails from Pexels. Free to use, credit appreciated.
 - Art Deco — photo by Nur Andi Ravsanjani Gusma on Pexels
 - Pop Art — photo by Pexels User on Pexels
 - Op Art — photo by Victor  Moragriega on Pexels
+- Abstract Expressionism — photo by Steve A Johnson on Pexels (https://www.pexels.com/photo/colorful-art-on-canvas-15267299/)
+- Minimalism — photo by Luis Moya on Pexels (https://www.pexels.com/photo/photo-of-a-construction-14528981/)
+- Brutalist Graphic — photo by Juan Diego on Pexels (https://www.pexels.com/photo/concrete-geometric-building-11831530/)
+- Ukiyo-e — photo by Rüveyda Akkaya on Pexels (https://www.pexels.com/photo/vibrant-purple-hydrangeas-in-full-bloom-outdoors-38888890/)
+- Chinese Ink Painting — photo by Dương Đức on Pexels (https://www.pexels.com/photo/artist-creating-chinese-calligraphy-outdoors-35346910/)
+- Persian Miniature — photo by Mehin Qehremanzade on Pexels (https://www.pexels.com/photo/colorful-toy-cars-on-vibrant-persian-rugs-34928895/)
+- Mughal Miniature — photo by Manish Jangid on Pexels (https://www.pexels.com/photo/intricate-carved-figure-in-historic-indian-architecture-36470542/)
+- Madhubani — photo by Pavitra Maheshwari on Pexels (https://www.pexels.com/photo/colorful-madhubani-folk-art-of-fish-and-flowers-34961656/)
+- Warli Art — photo by Sommya Sethiya on Pexels (https://www.pexels.com/photo/a-person-holding-a-small-painted-clay-pot-11664464/)
+- Illuminated Manuscript — photo by Skylar Kang on Pexels (https://www.pexels.com/photo/ancient-opened-historical-book-with-calligraphic-inscription-6207364/)
+- Vintage Travel Poster — photo by Ahmet Çiftçi on Pexels (https://www.pexels.com/photo/vintage-swiss-travel-posters-display-31376933/)
+- Outer Space — photo by Stephan  Wagner on Pexels (https://www.pexels.com/photo/breathtaking-view-of-cosmic-nebulae-32988465/)
+- Underwater Scene — photo by Los Muertos Crew on Pexels (https://www.pexels.com/photo/close-up-shot-of-an-exotic-fish-swimming-8837886/)
+- Dense Jungle — photo by Nastia Ligrain on Pexels (https://www.pexels.com/photo/variety-of-leaves-against-black-background-14465061/)
+- Desert Dunes — photo by raouf bedrani on Pexels (https://www.pexels.com/photo/sand-dune-11377054/)
+- Snowy Landscape — photo by Gül Işık on Pexels (https://www.pexels.com/photo/silhouette-photo-of-forests-2127791/)
+- Heavy Rain — photo by King  Ho on Pexels (https://www.pexels.com/photo/a-grayscale-photo-of-people-walking-on-the-street-at-night-while-raining-13832290/)
