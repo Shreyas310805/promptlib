@@ -110,7 +110,14 @@ async function generateOne(prompt){
     throw new Error(textPart ? `No image returned. Model said: ${textPart.text.slice(0, 200)}` : "No image data in response");
   }
 
-  return Buffer.from(imagePart.inlineData.data, "base64");
+  /* Gemini returns PNG here, but the gallery looks for images/<slug>.jpg, so
+     that is the name we must write. The extension is a lie the browser does not
+     care about: <img> decodes by magic bytes, and static hosts label .jpg as
+     image/jpeg, which browsers sniff past. Converting properly would mean an
+     image library, and this project deliberately has no npm dependencies.
+     Reported so the mismatch is visible rather than silent. */
+  const mimeType = imagePart.inlineData.mimeType || "image/png";
+  return { buffer: Buffer.from(imagePart.inlineData.data, "base64"), mimeType };
 }
 
 async function main(){
@@ -125,7 +132,7 @@ async function main(){
   if(!fs.existsSync(IMAGES_DIR)) fs.mkdirSync(IMAGES_DIR, { recursive: true });
 
   const prompts = loadPrompts();
-  console.log(`Loaded ${prompts.length} prompts from script.js`);
+  console.log(`Loaded ${prompts.length} prompts from prompts-image.js`);
 
   let queue = prompts.map((p) => ({ ...p, slug: p.slug || slugify(p.style) }));
 
@@ -153,9 +160,10 @@ async function main(){
     process.stdout.write(`${label} ... `);
 
     try {
-      const buffer = await generateOne(thumbnailPrompt(item));
+      const { buffer, mimeType } = await generateOne(thumbnailPrompt(item));
       fs.writeFileSync(path.join(IMAGES_DIR, `${item.slug}.jpg`), buffer);
-      console.log(`saved images/${item.slug}.jpg`);
+      const note = mimeType === "image/jpeg" ? "" : ` (${mimeType} data, .jpg name — see generateOne)`;
+      console.log(`saved images/${item.slug}.jpg${note}`);
       ok++;
     } catch (err) {
       console.log(`FAILED — ${err.message}`);
