@@ -38,6 +38,7 @@
 
 const fs = require("fs");
 const path = require("path");
+const { writeManifest } = require("./build-manifest");
 
 const API_KEY = process.env.GEMINI_API_KEY;
 const MODEL = "gemini-3.1-flash-image";
@@ -173,7 +174,11 @@ async function main(){
     if(i < queue.length - 1) await sleep(DELAY_MS);
   }
 
+  /* Refresh the manifest so images.html knows which thumbnails now exist —
+     without this the gallery keeps showing gradient swatches for them. */
+  const inManifest = writeManifest();
   console.log(`\nDone. ${ok} generated, ${failed} failed.`);
+  console.log(`images/manifest.js now lists ${inManifest} thumbnail(s).`);
   if(ok) console.log("Open images.html to see them.\n");
   if(failed) console.log("Re-run the script to retry just the failed ones.\n");
 }

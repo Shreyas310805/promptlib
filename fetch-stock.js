@@ -42,6 +42,7 @@
 
 const fs = require("fs");
 const path = require("path");
+const { writeManifest } = require("./build-manifest");
 
 const API_KEY = process.env.PEXELS_API_KEY;
 const IMAGES_DIR = path.join(__dirname, "images");
@@ -186,7 +187,11 @@ async function main(){
     console.log(`\nCredits appended to images/CREDITS.md`);
   }
 
+  /* Refresh the manifest so images.html knows which thumbnails now exist —
+     without this the gallery keeps showing gradient swatches for them. */
+  const inManifest = writeManifest();
   console.log(`\nDone. ${ok} downloaded, ${failed} failed.`);
+  console.log(`images/manifest.js now lists ${inManifest} thumbnail(s).`);
   if(ok) console.log("Open images.html to see them.\n");
 }
 

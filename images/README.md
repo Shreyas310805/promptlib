@@ -6,6 +6,11 @@ named exactly as listed below and it appears on the site automatically.
 Missing files fall back to a colour swatch, so the site works fine with only
 some of these filled in. Do the popular categories first.
 
+After adding or removing files here by hand, run `node build-manifest.js`
+from the project folder. It rewrites `manifest.js`, which tells the gallery
+which thumbnails exist so it does not request the ones that do not.
+`fetch-stock.js` and `generate-images.js` do this for you automatically.
+
 ## Three ways to fill this folder
 
 ### 1. Free stock photos (recommended to start)
