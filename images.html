@@ -5,16 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Image prompts — PromptLib</title>
 <!-- @partial head -->
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0c0e'/%3E%3Cpath d='M10 10l7 6-7 6' stroke='%23ffb238' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0c0e'/%3E%3Cpath d='M10 10l7 6-7 6' stroke='%23eda93f' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <script>
 /* Bootstrap — keep inline and keep it tiny. Opts this page into the CSS fade
    only while JS is running, then guarantees a reveal on load even if script.js
    never arrives. An external file here could 404 and take the page with it. */
 document.documentElement.classList.add("js");
+try {
+  var t = localStorage.getItem("promptlib-theme");
+  if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+} catch (e) { /* private mode / storage blocked — dark default is fine */ }
 addEventListener("load", function(){ document.body.classList.add("loaded"); });
 </script>
 <!-- @end head -->
@@ -25,7 +29,7 @@ addEventListener("load", function(){ document.body.classList.add("loaded"); });
 <nav class="nav">
   <div class="nav-inner">
     <a href="index.html" class="logo">
-      <svg class="logo-mark" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="7" fill="#15161b"/><path d="M10 10l7 6-7 6" stroke="#ffb238" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <svg class="logo-mark" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="7" fill="#15161b"/><path d="M10 10l7 6-7 6" stroke="#eda93f" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span>promptlib</span>
     </a>
     <button class="nav-toggle" id="navToggle" aria-label="Toggle menu" aria-expanded="false"><span></span><span></span><span></span></button>
@@ -34,6 +38,10 @@ addEventListener("load", function(){ document.body.classList.add("loaded"); });
       <a href="images.html" class="nav-link" data-page="images.html">images</a>
       <a href="text.html" class="nav-link" data-page="text.html">text</a>
       <a href="builder.html" class="nav-link" data-page="builder.html">builder</a>
+      <button type="button" class="theme-toggle" id="themeToggle" aria-label="Switch to light theme" aria-pressed="false">
+        <svg class="icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.7 6.7 0 0 0 10.5 10.5z"/></svg>
+        <svg class="icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.4v2.2M12 19.4v2.2M4.2 4.2l1.6 1.6M18.2 18.2l1.6 1.6M2.4 12h2.2M19.4 12h2.2M4.2 19.8l1.6-1.6M18.2 5.8l1.6-1.6"/></svg>
+      </button>
     </div>
   </div>
 </nav>
@@ -41,7 +49,7 @@ addEventListener("load", function(){ document.body.classList.add("loaded"); });
 
 <main>
   <div class="section-inner">
-    <p class="eyebrow">$ browse --transform --upload-your-own</p>
+    <p class="eyebrow"><span class="eyebrow-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6.5l5.5 5.5L8 17.5"/><path d="M14.5 17.5H19"/></svg></span>browse --transform --upload-your-own</p>
     <h1 class="section-title">Image transformation prompts</h1>
     <p class="section-sub">Upload your own photo, paste one of these, and the AI restyles it. Every prompt already tells the model what to preserve — face, pose, composition — so your subject stays recognisable.</p>
 

@@ -198,6 +198,36 @@ function setActiveNav(){
   });
 }
 
+/* Dark is the default and the site's identity; the toggle is an override that
+   persists per browser. The stored value is applied by the inline bootstrap in
+   <head> so the page never paints one theme then swaps to the other. */
+function initThemeToggle(){
+  const btn = document.getElementById("themeToggle");
+  if(!btn) return;
+
+  const current = () => document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
+
+  const apply = (theme) => {
+    document.documentElement.setAttribute("data-theme", theme);
+    btn.setAttribute("aria-pressed", String(theme === "light"));
+    btn.setAttribute("aria-label", theme === "light" ? "Switch to dark theme" : "Switch to light theme");
+  };
+
+  apply(current());
+
+  btn.addEventListener("click", () => {
+    const next = current() === "light" ? "dark" : "light";
+    apply(next);
+    try {
+      localStorage.setItem("promptlib-theme", next);
+    } catch(err){
+      /* Storage can throw in private mode. The switch still works for this
+         page; it just will not be remembered. */
+    }
+    announce(next === "light" ? "Light theme enabled" : "Dark theme enabled");
+  });
+}
+
 function initMobileNav(){
   const navToggle = document.getElementById("navToggle");
   const navLinksEl = document.getElementById("navLinks");
@@ -739,6 +769,7 @@ function buildPrompt(){
    INIT — runs on every page; each function no-ops if its elements aren't present
    ================================================================== */
 setActiveNav();
+initThemeToggle();
 initMobileNav();
 initPageTransitions();
 initGallery();

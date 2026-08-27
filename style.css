@@ -1,28 +1,100 @@
 /* ============================================
    DESIGN TOKENS
    ============================================ */
+/* ---------------------------------------------------------------
+   THEME TOKENS
+
+   :root is the dark theme — the site's default and its identity.
+   [data-theme="light"] below overrides the same names; nothing else in this
+   file needs to know which theme is active.
+
+   Accents come in two forms because one value cannot serve both jobs:
+     --accent        the brand fill (button/chip backgrounds, borders)
+     --accent-ink    the same hue at a weight that is readable AS TEXT on the
+                     page background. On light backgrounds bright amber drops
+                     to ~1.9:1, so text has to use a much deeper tone.
+     --on-accent     text sitting on top of an --accent fill.
+   --------------------------------------------------------------- */
 :root{
-  --bg-void:#0b0c0e;
-  --bg-panel:#15161b;
-  --bg-panel-hover:#1c1d24;
-  --accent-amber:#ffb238;
-  --accent-amber-soft:rgba(255,178,56,.35);
-  --accent-blue:#6c8eff;
-  --accent-blue-soft:rgba(108,142,255,.35);
-  --text-primary:#ececf1;
-  --text-muted:#8c8f9b;
-  /* Placeholder text. Dimmer than --text-muted to keep the visual hierarchy,
-     but still 4.70:1 on --bg-panel; the old #5c5f6b measured 2.84:1 and
-     failed WCAG AA, while carrying real content ("try sketch, drone, pixel"). */
-  --text-placeholder:#7e828e;
-  --border-subtle:#24252c;
-  --font-display:'IBM Plex Sans',-apple-system,sans-serif;
-  --font-mono:'IBM Plex Mono','SFMono-Regular',Menlo,monospace;
+  color-scheme:dark;
+
+  /* surfaces — neutral near-black, not the blue-black it used to be */
+  --bg-void:#0c0c0d;
+  --bg-panel:#151517;
+  --bg-panel-hover:#1d1d20;
+  --border-subtle:#26262a;
+  --border-strong:#35353b;
+
+  /* type */
+  --text-primary:#ededee;
+  --text-muted:#9a9aa3;
+  --text-placeholder:#7e7e88;
+
+  /* accents */
+  --accent:#eda93f;
+  --accent-ink:#f0b455;
+  --on-accent:#1a1200;
+  --accent-amber:var(--accent);
+  --accent-amber-soft:rgba(237,169,63,.32);
+  --accent-blue:#7d9bff;
+  --accent-blue-ink:#93abff;
+  --accent-blue-soft:rgba(125,155,255,.32);
+
+  /* atmosphere */
+  --grid-line:rgba(255,255,255,.028);
+  --scrim:rgba(6,7,9,.78);
+  --shadow-card:0 14px 34px -16px rgba(0,0,0,.7);
+  --shadow-modal:0 30px 80px -30px rgba(0,0,0,.7);
+  /* Translucent so the grid shows through the sticky nav. Must be tokenised:
+     hardcoded dark here left light-mode nav text at 2.65:1. */
+  --nav-bg:rgba(11,12,14,.82);
+  --accent-hover:#f5bb5e;
+  --on-accent-blue:#0a0e1a;
+  --danger-ink:#ff8f8f;
+  /* Instrument Sans: editorial grotesque, tighter and less corporate than Plex.
+     JetBrains Mono for anything terminal-flavoured. */
+  --font-display:'Instrument Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --font-mono:'JetBrains Mono','SFMono-Regular',Menlo,Consolas,monospace;
   --radius:10px;
   --radius-lg:16px;
   --transition-fast:.18s ease;
   --transition-med:.32s ease;
   --section-pad:clamp(56px,9vw,110px);
+}
+
+/* Light theme. Warm paper white rather than pure #fff, which glares against
+   this much monospace. Applied by the inline bootstrap in each <head> before
+   first paint, so switching never flashes the other theme. */
+:root[data-theme="light"]{
+  color-scheme:light;
+
+  --bg-void:#faf9f7;
+  --bg-panel:#ffffff;
+  --bg-panel-hover:#f2f1ed;
+  --border-subtle:#e4e2dc;
+  --border-strong:#cfccc4;
+
+  --text-primary:#191919;
+  --text-muted:#5c5c64;
+  --text-placeholder:#7a7a83;
+
+  --accent:#e09a2c;
+  --accent-ink:#8a5300;
+  --on-accent:#1a1200;
+  --accent-amber-soft:rgba(224,154,44,.30);
+  --accent-blue:#4560d8;
+  --accent-blue-ink:#2f45a8;
+  --accent-blue-soft:rgba(69,96,216,.24);
+
+  --grid-line:rgba(0,0,0,.035);
+  --scrim:rgba(24,24,26,.42);
+  --shadow-card:0 14px 30px -18px rgba(24,24,26,.34);
+  --shadow-modal:0 30px 70px -30px rgba(24,24,26,.42);
+  --nav-bg:rgba(250,249,247,.86);
+  --accent-hover:#c9861f;
+  /* --accent-blue is mid-tone here, so its label flips to white. */
+  --on-accent-blue:#ffffff;
+  --danger-ink:#b3261e;
 }
 
 *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
@@ -55,8 +127,8 @@ body::before{
   pointer-events:none;
   z-index:0;
   background-image:
-    linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
   background-size:48px 48px;
   -webkit-mask-image:radial-gradient(ellipse 80% 55% at 50% 0%, black 0%, transparent 70%);
   mask-image:radial-gradient(ellipse 80% 55% at 50% 0%, black 0%, transparent 70%);
@@ -79,15 +151,22 @@ main{ position:relative; z-index:1; }
    ============================================ */
 .eyebrow{
   font-family:var(--font-mono);
-  font-size:13px;
-  color:var(--accent-amber);
-  letter-spacing:.02em;
+  font-size:12.5px;
+  color:var(--accent-ink);
+  letter-spacing:.04em;
   margin-bottom:14px;
 }
-.var{ color:var(--accent-blue); }
+/* The site's own chevron in place of a shell '$'. A literal dollar sign reads
+   as generic terminal dressing; this ties the prompt line to the logo mark. */
+.eyebrow-mark{
+  display:inline-block; vertical-align:-2px; margin-right:8px;
+  color:var(--accent);
+}
+.eyebrow-mark svg{ width:14px; height:14px; display:block; }
+.var{ color:var(--accent-blue-ink); }
 
 @keyframes blink{ 0%,49%{opacity:1;} 50%,100%{opacity:0;} }
-.cursor-blink{ animation:blink 1s step-start infinite; color:var(--accent-amber); font-weight:600; }
+.cursor-blink{ animation:blink 1s step-start infinite; color:var(--accent-ink); font-weight:600; }
 
 .demo-dot{ width:8px; height:8px; border-radius:50%; background:var(--accent-amber); display:inline-block; flex-shrink:0; }
 
@@ -96,7 +175,7 @@ main{ position:relative; z-index:1; }
   font-family:var(--font-mono); font-size:11px; letter-spacing:.02em;
   background:var(--bg-panel-hover); color:var(--text-muted); border:1px solid var(--border-subtle);
 }
-.badge-model{ color:var(--accent-amber); border-color:var(--accent-amber-soft); }
+.badge-model{ color:var(--accent-ink); border-color:var(--accent-amber-soft); }
 
 .btn{
   display:inline-flex; align-items:center; gap:8px; padding:13px 24px; border-radius:6px;
@@ -104,13 +183,13 @@ main{ position:relative; z-index:1; }
   border:1px solid transparent; text-decoration:none; background:none;
   transition:transform var(--transition-fast), background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
 }
-.btn-primary{ background:var(--accent-amber); color:#1a1200; }
-.btn-primary:hover{ transform:translateY(-2px); background:#ffc25e; }
+.btn-primary{ background:var(--accent); color:var(--on-accent); }
+.btn-primary:hover{ transform:translateY(-2px); background:var(--accent-hover); }
 .btn-ghost{ border-color:var(--border-subtle); color:var(--text-primary); }
 .btn-ghost:hover{ border-color:var(--accent-amber); transform:translateY(-2px); }
 .btn-sm{ padding:9px 16px; font-size:13px; }
-.btn-copy.copied{ background:var(--accent-blue); color:#0a0e1a; border-color:var(--accent-blue); }
-.btn-copy.copy-failed{ background:transparent; color:#ff8f8f; border-color:#ff8f8f; }
+.btn-copy.copied{ background:var(--accent-blue); color:var(--on-accent-blue); border-color:var(--accent-blue); }
+.btn-copy.copy-failed{ background:transparent; color:var(--danger-ink); border-color:var(--danger-ink); }
 
 /* Visually hidden but still announced — used by the shared live region. */
 .sr-only{
@@ -125,7 +204,7 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent-blue); out
   font-family:var(--font-mono); font-size:13px; color:var(--text-muted);
   text-decoration:none; margin-bottom:28px; transition:color var(--transition-fast);
 }
-.back-link:hover{ color:var(--accent-amber); }
+.back-link:hover{ color:var(--accent-ink); }
 .back-link .icon{ transform:rotate(180deg); }
 
 .reveal{
@@ -146,18 +225,34 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent-blue); out
    ============================================ */
 .nav{
   position:sticky; top:0; z-index:100;
-  background:rgba(11,12,14,.82); backdrop-filter:blur(10px);
+  background:var(--nav-bg); backdrop-filter:blur(10px);
   border-bottom:1px solid var(--border-subtle);
 }
 .nav-inner{ max-width:1180px; margin:0 auto; padding:16px 32px; display:flex; align-items:center; justify-content:space-between; }
 .logo{ display:inline-flex; align-items:center; gap:10px; font-family:var(--font-mono); font-size:16px; font-weight:500; text-decoration:none; color:var(--text-primary); }
-.nav-links{ display:flex; gap:8px; }
+.nav-links{ display:flex; align-items:center; gap:8px; }
+
+/* Theme toggle — sits at the end of the nav, shows the theme you would switch
+   TO rather than the one you are in. */
+.theme-toggle{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:34px; height:34px; margin-left:6px; flex-shrink:0;
+  background:transparent; border:1px solid var(--border-subtle);
+  border-radius:8px; color:var(--text-muted); cursor:pointer;
+  transition:color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
+}
+.theme-toggle:hover{ color:var(--text-primary); border-color:var(--border-strong); background:var(--bg-panel); }
+.theme-toggle .icon{ width:17px; height:17px; }
+/* Only one glyph is ever shown; the other is removed from the layout. */
+.theme-toggle .theme-icon-sun{ display:none; }
+:root[data-theme="light"] .theme-toggle .theme-icon-sun{ display:block; }
+:root[data-theme="light"] .theme-toggle .theme-icon-moon{ display:none; }
 .nav-link{
   font-family:var(--font-mono); font-size:14px; text-decoration:none; color:var(--text-muted);
   padding:8px 14px; border-radius:6px; transition:color var(--transition-fast), background var(--transition-fast);
 }
 .nav-link:hover{ color:var(--text-primary); }
-.nav-link.active{ color:var(--accent-amber); background:var(--bg-panel); }
+.nav-link.active{ color:var(--accent-ink); background:var(--bg-panel); }
 
 .nav-toggle{ display:none; flex-direction:column; justify-content:center; gap:5px; width:34px; height:34px; background:none; border:none; cursor:pointer; }
 .nav-toggle span{ display:block; width:100%; height:2px; background:var(--text-primary); transition:transform var(--transition-fast), opacity var(--transition-fast); }
@@ -178,19 +273,25 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent-blue); out
 .hero{ padding-top:calc(var(--section-pad) * 0.55); }
 .hero-inner{ max-width:1180px; margin:0 auto; padding:0 32px 56px; text-align:center; }
 .hero-title{ font-size:clamp(36px,6vw,64px); font-weight:700; line-height:1.12; letter-spacing:-.01em; max-width:820px; margin:0 auto 22px; }
-.text-gradient{ background:linear-gradient(100deg, var(--accent-amber), var(--accent-blue)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+/* Was a two-stop gradient clipped to the text. Gradient type is the single
+   most generic thing a dark landing page can do, so this is now a solid accent
+   with a weighted underline — same emphasis, reads as typography instead. */
+.text-gradient{
+  color:var(--accent-ink);
+  box-shadow:inset 0 -0.14em 0 var(--accent-amber-soft);
+}
 .hero-sub{ max-width:560px; margin:0 auto 36px; color:var(--text-muted); font-size:17px; }
 .hero-cta-row{ display:flex; gap:14px; justify-content:center; flex-wrap:wrap; }
 
 .demo-card{
   max-width:640px; margin:56px auto 0; background:var(--bg-panel); border:1px solid var(--border-subtle);
-  border-radius:var(--radius-lg); overflow:hidden; box-shadow:0 30px 80px -30px rgba(0,0,0,.7);
+  border-radius:var(--radius-lg); overflow:hidden; box-shadow:var(--shadow-modal);
 }
 .demo-card-bar{ display:flex; align-items:center; gap:10px; padding:12px 16px; background:var(--bg-panel-hover); border-bottom:1px solid var(--border-subtle); }
 .demo-filename{ font-family:var(--font-mono); font-size:12px; color:var(--text-muted); flex:1; text-align:left; }
 .demo-body{ padding:22px 20px 24px; text-align:left; }
 .demo-prompt-line{ font-family:var(--font-mono); font-size:14px; line-height:1.6; min-height:44px; }
-.demo-prompt-prefix{ color:var(--accent-blue); margin-right:6px; }
+.demo-prompt-prefix{ color:var(--accent-blue-ink); margin-right:6px; }
 .demo-result{ margin-top:16px; border-radius:8px; overflow:hidden; opacity:0; max-height:0; transition:opacity .5s ease, max-height .5s ease; }
 .demo-result.show{ opacity:1; max-height:320px; }
 .demo-swatch{
@@ -210,12 +311,12 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent-blue); out
   padding:26px; text-decoration:none; color:var(--text-primary); position:relative;
   transition:transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
-.nav-card:hover{ transform:translateY(-4px); border-color:var(--accent-amber); box-shadow:0 16px 40px -14px rgba(0,0,0,.6); }
-.nav-card .icon-lg{ color:var(--accent-amber); margin-bottom:16px; }
+.nav-card:hover{ transform:translateY(-4px); border-color:var(--accent-amber); box-shadow:var(--shadow-card); }
+.nav-card .icon-lg{ color:var(--accent-ink); margin-bottom:16px; }
 .nav-card h3{ font-size:18px; margin-bottom:8px; }
 .nav-card p{ color:var(--text-muted); font-size:13.5px; line-height:1.6; }
 .nav-card-arrow{ position:absolute; top:26px; right:26px; color:var(--text-muted); transition:transform var(--transition-fast), color var(--transition-fast); }
-.nav-card:hover .nav-card-arrow{ transform:translate(3px,-3px); color:var(--accent-amber); }
+.nav-card:hover .nav-card-arrow{ transform:translate(3px,-3px); color:var(--accent-ink); }
 
 /* ============================================
    IMAGE GALLERY (images.html)
@@ -238,15 +339,19 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent-blue); out
 }
 .gallery-card.tall{ grid-row-end:span 38; }
 .gallery-card.short{ grid-row-end:span 24; }
-.gallery-card:hover{ transform:translateY(-4px); border-color:var(--accent-amber); box-shadow:0 16px 40px -14px rgba(0,0,0,.6); }
+.gallery-card:hover{ transform:translateY(-4px); border-color:var(--accent-amber); box-shadow:var(--shadow-card); }
 
 /* style swatches — generated gradients standing in for a real render, no external images */
-.swatch-0{ background:linear-gradient(135deg,#ffb238,#ff6b6b); }
-.swatch-1{ background:linear-gradient(135deg,#6c8eff,#a685ff); }
-.swatch-2{ background:linear-gradient(135deg,#38e8c6,#6c8eff); }
-.swatch-3{ background:linear-gradient(135deg,#ffb238,#a685ff); }
-.swatch-4{ background:linear-gradient(135deg,#ff6b6b,#ffb238); }
-.swatch-5{ background:linear-gradient(135deg,#38e8c6,#ffb238); }
+/* Placeholder art for cards without a thumbnail. Deliberately muted and
+   closely related — six saturated rainbow gradients read as generic AI filler
+   and fought the photographs sitting next to them. These stay dark enough for
+   white text in either theme. */
+.swatch-0{ background:linear-gradient(150deg,#c08843,#9c5742); }
+.swatch-1{ background:linear-gradient(150deg,#5866a4,#3b4265); }
+.swatch-2{ background:linear-gradient(150deg,#3f8a80,#2d5a58); }
+.swatch-3{ background:linear-gradient(150deg,#77597f,#4c3b5a); }
+.swatch-4{ background:linear-gradient(150deg,#ae6d5d,#844d50); }
+.swatch-5{ background:linear-gradient(150deg,#5a6f83,#3a4857); }
 
 .gallery-card{ display:flex; align-items:flex-end; }
 .real-photo{
@@ -256,8 +361,8 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent-blue); out
   display:block;
   position:absolute; inset:0; pointer-events:none;
   background-image:
-    linear-gradient(rgba(255,255,255,.12) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,.12) 1px, transparent 1px);
+    linear-gradient(rgba(255,255,255,.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.07) 1px, transparent 1px);
   background-size:26px 26px;
   mix-blend-mode:overlay;
 }
@@ -299,7 +404,7 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent-blue); out
   transition:color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
 }
 .chip:hover{ color:var(--text-primary); border-color:var(--text-muted); }
-.chip.active{ color:#1a1200; background:var(--accent-amber); border-color:var(--accent-amber); }
+.chip.active{ color:var(--on-accent); background:var(--accent); border-color:var(--accent); }
 
 .gallery-empty{
   grid-column:1 / -1; color:var(--text-muted); font-size:15px; padding:40px 0;
@@ -315,7 +420,7 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent-blue); out
 }
 .gallery-error-title{ color:var(--text-primary); font-weight:600; font-size:16px; margin-bottom:6px; }
 .gallery-error code{
-  font-family:var(--font-mono); font-size:13px; color:var(--accent-amber);
+  font-family:var(--font-mono); font-size:13px; color:var(--accent-ink);
   background:var(--bg-void); padding:2px 6px; border-radius:4px;
 }
 
@@ -323,7 +428,7 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent-blue); out
    MODAL (images.html)
    ============================================ */
 .modal-backdrop{
-  position:fixed; inset:0; z-index:200; background:rgba(6,7,9,.78); backdrop-filter:blur(4px);
+  position:fixed; inset:0; z-index:200; background:var(--scrim); backdrop-filter:blur(4px);
   display:flex; align-items:center; justify-content:center; padding:24px;
   opacity:0; pointer-events:none;
   /* visibility, not opacity alone: a transparent-but-visible dialog keeps its
@@ -374,7 +479,7 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent-blue); out
   display:flex; flex-direction:column;
   transition:transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
-.prompt-card:hover{ transform:translateY(-4px); border-color:var(--accent-amber); box-shadow:0 16px 40px -14px rgba(0,0,0,.6); }
+.prompt-card:hover{ transform:translateY(-4px); border-color:var(--accent-amber); box-shadow:var(--shadow-card); }
 .prompt-card .prompt-text{ flex:1; padding:16px; }
 .prompt-card .btn{ margin:0 16px 16px; align-self:flex-start; }
 
@@ -392,7 +497,7 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent-blue); out
 .builder-req, .builder-opt{
   font-size:10px; padding:2px 7px; border-radius:999px; border:1px solid var(--border-subtle);
 }
-.builder-req{ color:var(--accent-amber); border-color:var(--accent-amber-soft); }
+.builder-req{ color:var(--accent-ink); border-color:var(--accent-amber-soft); }
 .builder-opt{ color:var(--text-muted); }
 .builder-field input, .builder-field select{
   font-family:var(--font-mono); font-size:13.5px;
@@ -445,7 +550,7 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent-blue); out
 .footer-line{ font-family:var(--font-mono); font-size:13px; color:var(--text-muted); }
 .footer-credit{ margin-top:8px; font-size:11.5px; }
 .footer-credit a{ color:var(--text-muted); }
-.footer-credit a:hover{ color:var(--accent-amber); }
+.footer-credit a:hover{ color:var(--accent-ink); }
 
 /* ============================================
    RESPONSIVE
