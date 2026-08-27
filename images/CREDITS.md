@@ -3,3 +3,156 @@
 Stock thumbnails from Pexels. Free to use, credit appreciated.
 
 - Watercolor Painting — photo by Sarah Films on Pexels (https://www.pexels.com/photo/selection-of-watercolors-14628036/)
+- Oil Painting — photo by Huy Nguyễn on Pexels
+- Impasto Oil — photo by Ulrick Trappschuh on Pexels
+- Acrylic Painting — photo by Sedanur Kunuk on Pexels
+- Gouache Illustration — photo by Esma Nur Tetik on Pexels
+- Pencil Sketch — photo by Hurrah suhail on Pexels
+- Detailed Graphite Portrait — photo by Liana Horodetska on Pexels
+- Colored Pencil — photo by Lucas George Wendt on Pexels
+- Charcoal Drawing — photo by Nam Phong Bùi on Pexels
+- Conte Crayon — photo by cottonbro studio on Pexels
+- Ink Pen Hatching — photo by Valeria Tumuruc on Pexels
+- Ink Wash — photo by Kseniya Lapteva on Pexels
+- Brush Pen Illustration — photo by Kateryna Hnidash on Pexels
+- Pastel Drawing — photo by cottonbro studio on Pexels
+- Oil Pastel — photo by Pavel Danilyuk on Pexels
+- Crayon Drawing — photo by cottonbro studio on Pexels
+- Marker Illustration — photo by https://kaboompics.com/ on Pexels
+- Airbrush Art — photo by Pew Nguyen on Pexels
+- Scratchboard — photo by Landiva  Weber on Pexels
+- Etching Print — photo by Inga Seliverstova on Pexels
+- Lithograph — photo by Ioana Motoc on Pexels
+- Woodblock Print — photo by Markus Spiske on Pexels
+- Linocut Print — photo by Inga Seliverstova on Pexels
+- Screen Print — photo by Alexey Demidov on Pexels
+- Risograph Print — photo by Antoni Shkraba on Pexels
+- Halftone Print — photo by Markus Spiske on Pexels
+- Stained Glass — photo by Melike on Pexels
+- Mosaic Tile — photo by Peppered Pixels Design Studio on Pexels
+- Fresco Mural — photo by Ayşegül  Aytören on Pexels
+- Tempera Panel — photo by Melike on Pexels
+- Encaustic Wax — photo by Eugenia Remark on Pexels
+- Paper Collage — photo by Heather Green on Pexels
+- Stencil Spray Art — photo by ROMAN ODINTSOV on Pexels
+- Graffiti Mural — photo by Neeraj Anoop on Pexels
+- Chalkboard Drawing — photo by Diana ✨ on Pexels
+- Sand Art — photo by Katy Ramm on Pexels
+- Embroidery — photo by Jelly Marketing on Pexels
+- Cross-Stitch — photo by Olha Krutii on Pexels
+- Hand-Painted Anime Film — photo by Alex Ivanov on Pexels
+- Soft Cel Animation — photo by Monstera Production on Pexels
+- Retro 80s Anime — photo by Artem Podrez on Pexels
+- 90s Anime — photo by Erik Mclean on Pexels
+- Modern Digital Anime — photo by Atahan Demir on Pexels
+- Classic 2D Feature Animation — photo by Wolf  Art on Pexels
+- Rubber Hose Cartoon — photo by Erik Mclean on Pexels
+- Newspaper Comic Strip — photo by Maria Firman on Pexels
+- Comic Book Panel — photo by Maria Firman on Pexels
+- Graphic Novel Noir — photo by Maria Firman on Pexels
+- Manga Panel — photo by Muhamad Guruh Budi Hartono on Pexels
+- Western Cartoon — photo by Karen Irala on Pexels
+- Storyboard Sketch — photo by RF._.studio _ on Pexels
+- Concept Art — photo by KATRIN  BOLOVTSOVA on Pexels
+- Character Sheet — photo by Michael Burrows on Pexels
+- Vector Flat Illustration — photo by Monstera Production on Pexels
+- Isometric Illustration — photo by cottonbro CG studio on Pexels
+- Children's Picture Book — photo by Marta Wave on Pexels
+- Editorial Illustration — photo by Rumeysa Demir on Pexels
+- Sticker Art — photo by Kuan-yu Huang on Pexels
+- Chibi Style — photo by Sơn Ngọc on Pexels
+- Caricature — photo by Tobias Reinert on Pexels
+- Line Art — photo by Michael Burrows on Pexels
+- Coloring Book Page — photo by Felicity Tai on Pexels
+- Cel-Shaded 3D — photo by cottonbro CG studio on Pexels
+- Low-Poly 3D — photo by Steve A Johnson on Pexels
+- Voxel Art — photo by JONATHAN PAGAOA on Pexels
+- Pixel Art — photo by Piotr Baranowski on Pexels
+- 16-Bit Sprite — photo by Piotr Baranowski on Pexels
+- Claymation Frame — photo by Tima Miroshnichenko on Pexels
+- Papercraft Layers — photo by Andrej Lišakov on Pexels
+- Silhouette Animation — photo by Göksu Taymaz on Pexels
+- 4K Ultra Sharp — photo by Connor Scott McManus on Pexels
+- 8K Hyper Detail — photo by https://kaboompics.com/ on Pexels
+- Drone Top-Down — photo by mdzi on Pexels
+- Drone Orbit Shot — photo by Antonio Janeski on Pexels
+- Tilt-Shift Miniature — photo by gu evary on Pexels
+- Long Exposure — photo by Ayfer Belim on Pexels
+- Light Painting — photo by Arturo Daniel León Peña on Pexels
+- Macro Detail — photo by Stephen Leonardi on Pexels
+- Fisheye Lens — photo by Aibek Skakov on Pexels
+- Wide-Angle Environmental — photo by Gizem Çelebi on Pexels
+- Telephoto Compression — photo by ✰ Saul Bandera Brotheridge on Pexels
+- Bokeh Portrait — photo by Omran Soliman on Pexels
+- Golden Hour — photo by Ammy Singh on Pexels
+- Blue Hour — photo by Heather Mallon on Pexels
+- Overcast Soft Light — photo by urtimud.89 on Pexels
+- Harsh Midday Sun — photo by David McElwee on Pexels
+- Film Noir — photo by Vincent Santamaria on Pexels
+- High Contrast Monochrome — photo by Anett Szekeres on Pexels
+- Sepia Vintage — photo by Book Hut on Pexels
+- Cross-Processed Film — photo by Beyzaa Yurtkuran on Pexels
+- Lomography — photo by Lisa Fotios on Pexels
+- Double Exposure — photo by Lisa Fotios on Pexels
+- Infrared Photography — photo by David McElwee on Pexels
+- HDR Photography — photo by Tom Fisk on Pexels
+- Anamorphic Widescreen — photo by Atypeek Dgn on Pexels
+- 35mm Film Grain — photo by Dũng Phạm on Pexels
+- Instant Photo — photo by Lisa Fotios on Pexels
+- Daguerreotype — photo by Suzy Hazelwood on Pexels
+- Tintype — photo by Fidan Nazim qizi on Pexels
+- Disposable Camera — photo by Marcelo Chagas on Pexels
+- Security Camera — photo by Justus Menke on Pexels
+- Dashcam Footage — photo by Fernando Ortega on Pexels
+- Underwater Photography — photo by Erdal Erdal on Pexels
+- Thermal Imaging — photo by cottonbro studio on Pexels
+- Night Vision — photo by Mak_ jp on Pexels
+- X-Ray Scan — photo by Ivan S on Pexels
+- Glitch Art — photo by Alexey Demidov on Pexels
+- Datamosh — photo by Robert Clark on Pexels
+- Pixel Sorting — photo by Robert Clark on Pexels
+- VHS Tape — photo by DS stories on Pexels
+- CRT Monitor — photo by cottonbro studio on Pexels
+- Vaporwave — photo by Wolf  Art on Pexels
+- Cyberpunk Neon — photo by Mikhail Nilov on Pexels
+- Holographic Foil — photo by Kristina Paukshtite on Pexels
+- Chromatic Aberration — photo by Nothing Ahead on Pexels
+- ASCII Art — photo by Borta on Pexels
+- Dot Matrix Print — photo by Mikhail Nilov on Pexels
+- Thermal Receipt Print — photo by GOWTHAM AGM on Pexels
+- Blueprint — photo by Marina Zvada on Pexels
+- Wireframe Render — photo by Adrien Olichon on Pexels
+- Topographic Map — photo by Marina Leonova on Pexels
+- Circuit Board — photo by David Yu on Pexels
+- Falling Code — photo by Beyza Kaplan on Pexels
+- Deep-Fried Meme — photo by Alexey Demidov on Pexels
+- JPEG Compression — photo by Robert Clark on Pexels
+- Kaleidoscope — photo by Landiva  Weber on Pexels
+- Fractal Recursion — photo by Alexander Paramonov on Pexels
+- Liquid Distortion — photo by Ellie Wang on Pexels
+- Heat Map — photo by Björn Austmar Þórsson on Pexels
+- Duotone — photo by ready made on Pexels
+- Neon Outline — photo by Pablo López on Pexels
+- Hologram Projection — photo by Shubham Dhage on Pexels
+- Point Cloud Scan — photo by MART  PRODUCTION on Pexels
+- Vector Trace — photo by Monstera Production on Pexels
+- Renaissance Oil — photo by Mike Murray on Pexels
+- Baroque Chiaroscuro — photo by Josue Canceco on Pexels
+- Rococo — photo by Hilal  Bülbül on Pexels
+- Neoclassical — photo by Travel with  Lenses on Pexels
+- Romanticism — photo by Ksenia Sknar on Pexels
+- Impressionist — photo by Eugene Golovesov on Pexels
+- Pointillism — photo by Elīna Arāja on Pexels
+- Fauvism — photo by Esra Nur Kalay on Pexels
+- Expressionism — photo by Steve A Johnson on Pexels
+- Cubism — photo by Peter Dyllong on Pexels
+- Futurism — photo by Atlantic Ambience on Pexels
+- Surrealism — photo by Mateo Jurin on Pexels
+- Dada Collage — photo by Heather Green on Pexels
+- Bauhaus — photo by Nici Gottstein on Pexels
+- Constructivist Poster — photo by Kseniya Kopna on Pexels
+- De Stijl — photo by cottonbro studio on Pexels
+- Art Nouveau — photo by Magda Ehlers on Pexels
+- Art Deco — photo by Nur Andi Ravsanjani Gusma on Pexels
+- Pop Art — photo by Pexels User on Pexels
+- Op Art — photo by Victor  Moragriega on Pexels
