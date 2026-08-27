@@ -167,10 +167,23 @@ function initPageTransitions(){
   requestAnimationFrame(() => requestAnimationFrame(() => document.body.classList.add("loaded")));
 
   document.addEventListener("click", (e) => {
+    /* Anything that is not a plain left-click belongs to the browser: modifier
+       clicks open new tabs or windows, and middle-click arrives as auxclick. */
+    if(e.defaultPrevented || e.button !== 0) return;
+    if(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+
     const link = e.target.closest("a");
-    if(!link) return;
+    if(!link || link.target === "_blank" || link.hasAttribute("download")) return;
+
     const href = link.getAttribute("href");
-    if(!href || href.startsWith("#") || href.startsWith("http") || href.startsWith("mailto:") || link.target === "_blank") return;
+    if(!href || href.startsWith("#")) return;
+
+    /* Only relative in-site navigations get the fade. Any href carrying an
+       explicit scheme — http:, mailto:, tel:, data:, blob: — is left alone.
+       data: matters: browsers refuse top-level data: navigation, so routing the
+       builder's Download link through window.location silently did nothing. */
+    if(href.startsWith("//") || /^[a-z][a-z0-9+.-]*:/i.test(href)) return;
+
     e.preventDefault();
     document.body.classList.remove("loaded");
     document.body.classList.add("leaving");
