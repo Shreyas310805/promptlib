@@ -6,6 +6,7 @@ Re-run this any time you add styles below:  python3 build_prompts.py
 """
 
 import json
+import os
 
 # (style name, descriptor injected into the prompt)
 CATALOG = {
@@ -496,7 +497,8 @@ lines = [
     "       python3 build_prompts.py",
     "",
     "   Fields: style (display name), cat (filter group), size (masonry height),",
-    "   prompt (the text), slug (thumbnail filename in images/).",
+    "   prompt (the text), slug (thumbnail filename in images/), search (stock",
+    "   photo keywords for fetch-stock.js — not used by the site's own search).",
     "   ================================================================== */",
     "window.imagePrompts = [",
 ]
@@ -504,7 +506,11 @@ for e in entries:
     lines.append("  " + json.dumps(e, ensure_ascii=False) + ",")
 lines.append("];")
 
-with open("prompts-image.js", "w", encoding="utf-8") as f:
+# Resolve against this file rather than the shell's cwd, so running the script
+# from a parent directory cannot silently drop the output somewhere else.
+# newline="\n" keeps the generated file LF on every platform, not CRLF on Windows.
+OUT_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "prompts-image.js")
+with open(OUT_PATH, "w", encoding="utf-8", newline="\n") as f:
     f.write("\n".join(lines) + "\n")
 
 print(f"Wrote prompts-image.js with {len(entries)} prompts")

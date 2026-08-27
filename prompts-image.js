@@ -10,7 +10,8 @@
        python3 build_prompts.py
 
    Fields: style (display name), cat (filter group), size (masonry height),
-   prompt (the text), slug (thumbnail filename in images/).
+   prompt (the text), slug (thumbnail filename in images/), search (stock
+   photo keywords for fetch-stock.js — not used by the site's own search).
    ================================================================== */
 window.imagePrompts = [
   {"style": "Watercolor Painting", "cat": "Traditional Media", "size": "tall", "prompt": "Transform the uploaded photo into a soft watercolor painting with bleeding edges, visible paper texture and translucent washes. Keep the subject's pose, proportions and facial features clearly recognisable, and preserve the original composition.", "slug": "watercolor-painting", "search": "Watercolor Painting"},
