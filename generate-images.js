@@ -51,6 +51,18 @@ const FORCE = args.includes("--force");
 const onlyIdx = args.indexOf("--only");
 const ONLY = onlyIdx !== -1 ? parseInt(args[onlyIdx + 1], 10) : null;
 
+/* --only is the flag that keeps a trial run small, so it must not fail open.
+   parseInt("--force") and parseInt(undefined) are both NaN, and NaN is falsy,
+   so `if(ONLY) queue = queue.slice(0, ONLY)` silently skipped the slice and
+   ran the ENTIRE queue. Validate it the way --cat already validates itself. */
+if(onlyIdx !== -1 && !(Number.isInteger(ONLY) && ONLY > 0)){
+  const got = args[onlyIdx + 1];
+  const detail = got === undefined ? " (no value given)" : `, got "${got}"`;
+  console.error(`\n--only needs a positive whole number${detail}.`);
+  console.error("  e.g.  --only 20\n");
+  process.exit(1);
+}
+
 function slugify(str){
   return str.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
