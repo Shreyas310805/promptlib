@@ -123,16 +123,75 @@ function observeReveals(){
   document.querySelectorAll(".reveal:not(.in-view)").forEach((el) => revealObserver.observe(el));
 }
 
+/* Screen-reader announcements. One shared polite live region, created lazily so
+   pages that never announce anything don't carry the node. */
+let liveRegion;
+function announce(message){
+  if(!liveRegion){
+    liveRegion = document.createElement("div");
+    liveRegion.className = "sr-only";
+    liveRegion.setAttribute("role", "status");
+    liveRegion.setAttribute("aria-live", "polite");
+    document.body.appendChild(liveRegion);
+  }
+  /* Clear first, or repeating the same string is not re-announced. */
+  liveRegion.textContent = "";
+  setTimeout(() => { liveRegion.textContent = message; }, 60);
+}
+
+/* Pre-async-clipboard fallback. navigator.clipboard is undefined on every
+   non-secure origin, which includes opening these pages straight off the
+   filesystem — a supported way to use this site — so this path is not exotic. */
+function legacyCopy(text){
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.setAttribute("readonly", "");
+  /* Off-screen, not display:none — execCommand needs a real selection. */
+  ta.style.cssText = "position:fixed;top:0;left:-9999px;opacity:0;";
+  document.body.appendChild(ta);
+
+  let ok = false;
+  try {
+    ta.select();
+    ta.setSelectionRange(0, ta.value.length);
+    ok = document.execCommand("copy");
+  } catch(err){
+    ok = false;
+  }
+  ta.remove();
+  return ok;
+}
+
+function flashCopyResult(btn, ok){
+  if(btn.dataset.copyBusy) return;
+  btn.dataset.copyBusy = "1";
+
+  const original = btn.innerHTML;
+  btn.innerHTML = ok
+    ? `${ICONS.check}<span>Copied!</span>`
+    : `${ICONS.close}<span>Copy failed</span>`;
+  btn.classList.add(ok ? "copied" : "copy-failed");
+  announce(ok ? "Prompt copied to clipboard" : "Copy failed — select the prompt text and copy it manually");
+
+  setTimeout(() => {
+    btn.innerHTML = original;
+    btn.classList.remove("copied", "copy-failed");
+    delete btn.dataset.copyBusy;
+  }, ok ? 1600 : 2800);
+}
+
+/* Async clipboard where it exists, textarea fallback where it doesn't, and a
+   visible failure state if both are refused — previously a rejected promise or
+   a missing API produced no feedback at all. */
 function copyText(text, btn){
-  navigator.clipboard.writeText(text).then(() => {
-    const original = btn.innerHTML;
-    btn.innerHTML = `${ICONS.check}<span>Copied!</span>`;
-    btn.classList.add("copied");
-    setTimeout(() => {
-      btn.innerHTML = original;
-      btn.classList.remove("copied");
-    }, 1600);
-  });
+  if(navigator.clipboard && window.isSecureContext){
+    navigator.clipboard.writeText(text).then(
+      () => flashCopyResult(btn, true),
+      () => flashCopyResult(btn, legacyCopy(text))
+    );
+    return;
+  }
+  flashCopyResult(btn, legacyCopy(text));
 }
 
 /* ==================================================================
