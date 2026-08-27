@@ -11,6 +11,10 @@
   --accent-blue-soft:rgba(108,142,255,.35);
   --text-primary:#ececf1;
   --text-muted:#8c8f9b;
+  /* Placeholder text. Dimmer than --text-muted to keep the visual hierarchy,
+     but still 4.70:1 on --bg-panel; the old #5c5f6b measured 2.84:1 and
+     failed WCAG AA, while carrying real content ("try sketch, drone, pixel"). */
+  --text-placeholder:#7e828e;
   --border-subtle:#24252c;
   --font-display:'IBM Plex Sans',-apple-system,sans-serif;
   --font-mono:'IBM Plex Mono','SFMono-Regular',Menlo,monospace;
@@ -278,8 +282,12 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent-blue); out
   border:1px solid var(--border-subtle); border-radius:8px; padding:13px 15px;
   transition:border-color var(--transition-fast);
 }
-#gallerySearch::placeholder{ color:#5c5f6b; }
-#gallerySearch:focus{ outline:none; border-color:var(--accent-amber); }
+#gallerySearch::placeholder{ color:var(--text-placeholder); }
+/* outline:none alone left a border-colour shift as the only focus cue, which
+   is easy to miss. Keep the amber border and add an on-brand ring using the
+   existing --accent-amber-soft token, so the look is unchanged but the
+   indicator is unmistakable. */
+#gallerySearch:focus{ outline:none; border-color:var(--accent-amber); box-shadow:0 0 0 3px var(--accent-amber-soft); }
 .gallery-count{ font-family:var(--font-mono); font-size:12.5px; color:var(--text-muted); white-space:nowrap; }
 
 .chip-row{ display:flex; gap:8px; flex-wrap:wrap; }
@@ -393,8 +401,8 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent-blue); out
   padding:11px 12px; width:100%;
   transition:border-color var(--transition-fast);
 }
-.builder-field input::placeholder{ color:#5c5f6b; }
-.builder-field input:focus, .builder-field select:focus{ outline:none; border-color:var(--accent-amber); }
+.builder-field input::placeholder{ color:var(--text-placeholder); }
+.builder-field input:focus, .builder-field select:focus{ outline:none; border-color:var(--accent-amber); box-shadow:0 0 0 3px var(--accent-amber-soft); }
 .builder-field select{ cursor:pointer; appearance:none;
   background-image:linear-gradient(45deg,transparent 50%,var(--text-muted) 50%),linear-gradient(135deg,var(--text-muted) 50%,transparent 50%);
   background-position:calc(100% - 16px) 50%, calc(100% - 11px) 50%;
@@ -442,8 +450,8 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent-blue); out
   border:1px solid var(--border-subtle); border-radius:6px; padding:11px 12px; width:100%;
   transition:border-color var(--transition-fast);
 }
-.builder-gen input::placeholder{ color:#5c5f6b; }
-.builder-gen input:focus{ outline:none; border-color:var(--accent-amber); }
+.builder-gen input::placeholder{ color:var(--text-placeholder); }
+.builder-gen input:focus{ outline:none; border-color:var(--accent-amber); box-shadow:0 0 0 3px var(--accent-amber-soft); }
 .builder-gen .btn{ align-self:flex-start; }
 .builder-gen .btn:disabled{ opacity:.55; cursor:not-allowed; transform:none; }
 .builder-warn{ color:#c9a24a; }
@@ -498,6 +506,14 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent-blue); out
   .gallery-card{ margin-bottom:12px; }
   .modal-backdrop{ padding:0; }
   .modal{ max-width:100%; max-height:100%; height:100%; border-radius:0; }
+}
+
+/* High-contrast modes drop box-shadow, so restore a real outline there. */
+@media (forced-colors: active){
+  #gallerySearch:focus,
+  .builder-field input:focus,
+  .builder-field select:focus,
+  .builder-gen input:focus{ outline:2px solid; outline-offset:2px; }
 }
 
 @media (prefers-reduced-motion:reduce){
