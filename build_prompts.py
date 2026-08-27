@@ -340,6 +340,64 @@ PRESERVE = {
     "Practical Edits": "Keep the subject accurate and unaltered — this is a correction, not a reinterpretation.",
 }
 
+# Craft direction — the part that tells the model HOW to execute, not just what
+# to make. Rotates per style so neighbouring cards do not read identically.
+CRAFT = {
+    "Traditional Media": [
+        "Let the medium do the work: visible tooth in the paper or canvas, pigment settling into the grain, and edges that bloom, drag or break up the way real material does rather than a clean digital filter.",
+        "Vary the mark-making across the frame \u2014 denser, more resolved work where the eye should land, looser and more suggestive toward the edges \u2014 and let a little of the bare ground show through in places.",
+        "Keep the palette as limited as a working artist's would be, mixed from a handful of pigments so every colour shares a common cast rather than looking sampled from the photograph.",
+    ],
+    "Illustration & Animation": [
+        "Commit to the style's line economy: confident outlines of varying weight, forms simplified to their essentials, and shadow read as flat deliberate shapes rather than soft photographic gradients.",
+        "Push the silhouette so the figure reads instantly at thumbnail size, and keep background detail clearly subordinate in contrast and saturation to the subject.",
+        "Treat colour as design rather than observation \u2014 a controlled palette with decisive value separation between subject, midground and background.",
+    ],
+    "Photography & Camera": [
+        "Respect the optics: consistent depth of field, believable falloff toward the frame edges, and highlight roll-off that behaves like a real sensor instead of a clipped digital curve.",
+        "Keep grain, noise and sharpening uniform across the whole frame so no region looks locally retouched or pasted in.",
+        "Give the light a single believable source and direction, with every shadow in the frame agreeing about where it is and how hard it should be.",
+    ],
+    "Digital & Glitch": [
+        "Apply the effect with rhythm rather than uniformly \u2014 clusters of intense corruption set against passages left almost clean, so it reads as a process that happened to the image rather than a texture laid over it.",
+        "Keep the artefacts faithful to the medium being imitated: the right block sizes, the right channel offsets, the right scanline pitch and bit depth.",
+        "Let the damage follow the image's own structure, concentrating along edges and high-contrast boundaries where a real encoder or signal would actually fail.",
+    ],
+    "Art Movements": [
+        "Borrow the movement's actual grammar \u2014 its characteristic brushwork, palette and treatment of pictorial space \u2014 rather than laying a surface filter over an otherwise unchanged photograph.",
+        "Let the period's material constraints show: the pigments genuinely available, the surfaces worked on, and the way its artists resolved edges, depth and anatomy.",
+        "Compose the way the movement would have, following its conventions for framing, flattening and directing where the eye travels.",
+    ],
+    "Scene & Setting": [
+        "Match the new environment properly: direction and colour temperature of the light falling on the subject, contact shadows where they meet the ground, and atmospheric haze at the correct distance.",
+        "Scale the surroundings believably against the subject, and keep the horizon line and perspective consistent with the original camera height and angle.",
+        "Let the environment act on the subject \u2014 bounce light from nearby surfaces, an overall colour cast, and reflections in anything glossy.",
+    ],
+    "Portrait Makeover": [
+        "Keep skin looking like skin: preserve pores, fine texture and natural asymmetry instead of smoothing the face into something plastic.",
+        "Sit every change believably on the existing bone structure and lighting, matching the direction and softness of shadows already in the frame.",
+        "Preserve the eyes and mouth precisely \u2014 they carry likeness more than any other feature, and small drift there breaks recognition entirely.",
+    ],
+    "Material & Sculpture": [
+        "Make the material behave physically: correct apparent weight, correct surface response to light, and the seams, joins or tool marks its fabrication would genuinely leave.",
+        "Let the form's thickness and structural logic show \u2014 how the object would actually stand, balance and carry its own load.",
+        "Give the surface a believable finish: the right specularity, micro-texture and pattern of wear for that material's age and handling.",
+    ],
+    "Practical Edits": [
+        "Invent nothing: no fabricated detail in recovered areas, no smoothing away real texture, and no drift in the subject's colour, proportions or identity.",
+        "Keep edges clean and free of halos or colour fringing, and match any repaired region to the grain and noise of everything around it.",
+        "Preserve the original tonal relationships so the result looks like a better capture rather than a heavily processed one.",
+    ],
+}
+
+# Output constraints. Shared across categories, rotated so the tail varies.
+OUTPUT = [
+    "Output one finished image with no added text, captions, borders or watermarks.",
+    "Return a single high-resolution image \u2014 no lettering, logos or frames.",
+    "Deliver one clean image at high resolution, without captions, signatures or added borders.",
+    "Produce a single finished frame carrying no watermark, caption or added lettering.",
+]
+
 # Stock-photo search terms, used by fetch-stock.js. Most style names work as-is;
 # these are the ones where the literal name returns nothing useful.
 SEARCH_OVERRIDES = {
@@ -465,7 +523,13 @@ for cat, styles in CATALOG.items():
     for name, desc in styles:
         wrapper_set = WRAPPERS.get(cat, DEFAULT_WRAPPERS)
         wrapper = wrapper_set[i % len(wrapper_set)]
-        prompt = wrapper.format(d=desc) + " " + PRESERVE[cat]
+        craft_set = CRAFT[cat]
+        prompt = " ".join([
+            wrapper.format(d=desc),
+            PRESERVE[cat],
+            craft_set[i % len(craft_set)],
+            OUTPUT[i % len(OUTPUT)],
+        ])
         entries.append({
             "style": name,
             "cat": cat,
@@ -481,6 +545,9 @@ slugs = [e["slug"] for e in entries]
 assert len(slugs) == len(set(slugs)), "duplicate slug: " + str(
     [s for s in slugs if slugs.count(s) > 1][:5]
 )
+short = [(e["style"], len(e["prompt"])) for e in entries if len(e["prompt"]) < 250]
+assert not short, "prompt under 250 chars: " + str(short[:5])
+
 names = [e["style"] for e in entries]
 assert len(names) == len(set(names)), "duplicate style name"
 
