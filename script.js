@@ -309,13 +309,19 @@ function initGallery(){
   const cats = ["All", ...new Set(imagePrompts.map((p) => p.cat))];
   const chipRow = document.getElementById("galleryChips");
   chipRow.innerHTML = cats.map((c) =>
-    `<button type="button" class="chip${c === "All" ? " active" : ""}" data-cat="${escapeHTML(c)}">${escapeHTML(c)}</button>`
+    `<button type="button" class="chip${c === "All" ? " active" : ""}" data-cat="${escapeHTML(c)}" aria-pressed="${c === "All"}">${escapeHTML(c)}</button>`
   ).join("");
 
   chipRow.querySelectorAll(".chip").forEach((chip) => {
     chip.addEventListener("click", () => {
-      chipRow.querySelectorAll(".chip").forEach((c) => c.classList.remove("active"));
+      /* aria-pressed tracks .active so the selected filter is announced, not
+         just coloured — the class alone tells assistive tech nothing. */
+      chipRow.querySelectorAll(".chip").forEach((c) => {
+        c.classList.remove("active");
+        c.setAttribute("aria-pressed", "false");
+      });
       chip.classList.add("active");
+      chip.setAttribute("aria-pressed", "true");
       galleryState.cat = chip.dataset.cat;
       renderGallery();
     });
