@@ -6,7 +6,20 @@ prompt templates by category, and build your own prompt from keywords.
 ## Running it
 
 No build step, no server needed. Keep all files together in one folder and open
-`index.html` in a browser.
+`index.html` in a browser. The generated output is committed, so a fresh clone
+runs as-is.
+
+## Editing shared markup
+
+The nav, the footer line and the shared `<head>` block live in `partials/` and
+are stitched into each page between `<!-- @partial name -->` markers. Edit the
+partial, then:
+
+    python3 build_pages.py            rewrite the 8 pages from partials/
+    python3 build_pages.py --check    report drift, change nothing, exit 1
+
+Everything outside the markers is hand-written and never touched. `--check` is
+what you want in a pre-commit hook.
 
 If you want to deploy it, any static host works (GitHub Pages, Netlify, Vercel).
 Upload the whole folder as-is.
@@ -24,6 +37,8 @@ Upload the whole folder as-is.
 | `script.js` | Text prompts, builder data, and all page logic |
 | `prompts-image.js` | The 266 image prompts (generated — don't edit by hand) |
 | `build_prompts.py` | Source of truth for image prompts; re-run to regenerate |
+| `partials/` + `build_pages.py` | Shared nav/footer/head markup; re-run after editing a partial |
+| `build-manifest.js` | Records which thumbnails exist so the gallery does not request missing ones |
 | `fetch-stock.js` | Bulk-download free stock thumbnails from Pexels |
 | `generate-images.js` | Local script to fill `images/` via the Gemini API |
 | `images/` | Gallery thumbnails + a README listing every filename |
