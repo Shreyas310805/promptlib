@@ -1,5 +1,9 @@
 # Images folder
 
+These files are COMMITTED to the repo on purpose. The site is uploaded as a
+folder to a static host, so a thumbnail that only exists on your machine will
+not appear on the deployed site.
+
 Thumbnails for the 266 image-transformation prompts. Drop a `.jpg` here
 named exactly as listed below and it appears on the site automatically.
 

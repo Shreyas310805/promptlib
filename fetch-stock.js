@@ -38,6 +38,8 @@
    LICENCE: Pexels photos are free to use, including commercially. Crediting
    photographers is not required but is requested — images.html carries a Pexels
    credit line in the footer for this reason. Keep it if you use this script.
+   Per-photo credits are appended to images/CREDITS.md, which is committed
+   alongside the thumbnails.
    ================================================================== */
 
 const fs = require("fs");
@@ -93,7 +95,10 @@ async function searchPhoto(query){
   if(!photo) throw new Error("no results for that search term");
 
   return {
-    url: photo.src?.large || photo.src?.medium || photo.src?.original,
+    /* 'medium' is ~350px tall. Cards render at 230-360px, so 'large' (940px)
+       was fetching roughly 8x the bytes needed and, since thumbnails are
+       committed to the repo, would have bloated it to ~80MB instead of ~13MB. */
+    url: photo.src?.medium || photo.src?.large || photo.src?.original,
     photographer: photo.photographer,
     link: photo.url
   };
