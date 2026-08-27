@@ -80,7 +80,8 @@ addEventListener("load", function(){ document.body.classList.add("loaded"); });
   <p class="footer-line">// end of file — copy a prompt and go make something.</p>
 </footer>
 
-<script src="prompts-image.js"></script>
+<!-- prompts-image.js is deliberately not loaded here: only images.html reads
+     window.imagePrompts, and script.js already tolerates its absence. -->
 <script src="script.js"></script>
 </body>
 </html>
