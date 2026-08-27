@@ -311,10 +311,26 @@ function initGallery(){
     });
   });
 
+  /* Coalesce keystrokes. Each render rebuilds all 266 cards and re-runs the
+     IntersectionObserver over them, so firing per character made fast typing
+     do that work a dozen times to show one result. 120ms is below the point
+     where the list feels laggy but well above burst typing. */
   const search = document.getElementById("gallerySearch");
-  search.addEventListener("input", () => {
-    galleryState.query = search.value.trim().toLowerCase();
+  let searchTimer;
+  const applySearch = () => {
+    const next = search.value.trim().toLowerCase();
+    if(next === galleryState.query) return;
+    galleryState.query = next;
     renderGallery();
+  };
+  search.addEventListener("input", () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(applySearch, 120);
+  });
+  /* Enter and the type=search clear button should feel immediate. */
+  search.addEventListener("search", () => { clearTimeout(searchTimer); applySearch(); });
+  search.addEventListener("keydown", (e) => {
+    if(e.key === "Enter"){ clearTimeout(searchTimer); applySearch(); }
   });
 
   const modalCloseBtn = document.getElementById("modalClose");
