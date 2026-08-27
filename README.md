@@ -114,12 +114,9 @@ image, so you can fill these in gradually.
 downloaded by every visitor and readable through View Source. A leaked key can be
 used by anyone, billed to you.
 
-Two safe paths, both already set up:
-
-1. `generate-images.js` reads the key from an environment variable and runs on
-   your machine only. This is the right way to fill the gallery.
-2. The "Generate a preview" panel on `builder.html` takes a key typed into the
-   page at runtime. It stays in that browser tab and is never written to a file.
+The image scripts (`fetch-stock.js`, `generate-images.js`) read their keys from
+environment variables and run on your machine only. No key is ever typed into,
+stored in, or shipped with the site itself.
 
 If you later add a backend (FastAPI etc.), keep the key server-side and have the
 page call your endpoint instead.

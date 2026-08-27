@@ -120,19 +120,6 @@ addEventListener("load", function(){ document.body.classList.add("loaded"); });
           <button class="btn btn-ghost btn-sm" id="builderResetBtn">Reset</button>
         </div>
         <p class="builder-note">The builder runs entirely in your browser — nothing is sent anywhere.</p>
-
-        <div class="builder-gen">
-          <div class="builder-gen-head">
-            <h3>Generate a preview</h3>
-            <span class="badge">optional</span>
-          </div>
-          <p class="builder-hint">Uses Google's Gemini image model. Get a free key at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>.</p>
-          <input type="password" id="builderApiKey" placeholder="Paste Gemini API key" autocomplete="off" spellcheck="false">
-          <p class="builder-hint builder-warn">Held in this tab only — never saved to a file and never included in the site's code. Don't paste your key into script.js; anything in there is visible to every visitor.</p>
-          <button class="btn btn-ghost btn-sm" id="builderGenBtn"></button>
-          <p class="builder-gen-status" id="builderGenStatus"></p>
-          <div class="builder-preview" id="builderPreview"></div>
-        </div>
       </div>
     </div>
   </div>

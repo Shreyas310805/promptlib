@@ -437,32 +437,6 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent-blue); out
 }
 
 /* builder generation panel */
-.builder-gen{
-  border:1px solid var(--border-subtle); border-radius:var(--radius);
-  padding:18px; display:flex; flex-direction:column; gap:11px; background:var(--bg-panel);
-}
-.builder-gen-head{ display:flex; align-items:center; gap:10px; }
-.builder-gen-head h3{ font-size:15px; font-weight:600; }
-.builder-gen a{ color:var(--accent-blue); }
-.builder-gen input{
-  font-family:var(--font-mono); font-size:13px;
-  background:var(--bg-void); color:var(--text-primary);
-  border:1px solid var(--border-subtle); border-radius:6px; padding:11px 12px; width:100%;
-  transition:border-color var(--transition-fast);
-}
-.builder-gen input::placeholder{ color:var(--text-placeholder); }
-.builder-gen input:focus{ outline:none; border-color:var(--accent-amber); box-shadow:0 0 0 3px var(--accent-amber-soft); }
-.builder-gen .btn{ align-self:flex-start; }
-.builder-gen .btn:disabled{ opacity:.55; cursor:not-allowed; transform:none; }
-.builder-warn{ color:#c9a24a; }
-.builder-gen-status{ font-family:var(--font-mono); font-size:12px; color:var(--text-muted); min-height:16px; }
-.builder-gen-status.is-busy{ color:var(--accent-blue); }
-.builder-gen-status.is-ok{ color:#4ec98a; }
-.builder-gen-status.is-warn{ color:#c9a24a; }
-.builder-gen-status.is-err{ color:#e06c6c; word-break:break-word; }
-.builder-preview:empty{ display:none; }
-.builder-preview{ display:flex; flex-direction:column; gap:10px; align-items:flex-start; }
-.builder-preview img{ width:100%; border-radius:8px; border:1px solid var(--border-subtle); }
 
 /* ============================================
    FOOTER
@@ -512,8 +486,7 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent-blue); out
 @media (forced-colors: active){
   #gallerySearch:focus,
   .builder-field input:focus,
-  .builder-field select:focus,
-  .builder-gen input:focus{ outline:2px solid; outline-offset:2px; }
+  .builder-field select:focus{ outline:2px solid; outline-offset:2px; }
 }
 
 @media (prefers-reduced-motion:reduce){

@@ -734,117 +734,6 @@ function buildPrompt(){
   }
 }
 
-/* ==================================================================
-   OPTIONAL LIVE GENERATION (builder.html)
-
-   The key is typed into the page at runtime and held in memory for this tab
-   only — it is never written into any file and never saved to disk, so nothing
-   secret ships with the site. Closing the tab clears it.
-
-   DO NOT hardcode your key anywhere in script.js or the HTML. Anything in those
-   files is downloaded by every visitor and readable via View Source. For bulk
-   generation of the gallery images, use generate-images.js instead — that runs
-   on your machine with the key in an environment variable.
-   ================================================================== */
-const GEMINI_MODEL = "gemini-3.1-flash-image";
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
-
-async function generateWithGemini(prompt, apiKey){
-  const res = await fetch(GEMINI_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-  });
-
-  if(!res.ok){
-    let detail = `HTTP ${res.status}`;
-    try {
-      const err = await res.json();
-      if(err?.error?.message) detail = err.error.message;
-    } catch(e){ /* keep the status-code fallback */ }
-    throw new Error(detail);
-  }
-
-  const data = await res.json();
-  const parts = data?.candidates?.[0]?.content?.parts || [];
-  const imagePart = parts.find((p) => p.inlineData?.data);
-
-  if(!imagePart){
-    const textPart = parts.find((p) => p.text);
-    throw new Error(textPart ? `No image returned — model said: ${textPart.text.slice(0, 160)}` : "No image in response");
-  }
-  /* mimeType and data come straight off the wire and end up inside a URL, so
-     validate rather than trust. A bad mimeType would otherwise be able to break
-     out of the data: URL it is interpolated into. */
-  const raw = imagePart.inlineData;
-  const mimeType = /^image\/[a-z0-9.+-]+$/i.test(raw.mimeType || "") ? raw.mimeType : "image/png";
-  const base64 = String(raw.data || "").replace(/\s+/g, "");
-  if(!/^[A-Za-z0-9+/]+={0,2}$/.test(base64)) throw new Error("Malformed image data in response");
-
-  return { mimeType, dataUrl: `data:${mimeType};base64,${base64}` };
-}
-
-function initBuilderGenerate(){
-  const genBtn = document.getElementById("builderGenBtn");
-  if(!genBtn) return;
-
-  const keyInput = document.getElementById("builderApiKey");
-  const statusEl = document.getElementById("builderGenStatus");
-  const previewEl = document.getElementById("builderPreview");
-
-  genBtn.innerHTML = `${ICONS.spark}<span>Generate preview</span>`;
-
-  genBtn.addEventListener("click", async () => {
-    const prompt = document.getElementById("builderOutput").dataset.raw || "";
-    const apiKey = keyInput.value.trim();
-
-    if(!prompt){
-      statusEl.textContent = "Build a prompt first — start with a subject.";
-      statusEl.className = "builder-gen-status is-warn";
-      return;
-    }
-    if(!apiKey){
-      statusEl.textContent = "Paste your Gemini API key above to generate.";
-      statusEl.className = "builder-gen-status is-warn";
-      keyInput.focus();
-      return;
-    }
-
-    genBtn.disabled = true;
-    statusEl.textContent = "Generating…";
-    statusEl.className = "builder-gen-status is-busy";
-    previewEl.innerHTML = "";
-
-    try {
-      const image = await generateWithGemini(prompt, apiKey);
-
-      /* Built with DOM calls rather than innerHTML — an API-derived URL has no
-         business being parsed as markup. The extension follows the actual
-         mimeType; it used to be hardcoded .jpg while Gemini returns PNG. */
-      const ext = (image.mimeType.split("/")[1] || "png").replace(/[^a-z0-9]/gi, "") || "png";
-
-      const img = document.createElement("img");
-      img.src = image.dataUrl;
-      img.alt = "Generated preview";
-
-      const link = document.createElement("a");
-      link.className = "btn btn-ghost btn-sm builder-download";
-      link.href = image.dataUrl;
-      link.download = `promptlib-preview.${ext}`;
-      link.textContent = "Download";
-
-      previewEl.innerHTML = "";
-      previewEl.append(img, link);
-      statusEl.textContent = "Done.";
-      statusEl.className = "builder-gen-status is-ok";
-    } catch (err) {
-      statusEl.textContent = `Failed — ${err.message}`;
-      statusEl.className = "builder-gen-status is-err";
-    } finally {
-      genBtn.disabled = false;
-    }
-  });
-}
 
 /* ==================================================================
    INIT — runs on every page; each function no-ops if its elements aren't present
@@ -855,6 +744,5 @@ initPageTransitions();
 initGallery();
 initCategoryPage();
 initBuilder();
-initBuilderGenerate();
 observeReveals();
 runDemoCycle();
