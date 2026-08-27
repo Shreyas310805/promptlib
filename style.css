@@ -570,10 +570,21 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent-blue); out
     position:fixed; top:60px; left:0; right:0; background:var(--bg-panel);
     flex-direction:column; padding:16px 20px; gap:4px; border-bottom:1px solid var(--border-subtle);
     opacity:0; transform:translateY(-10px); pointer-events:none;
-    transition:opacity var(--transition-fast), transform var(--transition-fast);
+    /* visibility, not opacity alone: an opacity:0 menu keeps every link in the
+       tab order, so a keyboard user on mobile tabbed through four invisible
+       nav links. Delayed by the fade so the close animation still plays. */
+    visibility:hidden;
+    transition:opacity var(--transition-fast), transform var(--transition-fast),
+               visibility 0s linear var(--transition-fast);
   }
-  .nav-links.open{ opacity:1; transform:translateY(0); pointer-events:auto; }
+  .nav-links.open{
+    opacity:1; transform:translateY(0); pointer-events:auto; visibility:visible;
+    transition:opacity var(--transition-fast), transform var(--transition-fast), visibility 0s;
+  }
   .nav-link{ padding:12px 10px; }
+  /* The toggle lives outside .nav-links so it stays reachable without opening
+     the menu — a theme switch is not worth a hamburger tap. */
+  .theme-toggle{ margin-left:auto; margin-right:10px; }
 
   .section-inner{ padding:40px 20px; }
   .hero-inner{ padding:0 20px 40px; }
