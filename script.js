@@ -42,12 +42,12 @@ const textPromptsData = {
 /* Hero demo (index.html only) — cycles automatically, mixing image and text
    results so the hero shows both halves of the site. */
 const demoPairs = [
-  { type:"image", filename:"image_04.txt", model:"Midjourney", style:"Neon Noir", hue:4, keywords:"cyberpunk,alley,neon",
+  { type:"image", filename:"image_04.txt", model:"Midjourney", style:"Neon Noir", hue:4,
     prompt:"cyberpunk alley, neon rain reflections, cinematic wide shot, teal and magenta lighting --ar 16:9 --v 6" },
   { type:"text", filename:"email_02.txt", model:"Claude",
     prompt:"Write a confident cold email to a hiring manager about a Frontend role, under 120 words, no generic flattery.",
     result:"Subject: A tool I built that might help your onboarding flow\n\nHi Priya — I recently cut my team's deploy time in half with a small internal tool. I think something similar could streamline onboarding for new engineers on your team. Worth a quick 15-minute call this week?" },
-  { type:"image", filename:"image_11.txt", model:"Midjourney", style:"Watercolor Whimsy", hue:0, keywords:"forest,mist,dawn",
+  { type:"image", filename:"image_11.txt", model:"Midjourney", style:"Watercolor Whimsy", hue:0,
     prompt:"misty pine forest at dawn, volumetric light rays through fog, muted teal and amber palette --ar 16:9" },
   { type:"text", filename:"ppt_03.txt", model:"GPT",
     prompt:"Give me a 3-slide pitch outline for a campus food delivery startup: problem, solution, ask.",
@@ -618,7 +618,11 @@ async function runDemoCycle(){
     await sleep(450);
 
     if(pair.type === "image"){
-      resultEl.innerHTML = `<div class="demo-swatch swatch-${pair.hue}"><div class="swatch-texture"></div><img class="real-photo" src="https://loremflickr.com/560/320/${encodeURIComponent(pair.keywords)}" alt="Generated result"><span class="swatch-name">${escapeHTML(pair.style)}</span></div>`;
+      /* The gradient swatch stands in for the render. This used to pull a photo
+         from loremflickr.com, which put a third-party request on the homepage,
+         broke the promise that the site works from disk with no network, and
+         showed an unrelated stock photo rather than anything the prompt made. */
+      resultEl.innerHTML = `<div class="demo-swatch swatch-${pair.hue}"><div class="swatch-texture"></div><span class="swatch-name">${escapeHTML(pair.style)}</span></div>`;
     } else {
       resultEl.innerHTML = `<pre class="demo-result-text">${escapeHTML(pair.result)}</pre>`;
     }
