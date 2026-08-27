@@ -106,17 +106,22 @@ function copyButtonHTML(label){
 function slugify(str){
   return str.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
-/* Tries a local image first (images/<slug>.jpg — see /images/README.md), falls back
-   to a keyword-matched stock photo if that's missing, then to the plain gradient
-   swatch if that fails too. Never leaves a broken-image icon. */
-function onImgError(img){
-  if(img.dataset.fallback){
-    img.src = img.dataset.fallback;
-    img.removeAttribute("data-fallback");
-  } else {
-    img.remove();
-  }
-}
+/* Thumbnails are optional: images/<slug>.jpg if present (see images/README.md),
+   otherwise the gradient swatch underneath shows through. Dropping the <img> on
+   error is what reveals it, and avoids a broken-image icon.
+
+   'error' does not bubble, so this captures instead — one listener covers every
+   thumbnail, including ones rendered later, and replaces the inline onerror
+   attributes these images used to carry.
+
+   NB: the previous helper here described a local -> stock photo -> swatch chain.
+   No such chain existed; nothing ever called it and no fallback URL was ever
+   set. fetch-stock.js downloads stock photos INTO images/ ahead of time, so at
+   runtime there is only ever the one source. */
+document.addEventListener("error", (e) => {
+  const img = e.target;
+  if(img instanceof HTMLImageElement && img.classList.contains("real-photo")) img.remove();
+}, true);
 
 let revealObserver;
 function observeReveals(){
@@ -391,7 +396,7 @@ function renderGallery(){
   grid.innerHTML = list.map((p, i) => `
     <button type="button" class="gallery-card reveal swatch-${p.i % 6} ${escapeHTML(p.size || "")}" style="transition-delay:${(i % 3) * 60}ms" data-id="${p.i}" aria-label="${escapeHTML(p.style)}, ${escapeHTML(p.cat)}. View prompt.">
       <span class="swatch-texture"></span>
-      <img class="real-photo" src="images/${encodeURIComponent(p.slug)}.jpg" alt="" loading="lazy" onerror="this.remove()">
+      <img class="real-photo" src="images/${encodeURIComponent(p.slug)}.jpg" alt="" loading="lazy">
       <span class="swatch-content">
         <span class="badge">${escapeHTML(p.cat)}</span>
         <span class="swatch-name">${escapeHTML(p.style)}</span>
@@ -439,7 +444,7 @@ function openModal(id){
   const modalSwatch = document.getElementById("modalSwatch");
   modalSwatch.className = `modal-swatch swatch-${id % 6}`;
   /* alt="" — the name is in the heading and in .modal-swatch-name already. */
-  modalSwatch.innerHTML = `<div class="swatch-texture"></div><img class="real-photo" src="images/${encodeURIComponent(p.slug)}.jpg" alt="" onerror="this.remove()"><span class="modal-swatch-name">${escapeHTML(p.style)}</span>`;
+  modalSwatch.innerHTML = `<div class="swatch-texture"></div><img class="real-photo" src="images/${encodeURIComponent(p.slug)}.jpg" alt=""><span class="modal-swatch-name">${escapeHTML(p.style)}</span>`;
   document.getElementById("modalStyleName").textContent = p.style;
   document.getElementById("modalModel").textContent = p.cat;
   document.getElementById("modalPromptText").innerHTML = highlightVars(p.prompt);
@@ -529,7 +534,7 @@ async function runDemoCycle(){
     await sleep(450);
 
     if(pair.type === "image"){
-      resultEl.innerHTML = `<div class="demo-swatch swatch-${pair.hue}"><div class="swatch-texture"></div><img class="real-photo" src="https://loremflickr.com/560/320/${encodeURIComponent(pair.keywords)}" alt="Generated result" onerror="this.remove()"><span class="swatch-name">${escapeHTML(pair.style)}</span></div>`;
+      resultEl.innerHTML = `<div class="demo-swatch swatch-${pair.hue}"><div class="swatch-texture"></div><img class="real-photo" src="https://loremflickr.com/560/320/${encodeURIComponent(pair.keywords)}" alt="Generated result"><span class="swatch-name">${escapeHTML(pair.style)}</span></div>`;
     } else {
       resultEl.innerHTML = `<pre class="demo-result-text">${escapeHTML(pair.result)}</pre>`;
     }

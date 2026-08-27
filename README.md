@@ -88,8 +88,8 @@ https://aistudio.google.com/apikey
 **Cost:** 266 images at roughly $0.04 each is about $10 for a full run. Verify
 current pricing yourself before starting. Always do `--only 1` first.
 
-Missing images fall back to a stock photo, then to a color swatch — the site
-never shows a broken image, so you can fill these in gradually.
+Missing images fall back to the gradient swatch — the site never shows a broken
+image, so you can fill these in gradually.
 
 ## About the API key
 
