@@ -6,7 +6,7 @@
    and must be loaded before this one. To add or edit image prompts, edit
    build_prompts.py and re-run it — don't edit prompts-image.js by hand.
    ================================================================== */
-const imagePrompts = window.imagePrompts || [];
+const imagePrompts = Array.isArray(window.imagePrompts) ? window.imagePrompts : [];
 
 /* To add a new TEXT prompt: push {filename, prompt} into the matching array.
    [bracketed] words are auto-highlighted as fill-in variables — keep placeholders
@@ -255,9 +255,39 @@ function initPageTransitions(){
    ================================================================== */
 let galleryState = { cat: "All", query: "" };
 
+/* prompts-image.js is a separate <script>; if it 404s, is blocked, or fails to
+   parse, we arrive here with nothing. Say that plainly — an empty grid plus
+   "no prompts match that search" blames the visitor for a load failure. */
+function renderGalleryUnavailable(){
+  const grid = document.getElementById("galleryGrid");
+  const countEl = document.getElementById("galleryCount");
+  const chipRow = document.getElementById("galleryChips");
+  const search = document.getElementById("gallerySearch");
+
+  if(countEl) countEl.textContent = "unavailable";
+  if(chipRow) chipRow.innerHTML = "";
+  if(search){
+    search.disabled = true;
+    search.placeholder = "Search unavailable";
+  }
+
+  grid.innerHTML = `
+    <div class="gallery-error" role="alert">
+      <p class="gallery-error-title">The prompt library didn&rsquo;t load.</p>
+      <p>prompts-image.js is missing or failed to parse, so there is nothing to show.
+      Try reloading. If it keeps happening, regenerate it with
+      <code>python3 build_prompts.py</code>.</p>
+    </div>`;
+}
+
 function initGallery(){
   const grid = document.getElementById("galleryGrid");
   if(!grid) return;
+
+  if(!imagePrompts.length){
+    renderGalleryUnavailable();
+    return;
+  }
 
   /* Category chips are derived from the data, so adding a new category in
      build_prompts.py makes a new filter appear with no edit here. */

@@ -291,6 +291,20 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent-blue); out
   grid-column:1 / -1; color:var(--text-muted); font-size:15px; padding:40px 0;
 }
 
+/* Shown when prompts-image.js never arrived — deliberately distinct from the
+   empty-search state above, which is a normal outcome rather than a fault. */
+.gallery-error{
+  grid-column:1 / -1; padding:28px; margin-top:8px;
+  background:var(--bg-panel); border:1px solid var(--border-subtle);
+  border-left:3px solid var(--accent-amber); border-radius:var(--radius);
+  color:var(--text-muted); font-size:14.5px; line-height:1.7;
+}
+.gallery-error-title{ color:var(--text-primary); font-weight:600; font-size:16px; margin-bottom:6px; }
+.gallery-error code{
+  font-family:var(--font-mono); font-size:13px; color:var(--accent-amber);
+  background:var(--bg-void); padding:2px 6px; border-radius:4px;
+}
+
 /* ============================================
    MODAL (images.html)
    ============================================ */
