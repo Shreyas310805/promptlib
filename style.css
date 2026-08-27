@@ -33,11 +33,15 @@ body{
   -webkit-font-smoothing:antialiased;
   overflow-x:hidden;
   position:relative;
-  opacity:0;
-  transition:opacity var(--transition-med) ease;
 }
-body.loaded{ opacity:1; }
-body.leaving{ opacity:0; }
+/* The page fade is OPT-IN. The inline bootstrap in each <head> adds .js while
+   JS is actually running, and adds .loaded on window load. So if script.js is
+   blocked, 404s or throws — or JS is off entirely — none of these rules apply
+   and the page simply renders. body used to be opacity:0 by default, which
+   meant any of those failures left every page permanently blank. */
+.js body{ opacity:0; transition:opacity var(--transition-med) ease; }
+.js body.loaded{ opacity:1; }
+.js body.leaving{ opacity:0; }
 
 /* faint terminal-grid atmosphere, fixed behind everything */
 body::before{

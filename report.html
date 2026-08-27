@@ -9,6 +9,13 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+<script>
+/* Bootstrap — keep inline and keep it tiny. Opts this page into the CSS fade
+   only while JS is running, then guarantees a reveal on load even if script.js
+   never arrives. An external file here could 404 and take the page with it. */
+document.documentElement.classList.add("js");
+addEventListener("load", function(){ document.body.classList.add("loaded"); });
+</script>
 </head>
 <body>
 
