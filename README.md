@@ -34,8 +34,10 @@ Upload the whole folder as-is.
 | `ppt.html` / `essay.html` / `report.html` / `email.html` | Text prompt category pages |
 | `builder.html` | Keyword → prompt builder |
 | `style.css` | All styling for every page |
-| `script.js` | Text prompts, builder data, and all page logic |
+| `script.js` | All page logic, shared by every page |
 | `prompts-image.js` | The 266 image prompts (generated — don't edit by hand) |
+| `prompts-text.js` | Text prompt templates; only the four category pages load it |
+| `builder-data.js` | Builder dropdown vocabulary; only `builder.html` loads it |
 | `build_prompts.py` | Source of truth for image prompts; re-run to regenerate |
 | `partials/` + `build_pages.py` | Shared nav/footer/head markup; re-run after editing a partial |
 | `build-manifest.js` | Records which thumbnails exist so the gallery does not request missing ones |

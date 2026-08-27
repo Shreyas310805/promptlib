@@ -8,36 +8,11 @@
    ================================================================== */
 const imagePrompts = Array.isArray(window.imagePrompts) ? window.imagePrompts : [];
 
-/* To add a new TEXT prompt: push {filename, prompt} into the matching array.
-   [bracketed] words are auto-highlighted as fill-in variables — keep placeholders
-   in that format. Each key (ppt/essay/report/email) feeds its own page:
-   the page's #categoryPromptList element has a matching data-category attribute. */
-const textPromptsData = {
-  ppt: [
-    { filename:"ppt_01.txt", prompt:"Create a [number]-slide presentation outline on [topic] for a [audience type] audience. Include a title slide, an agenda, [number] content slides with 3 bullet points each, and a closing summary slide. Keep language [tone]." },
-    { filename:"ppt_02.txt", prompt:"Turn the following notes into slide-ready bullet points, max 5 words per line, grouped under clear section headers: [paste notes]" },
-    { filename:"ppt_03.txt", prompt:"Suggest a slide-by-slide structure for a [duration]-minute pitch deck for [product or idea], following a problem → solution → market → ask format." },
-    { filename:"ppt_04.txt", prompt:"Write speaker notes for a slide titled '[slide title]', assuming the audience already knows [background context]. Keep it under 100 words, conversational tone." }
-  ],
-  essay: [
-    { filename:"essay_01.txt", prompt:"Write a [word count]-word essay on [topic] in a [tone] tone. Structure it with an introduction that states a clear thesis, [number] body paragraphs each covering one supporting point, and a conclusion that restates the thesis without repeating it word-for-word." },
-    { filename:"essay_02.txt", prompt:"Give me 5 possible thesis statements for an essay about [topic], each taking a slightly different angle." },
-    { filename:"essay_03.txt", prompt:"Rewrite this paragraph to sound more [tone] while keeping the same meaning: [paste paragraph]" },
-    { filename:"essay_04.txt", prompt:"Write a counter-argument paragraph for an essay arguing that [position], addressing the strongest opposing view and rebutting it in [word count] words." }
-  ],
-  report: [
-    { filename:"report_01.txt", prompt:"Write a [report type] report on [topic] for [audience], structured as: Executive Summary, Background, Findings ([number] key points), Recommendations, Conclusion. Total length: [word count] words." },
-    { filename:"report_02.txt", prompt:"Summarize the following data into a concise 'Key Findings' section with [number] bullet points, each starting with the most important number or result: [paste data]" },
-    { filename:"report_03.txt", prompt:"Draft an executive summary for a report about [topic], written for [audience] who won't read the full report — under 200 words." },
-    { filename:"report_04.txt", prompt:"Convert this list of raw observations into a formal 'Recommendations' section, phrased as clear action items: [paste observations]" }
-  ],
-  email: [
-    { filename:"email_01.txt", prompt:"Write a [tone] email to [recipient] about [topic]. Keep it under [word count] words, include a clear subject line, and end with a specific call to action." },
-    { filename:"email_02.txt", prompt:"Draft a follow-up email to [recipient] after [event or meeting], referencing [specific detail] and proposing [next step]." },
-    { filename:"email_03.txt", prompt:"Write a polite decline email to [recipient] regarding [request], keeping the door open for future collaboration." },
-    { filename:"email_04.txt", prompt:"Turn these rough notes into a professional email to [recipient]: [paste notes]. Tone: [tone]." }
-  ]
-};
+/* Text prompt templates live in prompts-text.js, loaded only by the four
+   category pages. Builder vocabulary lives in builder-data.js, loaded only
+   by builder.html. Both are absent on most pages by design — null means
+   'this page does not have it', which the inits below check for. */
+const textPromptsData = window.textPromptsData || null;
 
 /* Hero demo (index.html only) — cycles automatically, mixing image and text
    results so the hero shows both halves of the site. */
@@ -564,6 +539,19 @@ function closeModal(){
 function initCategoryPage(){
   const list = document.getElementById("categoryPromptList");
   if(!list) return;
+
+  /* prompts-text.js is a separate <script>; if it 404s or fails to parse the
+     page would otherwise render an empty list with no explanation. */
+  if(!textPromptsData){
+    list.innerHTML = `
+      <div class="gallery-error" role="alert">
+        <p class="gallery-error-title">These prompts didn&rsquo;t load.</p>
+        <p>prompts-text.js is missing or failed to parse. Try reloading &mdash; if it
+        keeps happening, check that the file sits next to this page.</p>
+      </div>`;
+    return;
+  }
+
   const category = list.dataset.category;
   const prompts = textPromptsData[category] || [];
 
@@ -635,121 +623,9 @@ async function runDemoCycle(){
   }
 }
 
-/* ==================================================================
-   PROMPT BUILDER DATA (builder.html)
-   Pure templates — no API key, no network call. To add an option, just add a
-   string to the relevant array; it appears in the dropdown automatically.
-   Each entry is the literal phrase injected into the assembled prompt.
-   ================================================================== */
-const builderOptions = {
-  style: [
-    "lush hand-painted watercolor style, soft bleeding edges, textured paper grain",
-    "charcoal drawing, monochromatic smoky gradients, heavy shading",
-    "traditional woodblock print, strong black outlines, flat color zones",
-    "ink wash painting, fluid brushstrokes, varying opacity, negative space",
-    "colored pencil sketch, visible textured linework, soft shading",
-    "gouache painting, heavy opaque matte color, deep saturated tones",
-    "oil painting with thick impasto brushstrokes, visible 3D relief",
-    "linocut print, bold blocky negative space, raw chiseled edges",
-    "stained glass, bold black leading, glowing translucent panes",
-    "layered papercraft and origami, flat folded-paper shapes, 3D depth",
-    "claymation stop-motion, molded clay texture, visible fingerprints",
-    "embroidery, characters woven from visible threads and fabric texture",
-    "fresco mural, cracked plaster texture, faded historical pigment",
-    "1980s VHS home-video look, muted tones, chromatic aberration, scanlines",
-    "city pop album-cover aesthetic, sleek 80s urban nightscape, neon reflections",
-    "lo-fi aesthetic, high grain, low contrast, drifting dust particles",
-    "Technicolor glow, oversaturated primaries, blooming halo around lights",
-    "sepia-toned vintage photography, monochromatic brown tones",
-    "8-bit pixel art, retro video game squares, limited palette",
-    "16-bit JRPG pixel sprites, vibrant parallax background",
-    "risograph print, misaligned two-color layers, visible grain",
-    "art deco poster, bold geometric linework, metallic gold and teal",
-    "art nouveau, whiplash curves, elegant floral framing",
-    "low-poly 3D render, faceted geometric surfaces, flat shading",
-    "vector illustration, ultra-clean geometric lines, flat color",
-    "glitch art and datamoshing, corrupted artifacts, color-channel bleed",
-    "psychedelic swirling neon palette, melting tie-dye distortion",
-    "fisheye lens distortion, ultra-wide bulbous perspective",
-    "heat-haze mirage, shimmering warping distortion",
-    "steampunk, cluttered brass gears and rusted mechanical detail",
-    "dieselpunk, dark oily heavy machinery under a grey sky",
-    "cottagecore, cozy overgrown cabin, wildflowers, warm domestic detail",
-    "dark fantasy, moody shadowy forest, pale spirits, gothic undertones",
-    "cosmic horror, soft pastel depiction of colossal indifferent entities",
-    "post-apocalyptic ruins reclaimed by vibrant green moss and trees",
-    "biomechanical fusion of living tissue and vintage machinery",
-    "chibi super-deformed proportions, oversized head, simple dot eyes",
-    "liminal space, empty and unsettlingly quiet, flat even lighting"
-  ],
-  lighting: [
-    "golden hour lighting, long warm shadows, amber light leaks",
-    "blue hour, cool dusk tones, soft ambient glow",
-    "overcast diffused light, shadowless and even",
-    "dramatic god rays piercing heavy clouds",
-    "bioluminescent glow, deep blues and indigos",
-    "neon noir, blinding commercial neon against wet dark pavement",
-    "harsh direct midday sun, hard-edged shadows",
-    "soft studio lighting, single gentle shadow",
-    "rim lighting, subject outlined against a dark background",
-    "candlelight, warm flickering pools of light",
-    "moonlight, cool silver highlights, deep shadow",
-    "backlit silhouette, subject dark against bright haze"
-  ],
-  composition: [
-    "cinematic wide shot",
-    "extreme close-up",
-    "overhead flat lay",
-    "low angle looking up",
-    "high angle looking down",
-    "symmetrical centered composition",
-    "rule-of-thirds off-center framing",
-    "shallow depth of field, blurred background",
-    "wide establishing landscape shot",
-    "tight portrait crop",
-    "over-the-shoulder view",
-    "macro detail shot"
-  ],
-  mood: [
-    "nostalgic and warm",
-    "quiet and melancholy",
-    "tense and ominous",
-    "peaceful and serene",
-    "energetic and chaotic",
-    "dreamlike and surreal",
-    "gritty and somber",
-    "whimsical and playful",
-    "epic and awe-inspiring",
-    "lonely and isolated",
-    "cozy and intimate",
-    "cold and clinical"
-  ],
-  palette: [
-    "muted earth tones",
-    "vibrant jewel tones",
-    "monochrome black and white",
-    "teal and orange contrast",
-    "soft pastel palette",
-    "high-contrast primary colors",
-    "desaturated washed-out tones",
-    "warm amber and gold",
-    "cool blues and greys",
-    "neon magenta and cyan"
-  ],
-  finish: [
-    "highly detailed, ultra sharp",
-    "soft focus, gentle blur",
-    "heavy film grain",
-    "clean and minimal, lots of negative space",
-    "richly textured surfaces",
-    "glossy and reflective",
-    "matte and flat",
-    "painterly and loose"
-  ]
-};
-
-/* Aspect ratios — the flag syntax differs per model, handled in buildPrompt(). */
-const builderRatios = ["1:1", "16:9", "9:16", "4:5", "3:2", "2:3"];
+/* See builder-data.js — only builder.html loads it. */
+const builderOptions = window.builderOptions || null;
+const builderRatios = Array.isArray(window.builderRatios) ? window.builderRatios : [];
 
 /* ==================================================================
    PROMPT BUILDER (builder.html only)
@@ -757,6 +633,19 @@ const builderRatios = ["1:1", "16:9", "9:16", "4:5", "3:2", "2:3"];
 function initBuilder(){
   const form = document.getElementById("builderForm");
   if(!form) return;
+
+  /* builder-data.js supplies every dropdown. Without it the selects would sit
+     there empty and the page would look broken for no stated reason. */
+  if(!builderOptions){
+    const panel = document.querySelector(".builder-output-panel") || form;
+    panel.insertAdjacentHTML("afterbegin", `
+      <div class="gallery-error" role="alert">
+        <p class="gallery-error-title">The builder didn&rsquo;t load.</p>
+        <p>builder-data.js is missing or failed to parse, so there are no options
+        to choose from. Try reloading.</p>
+      </div>`);
+    return;
+  }
 
   const fields = ["style","lighting","composition","mood","palette","finish"];
 
