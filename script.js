@@ -495,6 +495,10 @@ function initBuilder(){
   form.addEventListener("input", buildPrompt);
   form.addEventListener("change", buildPrompt);
 
+  /* Real <form> so Reset can use native reset(), but there is nothing to submit
+     to — swallow Enter rather than letting it reload the page. */
+  form.addEventListener("submit", (e) => e.preventDefault());
+
   document.getElementById("builderRandomBtn").addEventListener("click", () => {
     fields.forEach((field) => {
       const opts = builderOptions[field];
@@ -503,9 +507,10 @@ function initBuilder(){
     buildPrompt();
   });
 
+  /* Native reset() restores every control to its first/blank option, which for
+     the six style selects is the "— none —" entry rendered above. */
   document.getElementById("builderResetBtn").addEventListener("click", () => {
     form.reset();
-    fields.forEach((field) => { document.getElementById(`builder-${field}`).value = ""; });
     buildPrompt();
   });
 
