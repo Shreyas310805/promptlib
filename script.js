@@ -337,6 +337,10 @@ function initGallery(){
      do that work a dozen times to show one result. 120ms is below the point
      where the list feels laggy but well above burst typing. */
   const search = document.getElementById("gallerySearch");
+  /* The count in the placeholder is hardcoded in images.html as a no-JS
+     fallback; take it from the data so it cannot drift when build_prompts.py
+     gains or loses styles. */
+  search.placeholder = search.placeholder.replace(/\d+/, imagePrompts.length);
   let searchTimer;
   const applySearch = () => {
     const next = search.value.trim().toLowerCase();
