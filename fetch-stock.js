@@ -63,6 +63,16 @@ const CAT = catIdx !== -1 ? args[catIdx + 1] : null;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+/* Appended as each photo lands, not batched to the end of the run. A full run
+   is over an hour; anything held in memory is lost to Ctrl+C or a crash. The
+   header is written once, when the file does not exist yet. */
+function appendCredit(line){
+  const header = fs.existsSync(CREDITS_FILE)
+    ? ""
+    : "# Photo credits\n\nStock thumbnails from Pexels. Free to use, credit appreciated.\n\n";
+  fs.appendFileSync(CREDITS_FILE, header + line + "\n");
+}
+
 function loadPrompts(){
   const file = path.join(__dirname, "prompts-image.js");
   if(!fs.existsSync(file)){
@@ -156,7 +166,6 @@ async function main(){
   console.log(`\nFetching ${queue.length} thumbnail(s). Throttled for the Pexels rate limit — about ${mins} min.`);
   console.log("Safe to stop with Ctrl+C at any point; re-running resumes.\n");
 
-  const credits = [];
   let ok = 0, failed = 0;
 
   for(let i = 0; i < queue.length; i++){
@@ -167,7 +176,13 @@ async function main(){
       const photo = await searchPhoto(item.search);
       const buffer = await download(photo.url);
       fs.writeFileSync(path.join(IMAGES_DIR, `${item.slug}.jpg`), buffer);
-      credits.push(`- ${item.style} — photo by ${photo.photographer} on Pexels (${photo.link})`);
+      appendCredit(`- ${item.style} — photo by ${photo.photographer} on Pexels (${photo.link})`);
+      /* Refresh the manifest on every save. Until a slug is listed there the
+         gallery will not render its thumbnail, so batching this to the end of
+         the run left every downloaded image invisible for up to 90 minutes —
+         and invisible forever if the run was interrupted. A directory scan
+         costs nothing next to an 18.5s rate-limit pause. */
+      writeManifest();
       console.log(`saved (${photo.photographer})`);
       ok++;
     } catch (err) {
@@ -184,16 +199,7 @@ async function main(){
     if(i < queue.length - 1) await sleep(DELAY_MS);
   }
 
-  if(credits.length){
-    const header = fs.existsSync(CREDITS_FILE)
-      ? "\n"
-      : "# Photo credits\n\nStock thumbnails from Pexels. Free to use, credit appreciated.\n\n";
-    fs.appendFileSync(CREDITS_FILE, header + credits.join("\n") + "\n");
-    console.log(`\nCredits appended to images/CREDITS.md`);
-  }
-
-  /* Refresh the manifest so images.html knows which thumbnails now exist —
-     without this the gallery keeps showing gradient swatches for them. */
+  /* Already flushed per photo; this is just the final count. */
   const inManifest = writeManifest();
   console.log(`\nDone. ${ok} downloaded, ${failed} failed.`);
   console.log(`images/manifest.js now lists ${inManifest} thumbnail(s).`);

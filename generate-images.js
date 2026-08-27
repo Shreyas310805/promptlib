@@ -163,6 +163,8 @@ async function main(){
     try {
       const { buffer, mimeType } = await generateOne(thumbnailPrompt(item));
       fs.writeFileSync(path.join(IMAGES_DIR, `${item.slug}.jpg`), buffer);
+      /* Flush per image — see the same note in fetch-stock.js. */
+      writeManifest();
       const note = mimeType === "image/jpeg" ? "" : ` (${mimeType} data, .jpg name — see generateOne)`;
       console.log(`saved images/${item.slug}.jpg${note}`);
       ok++;
@@ -174,8 +176,7 @@ async function main(){
     if(i < queue.length - 1) await sleep(DELAY_MS);
   }
 
-  /* Refresh the manifest so images.html knows which thumbnails now exist —
-     without this the gallery keeps showing gradient swatches for them. */
+  /* Already flushed per image; this is just the final count. */
   const inManifest = writeManifest();
   console.log(`\nDone. ${ok} generated, ${failed} failed.`);
   console.log(`images/manifest.js now lists ${inManifest} thumbnail(s).`);
