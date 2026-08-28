@@ -778,7 +778,18 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
 }
 .prompt-card:hover{ border-color:var(--border-strong); background:var(--bg-panel-hover); }
 .prompt-card .prompt-text{ flex:1; padding:16px; }
-.prompt-card .btn{ margin:0 16px 16px; align-self:flex-start; }
+/* ---- send-to-assistant row ------------------------------------------
+   Sits under the copy button. The two destinations are secondary to copying,
+   so they are ghost buttons at small size rather than competing fills. */
+.prompt-actions{ display:flex; flex-direction:column; gap:var(--space-2); align-items:stretch; }
+.send-row{ display:flex; gap:var(--space-2); flex-wrap:wrap; }
+.btn-send{ flex:1 1 auto; justify-content:center; padding:9px 14px; }
+.btn-send .icon{ width:14px; height:14px; }
+.modal-body .prompt-actions{ gap:var(--space-3); }
+.modal-body .send-row .btn-send{ flex:1 1 0; }
+
+.prompt-card .prompt-actions{ margin:0 16px 16px; }
+.prompt-card .btn{ margin:0; align-self:stretch; justify-content:center; }
 
 /* ============================================
    PROMPT BUILDER (builder.html)

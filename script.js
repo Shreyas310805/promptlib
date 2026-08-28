@@ -207,6 +207,67 @@ function copyText(text, btn){
 }
 
 /* ==================================================================
+   SEND TO AN ASSISTANT
+
+   ChatGPT accepts a ?q= prefill; Gemini has no documented equivalent, so
+   opening it lands on an empty composer. Both buttons therefore copy the
+   prompt FIRST and open second — paste works regardless of whether the
+   destination honours a parameter, and the behaviour is identical either
+   way from the visitor's side.
+   ================================================================== */
+const SEND_TARGETS = [
+  {
+    id: "chatgpt",
+    label: "ChatGPT",
+    /* Prefills the composer. Prompts here top out around 540 characters, so
+       the encoded URL stays far inside every browser's length limit. */
+    url: (prompt) => `https://chatgpt.com/?q=${encodeURIComponent(prompt)}`,
+    icon: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.2 20 7.6v8.8L12 20.8 4 16.4V7.6z"/><path d="M12 12v8.8M12 12 4 7.6M12 12l8-4.4"/></svg>`
+  },
+  {
+    id: "gemini",
+    label: "Gemini",
+    url: () => "https://gemini.google.com/app",
+    icon: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c.5 4.3 2.7 6.5 7 7-4.3.5-6.5 2.7-7 7-.5-4.3-2.7-6.5-7-7 4.3-.5 6.5-2.7 7-7z"/></svg>`
+  }
+];
+
+function sendRowHTML(prompt){
+  return SEND_TARGETS.map((t) =>
+    `<button type="button" class="btn btn-ghost btn-sm btn-send" data-send="${t.id}" data-raw="${escapeHTML(prompt)}">${t.icon}<span>Open in ${escapeHTML(t.label)}</span></button>`
+  ).join("");
+}
+
+/* Delegated: a category page renders 114 cards, so per-button listeners meant
+   228 of them re-attached on every filter and every debounced keystroke. One
+   listener on the container survives innerHTML replacement of its children. */
+function bindSendButtons(root){
+  if(root.dataset.sendBound) return;
+  root.dataset.sendBound = "1";
+
+  root.addEventListener("click", (e) => {
+    const btn = e.target.closest(".btn-send");
+    if(!btn || !root.contains(btn)) return;
+
+    const target = SEND_TARGETS.find((t) => t.id === btn.dataset.send);
+    if(!target) return;
+    const prompt = btn.dataset.raw || "";
+
+    /* Opened synchronously, inside the click, or a popup blocker rejects it —
+       an await before this point loses the user-gesture context. */
+    const win = window.open(target.url(prompt), "_blank", "noopener,noreferrer");
+
+    copyText(prompt, btn);
+
+    /* copyText announces its own result on a short timer; delay this so the
+       two messages queue rather than clobbering each other. */
+    if(!win){
+      setTimeout(() => announce("The new tab was blocked, but the prompt is copied — paste it into " + target.label + "."), 240);
+    }
+  });
+}
+
+/* ==================================================================
    NAV — active link, mobile toggle (runs on every page)
    ================================================================== */
 function setActiveNav(){
@@ -644,6 +705,12 @@ function openModal(id){
   document.getElementById("modalPromptText").innerHTML = highlightVars(p.prompt);
   document.getElementById("modalCopyBtn").dataset.raw = p.prompt;
 
+  const sendRow = document.getElementById("modalSendRow");
+  if(sendRow){
+    sendRow.innerHTML = sendRowHTML(p.prompt);
+    bindSendButtons(sendRow);
+  }
+
   modalReturnFocus = document.querySelector(`.gallery-card[data-id="${id}"]`) || document.activeElement;
 
   document.getElementById("modalBackdrop").classList.add("open");
@@ -775,13 +842,17 @@ function initCategoryPage(){
       </div>
       <div class="prompt-block-bar"><span class="demo-dot"></span><span>${escapeHTML(p.filename)}</span></div>
       <p class="prompt-text">${highlightVars(p.prompt)}</p>
-      <button type="button" class="btn btn-ghost btn-copy btn-sm" data-raw="${escapeHTML(p.prompt)}">${copyButtonHTML("Copy prompt")}</button>
+      <div class="prompt-actions">
+        <button type="button" class="btn btn-ghost btn-copy btn-sm" data-raw="${escapeHTML(p.prompt)}">${copyButtonHTML("Copy prompt")}</button>
+        <div class="send-row">${sendRowHTML(p.prompt)}</div>
+      </div>
     </div>
   `).join("");
 
     list.querySelectorAll(".btn-copy").forEach((btn) => {
       btn.addEventListener("click", function(){ copyText(this.dataset.raw, this); });
     });
+    bindSendButtons(list);
     observeReveals();
   }
 

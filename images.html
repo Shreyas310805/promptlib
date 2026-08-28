@@ -91,8 +91,11 @@ addEventListener("load", function(){ document.body.classList.add("loaded"); });
         <div class="prompt-block-bar"><span class="demo-dot"></span><span>prompt.txt</span></div>
         <p class="prompt-text" id="modalPromptText"></p>
       </div>
-      <button class="btn btn-primary btn-copy" id="modalCopyBtn"></button>
-      <p class="modal-howto">Attach your own photo in ChatGPT, Gemini, or any image editor that accepts a reference image, then paste this prompt alongside it.</p>
+      <div class="prompt-actions">
+        <button class="btn btn-primary btn-copy" id="modalCopyBtn"></button>
+        <div class="send-row" id="modalSendRow"></div>
+      </div>
+      <p class="modal-howto">Attach your own photo in ChatGPT, Gemini, or any image editor that accepts a reference image, then paste this prompt alongside it. Both buttons copy the prompt first, so you can paste it either way.</p>
     </div>
   </div>
 </div>
