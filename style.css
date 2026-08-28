@@ -26,9 +26,11 @@
   --border-strong:#35353b;
 
   /* type */
+  /* Muted tones are the primary ink at reduced alpha rather than separate
+     greys, so they stay in the same colour family as the surface beneath. */
   --text-primary:#ededee;
-  --text-muted:#9a9aa3;
-  --text-placeholder:#7e7e88;
+  --text-muted:rgba(237,237,238,.62);
+  --text-placeholder:rgba(237,237,238,.45);
 
   /* ONE accent. It used to be two — amber plus a blue that existed only
      because amber was overloaded, which gave the site two different focus
@@ -61,7 +63,11 @@
   --danger-ink:#ff8f8f;
   /* Instrument Sans: editorial grotesque, tighter and less corporate than Plex.
      JetBrains Mono for anything terminal-flavoured. */
-  --font-display:'Instrument Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  /* Archivo is a grotesque with a true condensed sibling, which is what makes
+     small uppercase labels work without faking it by tracking out a normal
+     face. Mono stays for prompt text, where it is functional not decorative. */
+  --font-display:'Archivo',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --font-label:'Archivo Narrow','Archivo',-apple-system,sans-serif;
   --font-mono:'JetBrains Mono','SFMono-Regular',Menlo,Consolas,monospace;
   /* ---- type scale ----------------------------------------------------
      A real ratio instead of 18 ad-hoc sizes with half-pixel steps. Fluid
@@ -76,16 +82,19 @@
   --text-2xl:clamp(30px,3.4vw,40px);
   --text-3xl:clamp(38px,5.4vw,62px);
 
-  --leading-tight:1.08;
-  --leading-snug:1.3;
+  --leading-tight:1.04;
+  --leading-snug:1.18;
   --leading-body:1.6;
   --leading-loose:1.75;
 
   /* Tracking tightens as size grows — the single clearest signal of
      typography that was set rather than defaulted. */
-  --track-display:-0.022em;
+  /* Tracking tightens as size grows and opens up at label sizes — the ratios
+     sharplink.com uses (-0.025em at 52px, -0.01em at 24-44px, +0.08em on
+     13px uppercase). Optical, not decorative. */
+  --track-display:-0.025em;
   --track-heading:-0.012em;
-  --track-body:0em;
+  --track-body:-0.005em;
   --track-caps:0.08em;
 
   /* Measure. Prompt text used to inherit its width from grid tracks and
@@ -102,9 +111,13 @@
   --gutter:clamp(20px,4vw,32px);
   --nav-h:64px;
 
-  --radius-sm:6px;
-  --radius:10px;
-  --radius-lg:16px;
+  /* Square. sharplink.com carries zero border-radius on any element, and it is
+     the single biggest reason it reads as designed rather than assembled —
+     rounded corners everywhere is the default of every component library.
+     Kept as tokens so one edit reverses the whole decision. */
+  --radius-sm:0px;
+  --radius:0px;
+  --radius-lg:0px;
 
   /* ---- motion --------------------------------------------------------
      Two curves, used everywhere. `standard` is a gentle ease-out for state
@@ -112,6 +125,9 @@
      rather than faded. Durations are short enough to feel immediate. */
   --ease-standard:cubic-bezier(.2,.7,.3,1);
   --ease-entrance:cubic-bezier(.16,.84,.34,1.02);
+  /* Slow in, fast through, slow out. Used where a move should feel deliberate
+     rather than springy — the nav indicator and the reveal. */
+  --ease-expressive:cubic-bezier(.785,.135,.15,.86);
   --dur-1:120ms;
   --dur-2:200ms;
   --dur-3:320ms;
@@ -133,9 +149,9 @@
   --border-subtle:#e4e2dc;
   --border-strong:#cfccc4;
 
-  --text-primary:#191919;
-  --text-muted:#5c5c64;
-  --text-placeholder:#7a7a83;
+  --text-primary:#141414;
+  --text-muted:rgba(20,20,20,.66);
+  --text-placeholder:rgba(20,20,20,.48);
 
   --accent:#c8811d;
   --accent-ink:#8a5300;
@@ -225,14 +241,14 @@ main{ position:relative; z-index:1; }
 .demo-dot{ width:8px; height:8px; border-radius:50%; background:var(--accent-amber); display:inline-block; flex-shrink:0; }
 
 .badge{
-  display:inline-flex; align-items:center; padding:4px 10px; border-radius:999px;
+  display:inline-flex; align-items:center; padding:4px 10px; border-radius:var(--radius-sm);
   font-family:var(--font-mono); font-size:var(--text-2xs); letter-spacing:.02em;
   background:var(--bg-panel-hover); color:var(--text-muted); border:1px solid var(--border-subtle);
 }
 .badge-model{ color:var(--accent-ink); border-color:var(--accent-amber-soft); }
 
 .btn{
-  display:inline-flex; align-items:center; gap:8px; padding:13px 24px; border-radius:6px;
+  display:inline-flex; align-items:center; gap:8px; padding:13px 24px; border-radius:var(--radius-sm);
   font-family:var(--font-mono); font-size:var(--text-sm); font-weight:500; cursor:pointer;
   border:1px solid transparent; text-decoration:none; background:none;
   transition:transform var(--transition-fast), background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
@@ -276,6 +292,22 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
   border-radius:var(--radius) var(--radius) 0 0;
 }
 
+
+/* ---- micro-labels ---------------------------------------------------
+   Condensed, uppercase, tracked out. One treatment shared by every small
+   categorical label on the site so they read as a single system. */
+.badge,
+.chip,
+.gallery-count,
+.prompt-thumb-label,
+.builder-req,
+.builder-opt{
+  font-family:var(--font-label);
+  text-transform:uppercase;
+  letter-spacing:var(--track-caps);
+  font-weight:500;
+}
+
 /* ============================================
    NAV
    ============================================ */
@@ -316,7 +348,7 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
   padding:var(--space-1);
   background:var(--bg-panel);
   border:1px solid var(--border-subtle);
-  border-radius:calc(var(--radius) + 2px);
+  border-radius:var(--radius);
 }
 
 /* The indicator is the ONLY thing that moves, and it moves on transform +
@@ -343,7 +375,7 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
   display:inline-flex; align-items:center; justify-content:center;
   width:38px; height:38px; margin-left:var(--space-2); flex-shrink:0;
   background:var(--bg-panel); border:1px solid var(--border-subtle);
-  border-radius:calc(var(--radius) + 2px); color:var(--text-muted); cursor:pointer;
+  border-radius:var(--radius); color:var(--text-muted); cursor:pointer;
   transition:color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
 }
 .theme-toggle:hover{ color:var(--text-primary); border-color:var(--border-strong); background:var(--bg-panel); }
@@ -378,7 +410,7 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
    ============================================ */
 .section-inner{ max-width:1180px; margin:0 auto; padding:var(--section-pad) 32px; }
 .section-title{
-  font-size:var(--text-2xl); font-weight:700;
+  font-size:var(--text-2xl); font-weight:500;
   line-height:var(--leading-tight); letter-spacing:var(--track-display);
   max-width:20ch; text-wrap:balance; margin-bottom:var(--space-3);
 }
@@ -405,7 +437,7 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
 }
 .hero-inner{ padding:0; text-align:left; }
 .hero-title{
-  font-size:var(--text-3xl); font-weight:700;
+  font-size:var(--text-3xl); font-weight:500;
   line-height:var(--leading-tight); letter-spacing:var(--track-display);
   max-width:14ch; margin:0 0 var(--space-5); text-wrap:balance;
 }
@@ -431,15 +463,15 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
 .demo-body{ padding:22px 20px 24px; text-align:left; }
 .demo-prompt-line{ font-family:var(--font-mono); font-size:var(--text-sm); line-height:1.6; min-height:44px; }
 .demo-prompt-prefix{ color:var(--syntax-var); margin-right:6px; }
-.demo-result{ margin-top:16px; border-radius:8px; overflow:hidden; opacity:0; max-height:0; transition:opacity .5s ease, max-height .5s ease; }
+.demo-result{ margin-top:16px; border-radius:var(--radius); overflow:hidden; opacity:0; max-height:0; transition:opacity .5s ease, max-height .5s ease; }
 .demo-result.show{ opacity:1; max-height:320px; }
 .demo-swatch{
-  min-height:190px; border-radius:8px; position:relative; overflow:hidden;
+  min-height:190px; border-radius:var(--radius); position:relative; overflow:hidden;
   display:flex; align-items:flex-end; padding:18px;
 }
 .demo-result-text{
   font-family:var(--font-mono); font-size:var(--text-sm); line-height:1.6; color:var(--text-muted); white-space:pre-wrap;
-  background:var(--bg-void); padding:16px; border:1px solid var(--border-subtle); border-radius:8px;
+  background:var(--bg-void); padding:16px; border:1px solid var(--border-subtle); border-radius:var(--radius);
 }
 
 /* nav cards — used on homepage (2-up) and text hub (4-up) */
@@ -452,7 +484,7 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
 }
 .nav-card:hover{ border-color:var(--border-strong); background:var(--bg-panel-hover); }
 .nav-card .icon-lg{ color:var(--accent-ink); margin-bottom:16px; }
-.nav-card h3{ font-size:var(--text-lg); margin-bottom:8px; }
+.nav-card h3{ font-size:var(--text-lg); font-weight:500; letter-spacing:var(--track-heading); margin-bottom:var(--space-2); }
 .nav-card p{ color:var(--text-muted); font-size:var(--text-sm); line-height:1.6; }
 .nav-card-arrow{ position:absolute; top:26px; right:26px; color:var(--text-muted); transition:transform var(--transition-fast), color var(--transition-fast); }
 .nav-card:hover .nav-card-arrow{ transform:translate(3px,-3px); color:var(--accent-ink); }
@@ -520,7 +552,7 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
 }
 .swatch-name{
   display:block;
-  font-family:var(--font-display); font-weight:700; font-size:var(--text-lg); color:#fff;
+  font-family:var(--font-display); font-weight:500; font-size:var(--text-lg); color:#fff; letter-spacing:var(--track-heading);
   text-shadow:0 2px 14px rgba(0,0,0,.4); line-height:1.25;
 }
 
@@ -534,7 +566,7 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
   flex:1; min-width:0;
   font-family:var(--font-mono); font-size:var(--text-sm);
   background:var(--bg-panel); color:var(--text-primary);
-  border:1px solid var(--border-subtle); border-radius:8px; padding:13px 15px;
+  border:1px solid var(--border-subtle); border-radius:var(--radius); padding:13px 15px;
   transition:border-color var(--transition-fast);
 }
 .search-input::placeholder{ color:var(--text-placeholder); }
@@ -549,7 +581,7 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
 .chip{
   font-family:var(--font-mono); font-size:var(--text-xs);
   background:var(--bg-panel); color:var(--text-muted);
-  border:1px solid var(--border-subtle); border-radius:999px;
+  border:1px solid var(--border-subtle); border-radius:var(--radius-sm);
   padding:7px 14px; cursor:pointer;
   transition:color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
 }
@@ -571,7 +603,7 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
 .gallery-error-title{ color:var(--text-primary); font-weight:600; font-size:var(--text-md); margin-bottom:6px; }
 .gallery-error code{
   font-family:var(--font-mono); font-size:var(--text-sm); color:var(--accent-ink);
-  background:var(--bg-void); padding:2px 6px; border-radius:4px;
+  background:var(--bg-void); padding:2px 6px; border-radius:var(--radius-sm);
 }
 
 /* ============================================
@@ -610,12 +642,12 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
 }
 .modal-swatch .swatch-texture{ background-size:32px 32px; }
 .modal-swatch-name{
-  position:relative; z-index:1; font-family:var(--font-display); font-weight:700;
+  position:relative; z-index:1; font-family:var(--font-display); font-weight:500;
   font-size:var(--text-xl); color:#fff; text-shadow:0 2px 14px rgba(0,0,0,.4); line-height:1.25;
 }
 .modal-body{ padding:26px; display:flex; flex-direction:column; gap:18px; }
 .modal-meta{ display:flex; gap:8px; flex-wrap:wrap; }
-.modal-style-name{ font-size:var(--text-xl); font-weight:700; }
+.modal-style-name{ font-size:var(--text-xl); font-weight:500; letter-spacing:var(--track-heading); }
 .modal-howto{ font-size:var(--text-xs); color:var(--text-muted); line-height:1.6; }
 .prompt-block{ border:1px solid var(--border-subtle); border-radius:var(--radius); overflow:hidden; }
 .prompt-text{ font-family:var(--font-mono); font-size:var(--text-sm); line-height:var(--leading-loose);
@@ -649,14 +681,14 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
   display:flex; align-items:center; gap:8px;
 }
 .builder-req, .builder-opt{
-  font-size:var(--text-2xs); padding:2px 7px; border-radius:999px; border:1px solid var(--border-subtle);
+  font-size:var(--text-2xs); padding:2px 7px; border-radius:var(--radius-sm); border:1px solid var(--border-subtle);
 }
 .builder-req{ color:var(--accent-ink); border-color:var(--accent-amber-soft); }
 .builder-opt{ color:var(--text-muted); }
 .builder-field input, .builder-field select{
   font-family:var(--font-mono); font-size:var(--text-sm);
   background:var(--bg-panel); color:var(--text-primary);
-  border:1px solid var(--border-subtle); border-radius:6px;
+  border:1px solid var(--border-subtle); border-radius:var(--radius-sm);
   padding:11px 12px; width:100%;
   transition:border-color var(--transition-fast);
 }
@@ -691,7 +723,7 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
 }
 .prompt-thumb-icon{ position:relative; z-index:1; color:#fff; display:flex; opacity:.95; }
 .prompt-thumb-label{
-  position:relative; z-index:1; font-family:var(--font-display); font-weight:700;
+  position:relative; z-index:1; font-family:var(--font-display); font-weight:500;
   font-size:var(--text-base); color:#fff; text-shadow:0 2px 10px rgba(0,0,0,.3);
 }
 
