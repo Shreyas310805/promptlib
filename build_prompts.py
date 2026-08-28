@@ -401,6 +401,9 @@ OUTPUT = [
 # Stock-photo search terms, used by fetch-stock.js. Most style names work as-is;
 # these are the ones where the literal name returns nothing useful.
 SEARCH_OVERRIDES = {
+    # An art-history label with no photographic equivalent on a stock site;
+    # "Post-Impressionist" returned zero Pexels results on a real run.
+    "Post-Impressionist": "impressionist oil painting",
     "4K Ultra Sharp": "ultra sharp detailed landscape",
     "8K Hyper Detail": "extremely detailed macro texture",
     "Drone Top-Down": "aerial top down view",
@@ -438,7 +441,7 @@ SEARCH_OVERRIDES = {
     "Magazine Cover": "magazine cover mockup",
     "Loading Screen": "video game screen",
     "Billboard Mockup": "city billboard",
-    "Storefront Window": "shop window reflection",
+    "Storefront Window": "shop window display",
     "Rooftop at Night": "city rooftop night skyline",
     "Professional Headshot": "professional headshot",
     "Corporate Portrait": "corporate business portrait",
@@ -456,7 +459,7 @@ SEARCH_OVERRIDES = {
     "Steampunk Inventor": "steampunk goggles",
     "Renaissance Noble": "renaissance painting portrait",
     "1920s Portrait": "1920s vintage portrait",
-    "1970s Film Portrait": "1970s retro portrait",
+    "1970s Film Portrait": "vintage film portrait",
     "Fashion Editorial": "fashion editorial portrait",
     "White Background Product": "product on white background",
     "Lifestyle Product Shot": "lifestyle product photography",
