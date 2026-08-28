@@ -65,6 +65,10 @@
   /* Frosted glass. The tint is the surface at low alpha, the hairline is a
      light edge catching along the top — that highlight is what separates
      glass from a plain translucent panel. */
+  --bloom-a:rgba(77,141,255,.16);
+  --bloom-b:rgba(120,90,220,.13);
+  --bloom-c:rgba(40,120,150,.12);
+  --lattice:rgba(255,255,255,.055);
   --glass-tint:rgba(30,35,42,.44);
   --glass-edge:rgba(255,255,255,.10);
   --glass-blur:saturate(1.56) blur(13px);
@@ -193,6 +197,10 @@
   --shadow-card:0 14px 30px -18px rgba(24,24,26,.34);
   --shadow-modal:0 30px 70px -30px rgba(24,24,26,.42);
   --nav-bg:rgba(238,243,250,.62);
+  --bloom-a:rgba(31,111,224,.16);
+  --bloom-b:rgba(120,90,220,.12);
+  --bloom-c:rgba(20,140,170,.12);
+  --lattice:rgba(15,23,32,.075);
   --glass-tint:rgba(255,255,255,.50);
   --glass-edge:rgba(255,255,255,.85);
   --glass-blur:saturate(1.4) blur(13px);
@@ -222,15 +230,45 @@ body{
 .js body.loaded{ opacity:1; }
 .js body.leaving{ opacity:0; }
 
-/* No decorative backdrop. A faint grid under a radial mask is the single most
-   recognisable dark-landing-page cliche — it was doing no work here and it is
-   what made the page read as generated. Depth now comes from surface, border
-   and type instead. */
+/* ---- backdrop -------------------------------------------------------
+   Frosted glass needs something behind it. Over a flat fill, backdrop-filter
+   has nothing to blur and every glass surface collapses to a plain tint —
+   which is what was happening.
+
+   Soft colour fields, not the grid-under-a-radial-mask this file used to
+   carry: that pattern is the stock dark-landing-page backdrop, and I removed
+   it earlier for exactly that reason. These are three wide, low-opacity
+   blooms plus a fine dot lattice. The blooms give the glass colour to bend;
+   the lattice gives it detail to smear, which is what actually reads as
+   refraction rather than as translucency.
+
+   Fixed and pointer-events:none, so it never enters hit-testing or scrolls. */
+body::before{
+  content:"";
+  position:fixed; inset:-10%;
+  pointer-events:none; z-index:0;
+  background:
+    radial-gradient(38% 32% at 18% 12%, var(--bloom-a) 0%, transparent 68%),
+    radial-gradient(34% 30% at 82% 26%, var(--bloom-b) 0%, transparent 66%),
+    radial-gradient(42% 38% at 52% 88%, var(--bloom-c) 0%, transparent 70%);
+  filter:blur(28px);
+}
+body::after{
+  content:"";
+  position:fixed; inset:0;
+  pointer-events:none; z-index:0;
+  background-image:radial-gradient(var(--lattice) 1px, transparent 1px);
+  background-size:22px 22px;
+  /* Fades out low on the page so the footer stays quiet. */
+  -webkit-mask-image:linear-gradient(to bottom, black 0%, black 55%, transparent 92%);
+  mask-image:linear-gradient(to bottom, black 0%, black 55%, transparent 92%);
+}
 
 img{ display:block; max-width:100%; }
 a{ color:inherit; }
 button{ font-family:inherit; }
 main{ position:relative; z-index:1; }
+.footer{ position:relative; z-index:1; }
 
 /* ============================================
    ICONS  (inline SVGs use these for sizing — no emoji anywhere on the site)
@@ -499,6 +537,77 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
 .use a:hover{ color:var(--text-primary); padding-left:var(--space-3); }
 .use-verb{ color:var(--text-primary); font-weight:500; }
 
+
+
+/* ---- frosted boxes --------------------------------------------------
+   Every boxed component that holds text gets the same recipe, so a page
+   reads as one material rather than a mix of glass and flat panels.
+
+   Deliberately NOT applied to .gallery-card: that box IS a photograph, and
+   frosting it would fight the image instead of floating above it. */
+.nav-card,
+.prompt-card,
+.showcase-card,
+.prompt-block,
+.gallery-error,
+.modal,
+.demo-card{
+  background:var(--glass-tint);
+  backdrop-filter:var(--glass-blur);
+  -webkit-backdrop-filter:var(--glass-blur);
+  box-shadow:inset 0 1px 0 var(--glass-edge);
+}
+
+/* ---- hover: enlarge and reveal --------------------------------------
+   A boxed card grows slightly and lifts its ink on hover; where a card has
+   detail it is holding back, that detail expands into view. transform and
+   opacity are composited; max-height is not, but it runs on one hovered card
+   at a time rather than across a grid. */
+.nav-card,
+.prompt-card,
+.showcase-card,
+.stat{
+  transform:translate3d(0,0,0) scale(1);
+  transition:transform var(--dur-3) var(--ease-standard),
+             border-color var(--transition-fast),
+             background var(--transition-fast);
+}
+.nav-card:hover,
+.prompt-card:hover,
+.stat:hover{
+  transform:translate3d(0,0,0) scale(1.018);
+  border-color:var(--border-strong);
+}
+@media (hover:hover){
+  .showcase-card:hover{ transform:scale(calc(.94 + .1 * var(--focus))); }
+}
+
+/* The detail a card holds back until you ask for it. */
+.card-reveal{
+  max-height:0; opacity:0; overflow:hidden;
+  transition:max-height var(--dur-3) var(--ease-standard),
+             opacity var(--dur-2) var(--ease-standard),
+             margin-top var(--dur-3) var(--ease-standard);
+}
+.nav-card:hover .card-reveal,
+.nav-card:focus-visible .card-reveal,
+.prompt-card:hover .card-reveal,
+.prompt-card:focus-within .card-reveal,
+.gallery-card:hover .card-reveal,
+.gallery-card:focus-visible .card-reveal{
+  max-height:9rem; opacity:1; margin-top:var(--space-2);
+}
+.card-reveal p{
+  font-size:var(--text-xs); line-height:var(--leading-body); color:var(--text-muted);
+}
+
+/* Gallery cards reveal a prompt excerpt over the photograph. */
+.gallery-card .card-reveal{
+  font-family:var(--font-mono); font-size:var(--text-2xs);
+  line-height:1.55; color:rgba(255,255,255,.88);
+}
+.gallery-card:hover .card-reveal,
+.gallery-card:focus-visible .card-reveal{ max-height:6.5rem; }
 
 /* ============================================
    SIDE PANE — saved prompts, settings, about
@@ -901,7 +1010,7 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
   mix-blend-mode:overlay;
 }
 .swatch-content{
-  position:relative; z-index:1; width:100%; padding:16px;
+  position:relative; z-index:1; width:100%; padding:var(--space-4);
   display:flex; flex-direction:column; gap:8px; align-items:flex-start;
   background:linear-gradient(180deg, transparent 0%, rgba(6,7,9,.6) 75%);
 }

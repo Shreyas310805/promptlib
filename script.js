@@ -1058,6 +1058,7 @@ function renderGallery(){
       <span class="swatch-content">
         <span class="badge">${escapeHTML(p.cat)}</span>
         <span class="swatch-name">${escapeHTML(p.style)}</span>
+        <span class="card-reveal">${escapeHTML(p.prompt.slice(0, 130))}&hellip;</span>
       </span>
     </button>`).join("");
 
