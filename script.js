@@ -425,6 +425,104 @@ function initSettings(){
 }
 
 /* ==================================================================
+   CENTRE-FOCUS SCROLLERS (index.html)
+
+   Writes --focus on each child: 1 when its centre sits on the container's
+   centre, falling to 0 a container-width away. CSS turns that into scale,
+   saturation and opacity.
+
+   Everything defaults to --focus:1 in the stylesheet, so if this never runs
+   — no JS, an error earlier in the file, a browser that does not fire scroll
+   — every card sits at full size and full colour. The effect can only ever
+   recede things, never hide them.
+   ================================================================== */
+function initCentreFocus(){
+  const tracks = document.querySelectorAll("[data-focus-track]");
+  if(!tracks.length) return;
+
+  const paint = (track) => {
+    const box = track.getBoundingClientRect();
+    const mid = box.left + box.width / 2;
+    /* Falloff over half the container: a card one half-width from centre is
+       fully receded. Narrower than the container would make the middle card
+       pop; wider would flatten the effect entirely. */
+    const reach = Math.max(box.width / 2, 1);
+
+    for(const card of track.children){
+      const r = card.getBoundingClientRect();
+      const dist = Math.abs((r.left + r.width / 2) - mid);
+      const focus = Math.max(0, Math.min(1, 1 - dist / reach));
+      card.style.setProperty("--focus", focus.toFixed(3));
+    }
+  };
+
+  tracks.forEach((track) => {
+    /* Reduced motion: pin everything on, so nothing scales or desaturates. */
+    if(prefersReducedMotion || document.documentElement.classList.contains("reduce-motion")){
+      for(const card of track.children) card.style.setProperty("--focus", "1");
+      return;
+    }
+
+    let ticking = false;
+    const onScroll = () => {
+      if(ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => { paint(track); ticking = false; });
+    };
+
+    track.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll, { passive: true });
+    paint(track);
+
+    /* scrollLeft 0 now centres the FIRST card, because the track carries end
+       padding of half its width minus half a card. */
+    track.scrollLeft = 0;
+  });
+}
+
+/* ==================================================================
+   PROMPT SHOWCASE (index.html)
+
+   Pulls real prompts from whichever datasets the page has. index.html loads
+   neither by design, so this falls back to a small hand-picked set rather
+   than pulling 96KB back onto the homepage to fill a carousel.
+   ================================================================== */
+const SHOWCASE_FALLBACK = [
+  { tag:"Essay", meta:"essay", text:"Sharpen this thesis into a single arguable sentence that names the claim, the ground it stands on, and what it is arguing against: [paste your thesis]" },
+  { tag:"Report", meta:"report", text:"Turn these findings into [number] recommendations, each with an owner, a timeframe and the cost of doing nothing, ordered by impact: [paste findings]" },
+  { tag:"Slides", meta:"ppt", text:"Turn the following rough notes into [number] slide-ready bullet points of at most 8 words each, grouped under clear section headers, in a [tone] register: [paste notes]" },
+  { tag:"Email", meta:"email", text:"Rewrite this angry draft as a firm, professional message that keeps every factual point but removes the heat, under [word count] words: [paste draft]" },
+  { tag:"Image", meta:"images", text:"Transform the uploaded photo into a soft watercolour painting with bleeding edges, visible paper texture and translucent washes. Keep the subject's pose, proportions and facial features clearly recognisable." }
+];
+
+function initShowcase(){
+  const track = document.getElementById("showcaseTrack");
+  if(!track) return;
+
+  const items = SHOWCASE_FALLBACK.map((item) => {
+    /* Prefer a live prompt when the page happens to have the data. */
+    if(item.meta === "images" && imagePrompts.length){
+      const p = imagePrompts[0];
+      return { tag:"Image", meta:p.cat, text:p.prompt };
+    }
+    if(textPromptsData && textPromptsData[item.meta] && textPromptsData[item.meta].length){
+      const p = textPromptsData[item.meta][0];
+      return { tag:item.tag, meta:p.tag || item.meta, text:p.prompt };
+    }
+    return item;
+  });
+
+  track.innerHTML = items.map((item) => `
+    <li class="showcase-card">
+      <span class="showcase-tag">${escapeHTML(item.tag)}</span>
+      <p class="showcase-text">${highlightVars(item.text)}</p>
+      <span class="showcase-foot"><span>${escapeHTML(item.meta)}</span><span>${item.text.length} chars</span></span>
+    </li>`).join("");
+
+  track.setAttribute("data-focus-track", "");
+}
+
+/* ==================================================================
    COUNT-UP STATS (index.html)
 
    Runs when the figure scrolls into view, once. Eases out so it decelerates
@@ -1339,6 +1437,8 @@ initMobileNav();
 initPageTransitions();
 initGallery();
 initCountUp();
+initShowcase();
+initCentreFocus();
 initPane();
 initCategoryPage();
 initBuilder();

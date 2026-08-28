@@ -81,7 +81,7 @@ addEventListener("load", function(){ document.body.classList.add("loaded"); });
 
     <section class="stats" aria-labelledby="statsHeading">
       <h2 class="sr-only" id="statsHeading">What is in the library</h2>
-      <dl class="stat-row">
+      <dl class="stat-row" id="statRow" data-focus-track>
         <div class="stat reveal">
           <dt class="stat-label">Image prompts</dt>
           <dd class="stat-value" data-count-to="266">0</dd>
@@ -98,7 +98,20 @@ addEventListener("load", function(){ document.body.classList.add("loaded"); });
           <dt class="stat-label">Cost to use</dt>
           <dd class="stat-value" data-count-to="0" data-count-prefix="$">0</dd>
         </div>
+        <div class="stat reveal">
+          <dt class="stat-label">Sign-ups required</dt>
+          <dd class="stat-value" data-count-to="0">0</dd>
+        </div>
       </dl>
+    </section>
+
+
+    <section class="showcase" aria-labelledby="showcaseHeading">
+      <div class="showcase-head">
+        <h2 class="section-title" id="showcaseHeading">A few, to see the shape of them</h2>
+        <p class="section-sub">Scroll sideways. Every prompt on the site is written like these.</p>
+      </div>
+      <ul class="showcase-track" id="showcaseTrack" tabindex="0" role="region" aria-label="Example prompts, scroll horizontally"></ul>
     </section>
 
     <section class="uses" aria-labelledby="usesHeading">

@@ -65,9 +65,9 @@
   /* Frosted glass. The tint is the surface at low alpha, the hairline is a
      light edge catching along the top — that highlight is what separates
      glass from a plain translucent panel. */
-  --glass-tint:rgba(30,35,42,.55);
+  --glass-tint:rgba(30,35,42,.44);
   --glass-edge:rgba(255,255,255,.10);
-  --glass-blur:saturate(1.7) blur(16px);
+  --glass-blur:saturate(1.56) blur(13px);
   --accent-hover:#f5bb5e;
   --danger-ink:#ff8f8f;
   /* Instrument Sans: editorial grotesque, tighter and less corporate than Plex.
@@ -193,9 +193,9 @@
   --shadow-card:0 14px 30px -18px rgba(24,24,26,.34);
   --shadow-modal:0 30px 70px -30px rgba(24,24,26,.42);
   --nav-bg:rgba(238,243,250,.62);
-  --glass-tint:rgba(255,255,255,.62);
+  --glass-tint:rgba(255,255,255,.50);
   --glass-edge:rgba(255,255,255,.85);
-  --glass-blur:saturate(1.5) blur(16px);
+  --glass-blur:saturate(1.4) blur(13px);
   --accent-hover:#c9861f;
   --danger-ink:#b3261e;
 }
@@ -386,27 +386,99 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
    HOMEPAGE STATS + USES
    ============================================ */
 .stats{ max-width:var(--container); margin:0 auto; padding:var(--space-16) var(--gutter) 0; }
+/* Horizontal scroller, not a grid. The figures are the point, so each one gets
+   the full width of the eye and you travel between them — which is also what
+   makes the counting read as alive rather than as a static row of four. */
 .stat-row{
-  display:grid; gap:1px;
-  grid-template-columns:repeat(auto-fit,minmax(min(190px,100%),1fr));
-  background:var(--border-subtle);
-  border:1px solid var(--border-subtle);
-  border-radius:var(--radius-lg);
-  overflow:hidden;
+  display:flex; gap:var(--space-4);
+  overflow-x:auto; overflow-y:hidden;
+  scroll-snap-type:x mandatory;
+  /* Half the track minus half a card, so the FIRST and LAST cards can each
+     reach the centre. Without it scrollLeft:0 centres the second card and the
+     first one opens already receded. */
+  padding-inline:max(var(--gutter), calc(50% - min(320px,78vw) / 2));
+  padding-bottom:var(--space-4);
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
 }
-/* The 1px grid gap over a bordered container draws the dividers, so no rule
-   has to know whether it is the last cell in a wrapped row. */
+.stat-row::-webkit-scrollbar{ display:none; }
+
 .stat{
-  background:var(--bg-void);
+  flex:0 0 min(320px,78vw);
+  scroll-snap-align:center;
+  background:var(--glass-tint);
+  backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
+  border:1px solid var(--border-subtle);
+  box-shadow:inset 0 1px 0 var(--glass-edge);
+  border-radius:var(--radius-lg);
   padding:var(--space-8) var(--space-6);
   display:flex; flex-direction:column-reverse; gap:var(--space-2);
+  /* --focus is written by the scroll handler: 1 at the centre, 0 at the edges.
+     Default 1, so if that never runs every card simply sits at full size. */
+  --focus:1;
+  transform:scale(calc(.94 + .06 * var(--focus)));
+  transition:transform var(--dur-2) linear, border-color var(--transition-fast);
 }
 .stat-value{
-  font-size:var(--text-2xl); font-weight:500;
+  font-size:var(--text-3xl); font-weight:500;
   letter-spacing:var(--track-display); line-height:var(--leading-tight);
   color:var(--text-primary);
   /* Tabular figures, or the width jitters on every tick while counting. */
   font-variant-numeric:tabular-nums;
+  opacity:calc(.55 + .45 * var(--focus));
+  transition:opacity var(--dur-2) linear;
+}
+
+/* ---- prompt showcase ------------------------------------------------ */
+.showcase{ max-width:var(--container); margin:0 auto; padding:var(--space-20) 0 0; }
+.showcase-head{ max-width:var(--container); margin:0 auto; padding:0 var(--gutter); }
+.showcase-track{
+  list-style:none; display:flex; gap:var(--space-4);
+  margin-top:var(--space-8);
+  padding-block:var(--space-4);
+  padding-inline:max(var(--gutter), calc(50% - min(340px,76vw) / 2));
+  overflow-x:auto; overflow-y:hidden;
+  scroll-snap-type:x mandatory;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+}
+.showcase-track::-webkit-scrollbar{ display:none; }
+.showcase-track:focus-visible{ outline:2px solid var(--focus-ring); outline-offset:4px; }
+
+.showcase-card{
+  flex:0 0 min(340px,76vw);
+  scroll-snap-align:center;
+  background:var(--bg-panel);
+  border:1px solid var(--border-subtle);
+  border-radius:var(--radius-lg);
+  padding:var(--space-5);
+  display:flex; flex-direction:column; gap:var(--space-3);
+  --focus:1;
+  /* The centred card is bigger and fully saturated; its neighbours recede.
+     Both properties are composited, and the defaults leave every card at full
+     size and colour if the handler never runs. */
+  transform:scale(calc(.9 + .1 * var(--focus)));
+  filter:saturate(calc(.25 + .75 * var(--focus)));
+  opacity:calc(.5 + .5 * var(--focus));
+  transition:transform var(--dur-2) linear, filter var(--dur-2) linear, opacity var(--dur-2) linear;
+}
+.showcase-tag{
+  align-self:flex-start;
+  font-family:var(--font-label); text-transform:uppercase;
+  letter-spacing:var(--track-caps); font-weight:500; font-size:var(--text-2xs);
+  color:var(--accent-ink);
+  border:1px solid var(--accent-soft); border-radius:var(--radius-pill);
+  padding:3px 10px;
+}
+.showcase-text{
+  font-family:var(--font-mono); font-size:var(--text-sm);
+  line-height:var(--leading-loose); color:var(--text-primary);
+  display:-webkit-box; -webkit-line-clamp:6; -webkit-box-orient:vertical; overflow:hidden;
+}
+.showcase-foot{
+  margin-top:auto; display:flex; align-items:center; justify-content:space-between;
+  font-family:var(--font-label); text-transform:uppercase;
+  letter-spacing:var(--track-caps); font-size:var(--text-2xs); color:var(--text-muted);
 }
 .stat-label{
   font-family:var(--font-label); text-transform:uppercase;
@@ -975,7 +1047,17 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
    PROMPT BUILDER (builder.html)
    ============================================ */
 .builder-layout{ display:grid; grid-template-columns:1.15fr .85fr; gap:28px; align-items:start; }
-.builder-form{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+/* Frosted, same recipe as the nav and pane, so the builder's two panels read
+   as floating surfaces rather than flat boxes. */
+.builder-form{
+  display:grid; grid-template-columns:1fr 1fr; gap:var(--space-4);
+  padding:var(--space-5);
+  background:var(--glass-tint);
+  backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
+  border:1px solid var(--border-subtle);
+  box-shadow:inset 0 1px 0 var(--glass-edge);
+  border-radius:var(--radius-lg);
+}
 .builder-field{ display:flex; flex-direction:column; gap:7px; }
 .builder-field-wide{ grid-column:1 / -1; }
 .builder-field label{
@@ -1003,7 +1085,16 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
 }
 .builder-hint{ font-size:var(--text-xs); color:var(--text-muted); line-height:1.5; }
 
-.builder-output-panel{ position:sticky; top:88px; display:flex; flex-direction:column; gap:14px; }
+.builder-output-panel{
+  position:sticky; top:calc(var(--nav-h) + var(--space-6));
+  display:flex; flex-direction:column; gap:var(--space-3);
+  padding:var(--space-5);
+  background:var(--glass-tint);
+  backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
+  border:1px solid var(--border-subtle);
+  box-shadow:inset 0 1px 0 var(--glass-edge);
+  border-radius:var(--radius-lg);
+}
 .builder-count{ margin-left:auto; }
 .builder-output{ min-height:150px; white-space:pre-wrap; word-break:break-word; }
 .builder-placeholder{ color:var(--text-muted); }
