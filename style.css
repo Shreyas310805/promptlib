@@ -65,12 +65,15 @@
   /* Frosted glass. The tint is the surface at low alpha, the hairline is a
      light edge catching along the top — that highlight is what separates
      glass from a plain translucent panel. */
-  --bloom-a:rgba(77,141,255,.16);
-  --bloom-b:rgba(120,90,220,.13);
-  --bloom-c:rgba(40,120,150,.12);
+  --bloom-a:rgba(64,150,255,.26);
+  --bloom-b:rgba(140,80,240,.22);
+  --bloom-c:rgba(0,190,190,.20);
   --lattice:rgba(255,255,255,.055);
-  --glass-tint:rgba(30,35,42,.44);
-  --glass-edge:rgba(255,255,255,.10);
+  /* 30% more transparent (.44 -> .31). Thinner glass shows more of what is
+     behind it, which is the whole point — but it also means the blooms above
+     had to come up, or there is nothing to see through it. */
+  --glass-tint:rgba(30,35,42,.31);
+  --glass-edge:rgba(255,255,255,.14);
   --glass-blur:saturate(1.56) blur(13px);
   --accent-hover:#f5bb5e;
   --danger-ink:#ff8f8f;
@@ -167,7 +170,7 @@
 
   /* Light blue rather than warm paper — same family as the dark theme's
      slate, so the two themes read as one system seen under two lights. */
-  --bg-void:#eef3fa;
+  --bg-void:#e9f0fa;
   --bg-panel:#ffffff;
   --bg-panel-hover:#e3ebf6;
   --border-subtle:#d3e0ee;
@@ -187,8 +190,11 @@
   --accent-amber-soft:var(--accent-soft);
 
   --focus-ring:#14539f;
-  --syntax-var:#8a5a12;
-  --syntax-var-bg:rgba(138,90,18,.10);
+  /* Darkened from #8a5a12. Measured through the thinner glass over the
+     strongest bloom it fell to 4.14:1 — saturated fields raise the effective
+     background luminance, so warm mid-tones stop clearing AA. */
+  --syntax-var:#6f4a0c;
+  --syntax-var-bg:rgba(111,74,12,.10);
   --ok-ink:#1f7a4d;
   --danger-ink:#b3261e;
 
@@ -197,12 +203,15 @@
   --shadow-card:0 14px 30px -18px rgba(24,24,26,.34);
   --shadow-modal:0 30px 70px -30px rgba(24,24,26,.42);
   --nav-bg:rgba(238,243,250,.62);
-  --bloom-a:rgba(31,111,224,.16);
-  --bloom-b:rgba(120,90,220,.12);
-  --bloom-c:rgba(20,140,170,.12);
+  /* Electric blue into aqua, violet into magenta. A flat pale field gives a
+     translucent layer nothing to refract, so it reads as a grey box; saturated
+     fields are what produce visible colour separation through the glass. */
+  --bloom-a:rgba(0,122,255,.34);
+  --bloom-b:rgba(168,60,235,.28);
+  --bloom-c:rgba(0,196,196,.30);
   --lattice:rgba(15,23,32,.075);
-  --glass-tint:rgba(255,255,255,.50);
-  --glass-edge:rgba(255,255,255,.85);
+  --glass-tint:rgba(255,255,255,.35);
+  --glass-edge:rgba(255,255,255,.92);
   --glass-blur:saturate(1.4) blur(13px);
   --accent-hover:#c9861f;
   --danger-ink:#b3261e;
