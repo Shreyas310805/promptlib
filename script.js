@@ -487,12 +487,17 @@ function initCentreFocus(){
    neither by design, so this falls back to a small hand-picked set rather
    than pulling 96KB back onto the homepage to fill a carousel.
    ================================================================== */
+/* Alternating text and image, so the row reads as a sample of the whole
+   library rather than of one half of it. Image entries carry a slug, which is
+   the thumbnail filename in images/. */
 const SHOWCASE_FALLBACK = [
-  { tag:"Essay", meta:"essay", text:"Sharpen this thesis into a single arguable sentence that names the claim, the ground it stands on, and what it is arguing against: [paste your thesis]" },
-  { tag:"Report", meta:"report", text:"Turn these findings into [number] recommendations, each with an owner, a timeframe and the cost of doing nothing, ordered by impact: [paste findings]" },
-  { tag:"Slides", meta:"ppt", text:"Turn the following rough notes into [number] slide-ready bullet points of at most 8 words each, grouped under clear section headers, in a [tone] register: [paste notes]" },
-  { tag:"Email", meta:"email", text:"Rewrite this angry draft as a firm, professional message that keeps every factual point but removes the heat, under [word count] words: [paste draft]" },
-  { tag:"Image", meta:"images", text:"Transform the uploaded photo into a soft watercolour painting with bleeding edges, visible paper texture and translucent washes. Keep the subject's pose, proportions and facial features clearly recognisable." }
+  { kind:"text", tag:"Essay", meta:"essay", text:"Sharpen this thesis into a single arguable sentence that names the claim, the ground it stands on, and what it is arguing against: [paste your thesis]" },
+  { kind:"image", tag:"Image", meta:"Traditional Media", slug:"watercolor-painting", text:"Transform the uploaded photo into a soft watercolour painting with bleeding edges, visible paper texture and translucent washes. Keep the subject's pose, proportions and facial features clearly recognisable." },
+  { kind:"text", tag:"Report", meta:"report", text:"Turn these findings into [number] recommendations, each with an owner, a timeframe and the cost of doing nothing, ordered by impact: [paste findings]" },
+  { kind:"image", tag:"Image", meta:"Art Movements", slug:"cubism", text:"Reimagine the uploaded image as a Cubist painting, the subject fractured into overlapping geometric planes seen from several angles at once. Keep the pose and composition intact while adopting the movement's visual language." },
+  { kind:"text", tag:"Slides", meta:"ppt", text:"Turn the following rough notes into [number] slide-ready bullet points of at most 8 words each, grouped under clear section headers, in a [tone] register: [paste notes]" },
+  { kind:"image", tag:"Image", meta:"Photography & Camera", slug:"film-noir", text:"Restyle this image as a film noir frame with hard directional key light, deep black shadows and venetian-blind patterning. Keep the subject and composition exactly as they are — change only the photographic treatment." },
+  { kind:"text", tag:"Email", meta:"email", text:"Rewrite this angry draft as a firm, professional message that keeps every factual point but removes the heat, under [word count] words: [paste draft]" }
 ];
 
 function initShowcase(){
@@ -501,23 +506,43 @@ function initShowcase(){
 
   const items = SHOWCASE_FALLBACK.map((item) => {
     /* Prefer a live prompt when the page happens to have the data. */
-    if(item.meta === "images" && imagePrompts.length){
-      const p = imagePrompts[0];
-      return { tag:"Image", meta:p.cat, text:p.prompt };
+    if(item.kind === "image" && imagePrompts.length){
+      const p = imagePrompts.find((x) => x.slug === item.slug);
+      if(p) return { ...item, meta:p.cat, text:p.prompt };
     }
-    if(textPromptsData && textPromptsData[item.meta] && textPromptsData[item.meta].length){
+    if(item.kind === "text" && textPromptsData && textPromptsData[item.meta] && textPromptsData[item.meta].length){
       const p = textPromptsData[item.meta][0];
-      return { tag:item.tag, meta:p.tag || item.meta, text:p.prompt };
+      return { ...item, meta:p.tag || item.meta, text:p.prompt };
     }
     return item;
   });
 
-  track.innerHTML = items.map((item) => `
+  track.innerHTML = items.map((item) => {
+    if(item.kind === "image"){
+      return `
+    <li class="showcase-card showcase-card--image">
+      <img class="showcase-thumb" src="images/${encodeURIComponent(item.slug)}.jpg" alt="" loading="lazy">
+      <span class="showcase-tag">${escapeHTML(item.tag)}</span>
+      <p class="showcase-text">${highlightVars(item.text)}</p>
+      <span class="showcase-foot">
+        <span>${escapeHTML(item.meta)}</span>
+        <button type="button" class="showcase-copy btn-copy" data-raw="${escapeHTML(item.text)}">${ICONS.copy}<span>Copy</span></button>
+      </span>
+    </li>`;
+    }
+    return `
     <li class="showcase-card">
       <span class="showcase-tag">${escapeHTML(item.tag)}</span>
       <p class="showcase-text">${highlightVars(item.text)}</p>
       <span class="showcase-foot"><span>${escapeHTML(item.meta)}</span><span>${item.text.length} chars</span></span>
-    </li>`).join("");
+    </li>`;
+  }).join("");
+
+  /* Delegated, so the copy buttons survive any future re-render of the row. */
+  track.addEventListener("click", (e) => {
+    const btn = e.target.closest(".showcase-copy");
+    if(btn) copyText(btn.dataset.raw, btn);
+  });
 
   track.setAttribute("data-focus-track", "");
 }

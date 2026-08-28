@@ -69,6 +69,7 @@
   --bloom-b:rgba(140,80,240,.22);
   --bloom-c:rgba(0,190,190,.20);
   --lattice:rgba(255,255,255,.055);
+  --lattice-strong:rgba(255,255,255,.10);
   /* 30% more transparent (.44 -> .31). Thinner glass shows more of what is
      behind it, which is the whole point — but it also means the blooms above
      had to come up, or there is nothing to see through it. */
@@ -210,6 +211,7 @@
   --bloom-b:rgba(168,60,235,.28);
   --bloom-c:rgba(0,196,196,.30);
   --lattice:rgba(15,23,32,.075);
+  --lattice-strong:rgba(15,23,32,.14);
   --glass-tint:rgba(255,255,255,.35);
   --glass-edge:rgba(255,255,255,.92);
   --glass-blur:saturate(1.4) blur(13px);
@@ -432,7 +434,24 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
 /* ============================================
    HOMEPAGE STATS + USES
    ============================================ */
-.stats{ max-width:var(--container); margin:0 auto; padding:var(--space-16) var(--gutter) 0; }
+.stats{
+  position:relative;
+  max-width:var(--container); margin:0 auto;
+  padding:var(--space-16) var(--gutter) 0;
+}
+/* Anchors the wide empty band the counters float in. Denser and a touch more
+   present than the page-wide lattice, and clipped to this section so it reads
+   as a surface the cards sit ON rather than more page texture. */
+.stats::before{
+  content:"";
+  position:absolute; inset:var(--space-12) 0 0;
+  pointer-events:none; z-index:0;
+  background-image:radial-gradient(var(--lattice-strong) 1px, transparent 1px);
+  background-size:16px 16px;
+  -webkit-mask-image:radial-gradient(ellipse 70% 80% at 50% 50%, black 30%, transparent 100%);
+  mask-image:radial-gradient(ellipse 70% 80% at 50% 50%, black 30%, transparent 100%);
+}
+.stats > *{ position:relative; z-index:1; }
 /* Horizontal scroller, not a grid. The figures are the point, so each one gets
    the full width of the eye and you travel between them — which is also what
    makes the counting read as alive rather than as a static row of four. */
@@ -523,10 +542,33 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
   display:-webkit-box; -webkit-line-clamp:6; -webkit-box-orient:vertical; overflow:hidden;
 }
 .showcase-foot{
-  margin-top:auto; display:flex; align-items:center; justify-content:space-between;
+  margin-top:auto; display:flex; align-items:center; justify-content:space-between; gap:var(--space-3);
   font-family:var(--font-label); text-transform:uppercase;
   letter-spacing:var(--track-caps); font-size:var(--text-2xs); color:var(--text-muted);
 }
+
+/* Image variant: thumbnail runs the full width at the top, so the card leads
+   with the result and the prompt sits underneath it. Padding moves onto the
+   inner parts, or the image would inset. */
+.showcase-card--image{ padding:0; overflow:hidden; }
+.showcase-thumb{
+  display:block; width:100%; height:158px; object-fit:cover;
+  border-bottom:1px solid var(--border-subtle);
+  background:var(--bg-panel-hover);
+}
+.showcase-card--image .showcase-tag{ margin:var(--space-4) var(--space-5) 0; }
+.showcase-card--image .showcase-text{ margin:var(--space-3) var(--space-5) 0; -webkit-line-clamp:4; }
+.showcase-card--image .showcase-foot{ margin:var(--space-4) var(--space-5) var(--space-5); }
+.showcase-copy{
+  display:inline-flex; align-items:center; gap:var(--space-2);
+  padding:6px 12px; border-radius:var(--radius-pill);
+  background:transparent; border:1px solid var(--border-subtle);
+  font-family:inherit; text-transform:inherit; letter-spacing:inherit;
+  font-size:var(--text-2xs); color:var(--text-muted); cursor:pointer;
+  transition:color var(--transition-fast), border-color var(--transition-fast);
+}
+.showcase-copy:hover{ color:var(--text-primary); border-color:var(--border-strong); }
+.showcase-copy .icon{ width:13px; height:13px; }
 .stat-label{
   font-family:var(--font-label); text-transform:uppercase;
   letter-spacing:var(--track-caps); font-weight:500;
@@ -581,14 +623,36 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
              border-color var(--transition-fast),
              background var(--transition-fast);
 }
+/* A real lift on hover. This reverses my earlier removal of the hover-lift —
+   that call was about FIVE identical lifts firing on everything including
+   buttons, which made the gesture meaningless. One consistent lift reserved
+   for cards is a different thing: it tells you the card is the unit you can
+   act on. translate and border only; both cheap, and the border carries the
+   change for anyone who cannot perceive the motion. */
 .nav-card:hover,
 .prompt-card:hover,
-.stat:hover{
-  transform:translate3d(0,0,0) scale(1.018);
+.stat:hover,
+.gallery-card:hover,
+.saved-item:hover{
+  transform:translate3d(0,-4px,0);
   border-color:var(--border-strong);
 }
+.gallery-card,
+.saved-item{
+  transition:transform var(--dur-3) var(--ease-standard), border-color var(--transition-fast);
+}
 @media (hover:hover){
-  .showcase-card:hover{ transform:scale(calc(.94 + .1 * var(--focus))); }
+  /* Composed, not replaced: the showcase card is already scaled by --focus,
+     so the lift has to be added to that transform rather than overwrite it. */
+  .showcase-card:hover{ transform:translateY(-4px) scale(calc(.94 + .1 * var(--focus))); }
+}
+@media (prefers-reduced-motion:reduce){
+  .nav-card:hover,
+  .prompt-card:hover,
+  .stat:hover,
+  .gallery-card:hover,
+  .saved-item:hover,
+  .showcase-card:hover{ transform:none; }
 }
 
 /* The detail a card holds back until you ask for it. */
@@ -927,9 +991,41 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
 }
 .hero-cta-row{ display:flex; gap:var(--space-3); flex-wrap:wrap; }
 
+/* Two cards, offset. The example sits behind and slightly up-left so the
+   prompt card reads as the front plane; both cast a soft shadow so they lift
+   off the gradient rather than sitting flat on it. */
+.demo-stack{ position:relative; padding-top:var(--space-10); }
+
+.demo-behind{
+  position:absolute; top:0; right:var(--space-8); left:var(--space-12);
+  border:1px solid var(--border-subtle); border-radius:var(--radius-lg);
+  background:var(--glass-tint);
+  backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
+  box-shadow:inset 0 1px 0 var(--glass-edge), 0 18px 40px -24px rgba(0,0,0,.55);
+  overflow:hidden;
+  transform:rotate(-1.4deg);
+  transition:transform var(--dur-3) var(--ease-standard);
+}
+.demo-behind-thumb{ display:block; height:104px; }
+.demo-behind-bar{
+  display:flex; align-items:center; gap:var(--space-2);
+  padding:var(--space-2) var(--space-4);
+  border-top:1px solid var(--border-subtle);
+}
+.demo-behind-name{ font-family:var(--font-mono); font-size:var(--text-2xs); color:var(--text-muted); }
+
 .demo-card{
-  margin:0; background:var(--bg-panel); border:1px solid var(--border-subtle);
+  position:relative; z-index:1; margin:0;
+  border:1px solid var(--border-subtle);
   border-radius:var(--radius-lg); overflow:hidden;
+  box-shadow:0 26px 56px -28px rgba(0,0,0,.62);
+}
+.demo-stack:hover .demo-behind{ transform:rotate(-2.6deg) translateY(-4px); }
+
+@media (max-width:640px){
+  .demo-stack{ padding-top:var(--space-8); }
+  .demo-behind{ left:var(--space-6); right:var(--space-4); }
+  .demo-behind-thumb{ height:76px; }
 }
 .demo-card-bar{ display:flex; align-items:center; gap:10px; padding:12px 16px; background:var(--bg-panel-hover); border-bottom:1px solid var(--border-subtle); }
 .demo-filename{ font-family:var(--font-mono); font-size:var(--text-xs); color:var(--text-muted); flex:1; text-align:left; }
