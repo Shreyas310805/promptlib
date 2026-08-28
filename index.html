@@ -33,6 +33,7 @@ addEventListener("load", function(){ document.body.classList.add("loaded"); });
       <span class="logo-word">promptlib</span>
     </a>
     <button class="nav-toggle" id="navToggle" aria-label="Toggle menu" aria-expanded="false"><span></span><span></span><span></span></button>
+    <div class="nav-cluster">
     <div class="nav-links" id="navLinks">
       <span class="nav-indicator" id="navIndicator" aria-hidden="true"></span>
       <a href="index.html" class="nav-link" data-page="index.html">home</a>
@@ -41,14 +42,12 @@ addEventListener("load", function(){ document.body.classList.add("loaded"); });
       <a href="builder.html" class="nav-link" data-page="builder.html">builder</a>
     </div>
     <button type="button" class="theme-switch" id="themeToggle" role="switch" aria-checked="false" aria-label="Light theme">
-      <span class="theme-switch-thumb" aria-hidden="true"></span>
-      <span class="theme-switch-cell theme-cell-dark" aria-hidden="true">
-        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.7 6.7 0 0 0 10.5 10.5z"/></svg>
-      </span>
-      <span class="theme-switch-cell theme-cell-light" aria-hidden="true">
-        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.4v2.2M12 19.4v2.2M4.2 4.2l1.6 1.6M18.2 18.2l1.6 1.6M2.4 12h2.2M19.4 12h2.2M4.2 19.8l1.6-1.6M18.2 5.8l1.6-1.6"/></svg>
+      <span class="theme-icons" aria-hidden="true">
+        <svg class="icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.7 6.7 0 0 0 10.5 10.5z"/></svg>
+        <svg class="icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.4v2.2M12 19.4v2.2M4.2 4.2l1.6 1.6M18.2 18.2l1.6 1.6M2.4 12h2.2M19.4 12h2.2M4.2 19.8l1.6-1.6M18.2 5.8l1.6-1.6"/></svg>
       </span>
     </button>
+    </div>
   </div>
 </nav>
 <!-- @end nav -->
@@ -78,6 +77,40 @@ addEventListener("load", function(){ document.body.classList.add("loaded"); });
       </div>
     </div>
     </div>
+
+
+    <section class="stats" aria-labelledby="statsHeading">
+      <h2 class="sr-only" id="statsHeading">What is in the library</h2>
+      <dl class="stat-row">
+        <div class="stat reveal">
+          <dt class="stat-label">Image prompts</dt>
+          <dd class="stat-value" data-count-to="266">0</dd>
+        </div>
+        <div class="stat reveal">
+          <dt class="stat-label">Text templates</dt>
+          <dd class="stat-value" data-count-to="456">0</dd>
+        </div>
+        <div class="stat reveal">
+          <dt class="stat-label">Categories</dt>
+          <dd class="stat-value" data-count-to="21">0</dd>
+        </div>
+        <div class="stat reveal">
+          <dt class="stat-label">Cost to use</dt>
+          <dd class="stat-value" data-count-to="0" data-count-prefix="$">0</dd>
+        </div>
+      </dl>
+    </section>
+
+    <section class="uses" aria-labelledby="usesHeading">
+      <h2 class="section-title" id="usesHeading">Written for the work you actually do</h2>
+      <ul class="use-list">
+        <li class="use reveal"><a href="essay.html"><span class="use-verb">Draft and edit</span> an essay — thesis, structure, counter-arguments, a revision pass that does not just reword.</a></li>
+        <li class="use reveal"><a href="report.html"><span class="use-verb">Build a report</span> — scope it, summarise findings, turn analysis into recommendations someone can act on.</a></li>
+        <li class="use reveal"><a href="ppt.html"><span class="use-verb">Shape a deck</span> — narrative arc, slide-ready bullets, speaker notes timed to the slot you were given.</a></li>
+        <li class="use reveal"><a href="email.html"><span class="use-verb">Send the email</span> — cold outreach, a status update, or the difficult one you have rewritten four times.</a></li>
+        <li class="use reveal"><a href="images.html"><span class="use-verb">Restyle a photo</span> — 266 transformations that keep your subject recognisable instead of inventing a new one.</a></li>
+      </ul>
+    </section>
 
     <div class="nav-cards">
       <a href="images.html" class="nav-card reveal">

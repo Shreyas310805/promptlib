@@ -48,6 +48,52 @@ BLOCK_RE = re.compile(
 )
 
 
+COUNT_RE = re.compile(r'(data-count-to=")(\d+)(")')
+
+
+def live_counts():
+    """Read the real figures out of the generated data files.
+
+    The homepage prints these as headline numbers, and nothing else on that
+    page loads the datasets (they were dropped from index.html to save 96KB),
+    so without this they would silently drift the first time a prompt is
+    added or a category renamed.
+    """
+    def read(name):
+        path = os.path.join(BASE, name)
+        return open(path, encoding="utf-8").read() if os.path.exists(path) else ""
+
+    img = read("prompts-image.js")
+    txt = read("prompts-text.js")
+
+    image_prompts = img.count('"slug":')
+    text_templates = txt.count('"filename":')
+    image_cats = len(set(re.findall(r'"cat": "([^"]+)"', img)))
+
+    # Per category, not globally: 'Structure' is a tag under both ppt and
+    # report, and they are separate filters on separate pages. A global set
+    # would merge them and undercount what a visitor can actually filter by.
+    text_tags = 0
+    for block in re.findall(r"^  (\w+): \[(.*?)^  \]", txt, re.S | re.M):
+        text_tags += len(set(re.findall(r'"tag": "([^"]+)"', block[1])))
+
+    return [image_prompts, text_templates, image_cats + text_tags]
+
+
+def sync_counts(text, counts):
+    """Rewrite data-count-to values in document order, leaving any extras
+    (the $0 cost figure) untouched."""
+    it = iter(counts)
+
+    def swap(m):
+        try:
+            return m.group(1) + str(next(it)) + m.group(3)
+        except StopIteration:
+            return m.group(0)
+
+    return COUNT_RE.sub(swap, text)
+
+
 def load_partials():
     if not os.path.isdir(PARTIALS_DIR):
         sys.exit("partials/ not found — nothing to build from.")
@@ -99,6 +145,8 @@ def main():
             continue
 
         updated = apply_to(original, partials, name)
+        if COUNT_RE.search(updated):
+            updated = sync_counts(updated, live_counts())
         if updated == original:
             continue
 

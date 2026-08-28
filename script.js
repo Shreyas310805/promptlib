@@ -207,6 +207,57 @@ function copyText(text, btn){
 }
 
 /* ==================================================================
+   COUNT-UP STATS (index.html)
+
+   Runs when the figure scrolls into view, once. Eases out so it decelerates
+   into the final number instead of arriving at a constant rate, and writes
+   through requestAnimationFrame rather than setInterval so it stays on the
+   compositor's clock.
+   ================================================================== */
+function initCountUp(){
+  const figures = document.querySelectorAll("[data-count-to]");
+  if(!figures.length) return;
+
+  const render = (el, value) => {
+    const prefix = el.dataset.countPrefix || "";
+    el.textContent = prefix + value.toLocaleString();
+  };
+
+  /* Reduced motion: no tally, just the number. */
+  if(prefersReducedMotion || !("IntersectionObserver" in window)){
+    figures.forEach((el) => render(el, Number(el.dataset.countTo)));
+    return;
+  }
+
+  const run = (el) => {
+    const target = Number(el.dataset.countTo) || 0;
+    if(target === 0){ render(el, 0); return; }
+
+    const duration = 1100;
+    let start = null;
+    const step = (now) => {
+      if(start === null) start = now;
+      const t = Math.min((now - start) / duration, 1);
+      /* easeOutExpo — fast off the mark, long settle. */
+      const eased = t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
+      render(el, Math.round(target * eased));
+      if(t < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  };
+
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if(!entry.isIntersecting) return;
+      io.unobserve(entry.target);
+      run(entry.target);
+    });
+  }, { threshold: 0.4 });
+
+  figures.forEach((el) => io.observe(el));
+}
+
+/* ==================================================================
    SEND TO AN ASSISTANT
 
    ChatGPT accepts a ?q= prefill; Gemini has no documented equivalent, so
@@ -1028,6 +1079,7 @@ initThemeToggle();
 initMobileNav();
 initPageTransitions();
 initGallery();
+initCountUp();
 initCategoryPage();
 initBuilder();
 observeReveals();
