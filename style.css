@@ -120,13 +120,22 @@
   --gutter:clamp(20px,4vw,32px);
   --nav-h:64px;
 
-  /* Square. sharplink.com carries zero border-radius on any element, and it is
-     the single biggest reason it reads as designed rather than assembled —
-     rounded corners everywhere is the default of every component library.
-     Kept as tokens so one edit reverses the whole decision. */
-  --radius-sm:0px;
-  --radius:0px;
-  --radius-lg:0px;
+  /* Two families, deliberately not one value everywhere.
+
+     Small interactive controls are CAPSULES — chips, buttons, the nav track,
+     the theme switch. A fully-round end reads as "this is a control you
+     press", and it is what stops a row of them looking like table cells.
+
+     Surfaces that hold content get a modest radius instead: a capsule on a
+     card fights the rectangular photograph inside it.
+
+     (This reverses the zero-radius pass taken from sharplink.com. The rest of
+     that work — light display weight, optical tracking, the condensed label
+     face, alpha muting — is unaffected.) */
+  --radius-pill:999px;
+  --radius-sm:8px;
+  --radius:12px;
+  --radius-lg:18px;
 
   /* ---- motion --------------------------------------------------------
      Two curves, used everywhere. `standard` is a gentle ease-out for state
@@ -255,14 +264,14 @@ main{ position:relative; z-index:1; }
 .demo-dot{ width:8px; height:8px; border-radius:50%; background:var(--accent-amber); display:inline-block; flex-shrink:0; }
 
 .badge{
-  display:inline-flex; align-items:center; padding:4px 10px; border-radius:var(--radius-sm);
+  display:inline-flex; align-items:center; padding:4px 11px; border-radius:var(--radius-pill);
   font-family:var(--font-mono); font-size:var(--text-2xs); letter-spacing:.02em;
   background:var(--bg-panel-hover); color:var(--text-muted); border:1px solid var(--border-subtle);
 }
 .badge-model{ color:var(--accent-ink); border-color:var(--accent-amber-soft); }
 
 .btn{
-  display:inline-flex; align-items:center; gap:8px; padding:13px 24px; border-radius:var(--radius-sm);
+  display:inline-flex; align-items:center; gap:8px; padding:13px 26px; border-radius:var(--radius-pill);
   font-family:var(--font-mono); font-size:var(--text-sm); font-weight:500; cursor:pointer;
   border:1px solid transparent; text-decoration:none; background:none;
   transition:background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
@@ -414,7 +423,7 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
   backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
   border:1px solid var(--border-subtle);
   box-shadow:inset 0 1px 0 var(--glass-edge);
-  border-radius:var(--radius);
+  border-radius:var(--radius-pill);
 }
 
 /* The indicator is the ONLY thing that moves, and it moves on transform +
@@ -423,7 +432,7 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
 .nav-indicator{
   position:absolute; top:var(--space-1); left:0;
   height:calc(100% - var(--space-2));
-  border-radius:var(--radius-sm);
+  border-radius:var(--radius-pill);
   background:var(--bg-panel-hover);
   border:1px solid var(--border-subtle);
   opacity:0;
@@ -451,7 +460,7 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
   backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
   border:1px solid var(--border-subtle);
   box-shadow:inset 0 1px 0 var(--glass-edge);
-  border-radius:var(--radius);
+  border-radius:var(--radius-pill);
   cursor:pointer;
   transition:border-color var(--transition-fast);
 }
@@ -462,7 +471,7 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
   width:26px; height:calc(100% - var(--space-2));
   background:var(--bg-panel-hover);
   border:1px solid var(--border-strong);
-  border-radius:var(--radius-sm);
+  border-radius:var(--radius-pill);
   transform:translate3d(0,0,0);
   transition:transform var(--dur-3) var(--ease-expressive);
 }
@@ -486,7 +495,7 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
   font-family:var(--font-display); font-size:var(--text-sm); font-weight:500;
   letter-spacing:var(--track-body);
   text-decoration:none; color:var(--text-muted);
-  padding:var(--space-2) var(--space-4); border-radius:var(--radius-sm);
+  padding:var(--space-2) var(--space-4); border-radius:var(--radius-pill);
   transition:color var(--dur-2) var(--ease-standard);
   white-space:nowrap;
 }
@@ -663,7 +672,7 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
   flex:1; min-width:0;
   font-family:var(--font-mono); font-size:var(--text-sm);
   background:var(--bg-panel); color:var(--text-primary);
-  border:1px solid var(--border-subtle); border-radius:var(--radius); padding:13px 15px;
+  border:1px solid var(--border-subtle); border-radius:var(--radius-pill); padding:13px 19px;
   /* box-shadow too, or the focus ring appears instantly under a border that
      is still easing — two halves of one indicator arriving separately. */
   transition:border-color var(--transition-fast), box-shadow var(--transition-fast);
@@ -682,8 +691,8 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
              background var(--transition-fast);
   font-family:var(--font-mono); font-size:var(--text-xs);
   background:var(--bg-panel); color:var(--text-muted);
-  border:1px solid var(--border-subtle); border-radius:var(--radius-sm);
-  padding:7px 14px; cursor:pointer;
+  border:1px solid var(--border-subtle); border-radius:var(--radius-pill);
+  padding:7px 15px; cursor:pointer;
   transition:color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
 }
 .chip:hover{ color:var(--text-primary); border-color:var(--text-muted); }
@@ -783,7 +792,7 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
   display:flex; align-items:center; gap:8px;
 }
 .builder-req, .builder-opt{
-  font-size:var(--text-2xs); padding:2px 7px; border-radius:var(--radius-sm); border:1px solid var(--border-subtle);
+  font-size:var(--text-2xs); padding:2px 8px; border-radius:var(--radius-pill); border:1px solid var(--border-subtle);
 }
 .builder-req{ color:var(--accent-ink); border-color:var(--accent-amber-soft); }
 .builder-opt{ color:var(--text-muted); }
