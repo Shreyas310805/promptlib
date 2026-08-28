@@ -129,6 +129,55 @@ addEventListener("load", function(){ document.body.classList.add("loaded"); });
   </section>
 </main>
 
+<!-- @partial pane -->
+<button type="button" class="pane-open" id="paneOpen" aria-label="Open saved prompts and settings" aria-expanded="false" aria-controls="sidePane">
+  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+  <span class="pane-open-count" id="paneOpenCount" hidden></span>
+</button>
+
+<div class="pane-scrim" id="paneScrim" hidden></div>
+
+<aside class="side-pane" id="sidePane" aria-labelledby="paneTitle" aria-hidden="true" inert>
+  <div class="pane-head">
+    <h2 class="pane-title" id="paneTitle">Your library</h2>
+    <button type="button" class="pane-close" id="paneClose" aria-label="Close panel">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+
+  <div class="pane-scroll">
+    <section class="pane-section" aria-labelledby="savedHeading">
+      <h3 class="pane-heading" id="savedHeading">Saved prompts</h3>
+      <div id="savedList"></div>
+    </section>
+
+    <section class="pane-section" aria-labelledby="settingsHeading">
+      <h3 class="pane-heading" id="settingsHeading">Settings</h3>
+      <ul class="setting-list">
+        <li class="setting">
+          <label class="setting-label" for="setTheme">Light theme</label>
+          <button type="button" class="switch" id="setTheme" role="switch" aria-checked="false"><span class="switch-thumb" aria-hidden="true"></span></button>
+        </li>
+        <li class="setting">
+          <label class="setting-label" for="setShuffle">Shuffle prompts on open<span class="setting-hint">Off shows them in a fixed order</span></label>
+          <button type="button" class="switch" id="setShuffle" role="switch" aria-checked="true"><span class="switch-thumb" aria-hidden="true"></span></button>
+        </li>
+        <li class="setting">
+          <label class="setting-label" for="setMotion">Reduce motion<span class="setting-hint">Also follows your system setting</span></label>
+          <button type="button" class="switch" id="setMotion" role="switch" aria-checked="false"><span class="switch-thumb" aria-hidden="true"></span></button>
+        </li>
+      </ul>
+    </section>
+
+    <section class="pane-section" aria-labelledby="aboutHeading">
+      <h3 class="pane-heading" id="aboutHeading">About</h3>
+      <p class="pane-body">PromptLib is a browsable library of prompts that have been run against a real model first &mdash; 266 image transformations and 456 fill-in-the-blank text templates.</p>
+      <p class="pane-body">Everything runs in your browser. No account, no tracking, no key required. Saved prompts stay on this device.</p>
+    </section>
+  </div>
+</aside>
+<!-- @end pane -->
+
 <footer class="footer">
 <!-- @partial footer -->
   <p class="footer-line">// end of file — copy a prompt and go make something.</p>
