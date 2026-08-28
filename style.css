@@ -11,54 +11,63 @@
    Accents come in two forms because one value cannot serve both jobs:
      --accent        the brand fill (button/chip backgrounds, borders)
      --accent-ink    the same hue at a weight that is readable AS TEXT on the
-                     page background. On light backgrounds bright amber drops
-                     to ~1.9:1, so text has to use a much deeper tone.
+                     page background. A fill-strength blue on a light surface
+                     lands near 3:1, so text needs a deeper tone.
      --on-accent     text sitting on top of an --accent fill.
    --------------------------------------------------------------- */
 :root{
   color-scheme:dark;
 
-  /* surfaces — neutral near-black, not the blue-black it used to be */
-  --bg-void:#0c0c0d;
-  --bg-panel:#151517;
-  --bg-panel-hover:#1d1d20;
-  --border-subtle:#26262a;
-  --border-strong:#35353b;
+  /* Cool slate rather than pure black. Black plus orange is a warning
+     palette — high alarm, low credibility — so the surfaces carry a slight
+     blue cast and the accent lives in the same family instead of fighting it. */
+  --bg-void:#0e1013;
+  --bg-panel:#161a1f;
+  --bg-panel-hover:#1e232a;
+  --border-subtle:#252b33;
+  --border-strong:#39424e;
 
   /* type */
   /* Muted tones are the primary ink at reduced alpha rather than separate
      greys, so they stay in the same colour family as the surface beneath. */
-  --text-primary:#ededee;
-  --text-muted:rgba(237,237,238,.62);
-  --text-placeholder:rgba(237,237,238,.45);
+  --text-primary:#e8ecf1;
+  --text-muted:rgba(232,236,241,.64);
+  --text-placeholder:rgba(232,236,241,.45);
 
   /* ONE accent. It used to be two — amber plus a blue that existed only
      because amber was overloaded, which gave the site two different focus
      rings and made hover, focus and error look identical. Now amber is the
      only hue, and the jobs below are separated by ROLE, not by colour. */
-  --accent:#eda93f;          /* fills: primary button, active chip           */
-  --accent-ink:#f0b455;      /* the same hue at a weight readable as TEXT    */
-  --accent-hover:#f5bb5e;
-  --on-accent:#1a1200;       /* label sitting on an --accent fill            */
-  --accent-soft:rgba(237,169,63,.30);
+  --accent:#4d8dff;          /* fills: primary button, active chip           */
+  --accent-ink:#8ab4ff;      /* the same hue at a weight readable as TEXT    */
+  --accent-hover:#6ba0ff;
+  --on-accent:#06101f;       /* label sitting on an --accent fill            */
+  --accent-soft:rgba(77,141,255,.28);
   --accent-amber:var(--accent);        /* legacy alias, still referenced     */
   --accent-amber-soft:var(--accent-soft);
 
   /* Roles that must stay legible independently of the brand hue. */
-  --focus-ring:#f0b455;
-  --syntax-var:#8fb8d8;      /* [fill-in] tokens — cool, so they read as     */
-  --syntax-var-bg:rgba(143,184,216,.12);  /* data rather than as emphasis    */
+  --focus-ring:#8ab4ff;
+  /* Warm, so [fill-in] tokens separate from a now-blue accent. */
+  --syntax-var:#e3b778;
+  --syntax-var-bg:rgba(227,183,120,.12);
   --ok-ink:#6fcf97;
   --danger-ink:#ff8f8f;
 
   /* atmosphere */
   --grid-line:rgba(255,255,255,.028);
-  --scrim:rgba(6,7,9,.78);
+  --scrim:rgba(8,10,14,.72);
   --shadow-card:0 14px 34px -16px rgba(0,0,0,.7);
   --shadow-modal:0 30px 80px -30px rgba(0,0,0,.7);
   /* Translucent so the grid shows through the sticky nav. Must be tokenised:
      hardcoded dark here left light-mode nav text at 2.65:1. */
-  --nav-bg:rgba(11,12,14,.82);
+  --nav-bg:rgba(14,16,19,.62);
+  /* Frosted glass. The tint is the surface at low alpha, the hairline is a
+     light edge catching along the top — that highlight is what separates
+     glass from a plain translucent panel. */
+  --glass-tint:rgba(30,35,42,.55);
+  --glass-edge:rgba(255,255,255,.10);
+  --glass-blur:saturate(1.7) blur(16px);
   --accent-hover:#f5bb5e;
   --danger-ink:#ff8f8f;
   /* Instrument Sans: editorial grotesque, tighter and less corporate than Plex.
@@ -143,36 +152,41 @@
 :root[data-theme="light"]{
   color-scheme:light;
 
-  --bg-void:#faf9f7;
+  /* Light blue rather than warm paper — same family as the dark theme's
+     slate, so the two themes read as one system seen under two lights. */
+  --bg-void:#eef3fa;
   --bg-panel:#ffffff;
-  --bg-panel-hover:#f2f1ed;
-  --border-subtle:#e4e2dc;
-  --border-strong:#cfccc4;
+  --bg-panel-hover:#e3ebf6;
+  --border-subtle:#d3e0ee;
+  --border-strong:#b2c4d8;
 
-  --text-primary:#141414;
-  --text-muted:rgba(20,20,20,.66);
-  --text-placeholder:rgba(20,20,20,.48);
+  --text-primary:#0f1720;
+  --text-muted:rgba(15,23,32,.68);
+  --text-placeholder:rgba(15,23,32,.50);
 
-  --accent:#c8811d;
-  --accent-ink:#8a5300;
-  --accent-hover:#b0711a;
+  --accent:#1f6fe0;
+  --accent-ink:#14539f;
+  --accent-hover:#1a5ec2;
   /* Dark, not white: --accent is a mid amber here, so a near-white label
      measured 3.12:1. Dark ink on the same fill is 5.70:1. */
   --on-accent:#1a1200;
-  --accent-soft:rgba(138,83,0,.22);
+  --accent-soft:rgba(31,111,224,.24);
   --accent-amber-soft:var(--accent-soft);
 
-  --focus-ring:#8a5300;
-  --syntax-var:#2f5d80;
-  --syntax-var-bg:rgba(47,93,128,.10);
+  --focus-ring:#14539f;
+  --syntax-var:#8a5a12;
+  --syntax-var-bg:rgba(138,90,18,.10);
   --ok-ink:#1f7a4d;
   --danger-ink:#b3261e;
 
-  --grid-line:rgba(0,0,0,.035);
-  --scrim:rgba(24,24,26,.42);
+  --grid-line:rgba(15,23,32,.045);
+  --scrim:rgba(15,23,32,.38);
   --shadow-card:0 14px 30px -18px rgba(24,24,26,.34);
   --shadow-modal:0 30px 70px -30px rgba(24,24,26,.42);
-  --nav-bg:rgba(250,249,247,.86);
+  --nav-bg:rgba(238,243,250,.62);
+  --glass-tint:rgba(255,255,255,.62);
+  --glass-edge:rgba(255,255,255,.85);
+  --glass-blur:saturate(1.5) blur(16px);
   --accent-hover:#c9861f;
   --danger-ink:#b3261e;
 }
@@ -284,7 +298,11 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
    separate property, so a card's hover transition cannot reach them.
 
    Both animated properties are composited, so this never costs layout. */
-.reveal{ opacity:0; }
+/* Gated on html.js, set by the inline <head> bootstrap. Unconditional
+   opacity:0 here meant that with JavaScript disabled every gallery card, nav
+   card and prompt card was invisible — the same failure the body fade had,
+   in a different place. No JS now means no hiding. */
+.js .reveal{ opacity:0; }
 .reveal.in-view{
   animation:reveal-in var(--dur-4) var(--ease-entrance) both;
 }
@@ -341,13 +359,26 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
   :root.theme-transition .nav-indicator{ transition:none !important; }
 }
 
+
+/* ---- frosted surface -------------------------------------------------
+   One class for every floating control. -webkit- prefix included: Safari
+   still needs it, and without it the panel falls back to a flat tint
+   rather than disappearing, which is an acceptable degradation. */
+.glass{
+  background:var(--glass-tint);
+  backdrop-filter:var(--glass-blur);
+  -webkit-backdrop-filter:var(--glass-blur);
+  border:1px solid var(--border-subtle);
+  box-shadow:inset 0 1px 0 var(--glass-edge);
+}
+
 /* ============================================
    NAV
    ============================================ */
 .nav{
   position:sticky; top:0; z-index:100;
-  background:var(--nav-bg); backdrop-filter:blur(14px) saturate(1.4);
-  -webkit-backdrop-filter:blur(14px) saturate(1.4);
+  background:var(--nav-bg);
+  backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
   /* Transparent at rest so the nav sits ON the page; the rule appears only
      once content has scrolled under it. Cheaper and calmer than a permanent
      border, and it tells you where you are. */
@@ -379,8 +410,10 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
   position:relative;
   display:flex; align-items:center; gap:var(--space-1);
   padding:var(--space-1);
-  background:var(--bg-panel);
+  background:var(--glass-tint);
+  backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
   border:1px solid var(--border-subtle);
+  box-shadow:inset 0 1px 0 var(--glass-edge);
   border-radius:var(--radius);
 }
 
@@ -402,21 +435,52 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
 }
 .nav-indicator.is-ready{ opacity:1; }
 
-/* Theme toggle — sits at the end of the nav, shows the theme you would switch
-   TO rather than the one you are in. */
-.theme-toggle{
-  display:inline-flex; align-items:center; justify-content:center;
-  width:38px; height:38px; margin-left:var(--space-2); flex-shrink:0;
-  background:var(--bg-panel); border:1px solid var(--border-subtle);
-  border-radius:var(--radius); color:var(--text-muted); cursor:pointer;
-  transition:color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
+/* ---- theme switch ---------------------------------------------------
+   Was a 38px square that swapped one glyph for another — no affordance, no
+   sense of state, and it read as a placeholder. Now a real two-position
+   track: both destinations visible, a frosted thumb sliding between them.
+   Same indicator language as the nav, so the chrome shares one idea.
+
+   role=switch + aria-checked carries the state; the icons are decorative. */
+.theme-switch{
+  position:relative; flex-shrink:0;
+  display:grid; grid-template-columns:repeat(2,26px);
+  align-items:center; justify-items:center;
+  height:34px; padding:var(--space-1); margin-left:var(--space-2);
+  background:var(--glass-tint);
+  backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
+  border:1px solid var(--border-subtle);
+  box-shadow:inset 0 1px 0 var(--glass-edge);
+  border-radius:var(--radius);
+  cursor:pointer;
+  transition:border-color var(--transition-fast);
 }
-.theme-toggle:hover{ color:var(--text-primary); border-color:var(--border-strong); background:var(--bg-panel); }
-.theme-toggle .icon{ width:17px; height:17px; }
-/* Only one glyph is ever shown; the other is removed from the layout. */
-.theme-toggle .theme-icon-sun{ display:none; }
-:root[data-theme="light"] .theme-toggle .theme-icon-sun{ display:block; }
-:root[data-theme="light"] .theme-toggle .theme-icon-moon{ display:none; }
+.theme-switch:hover{ border-color:var(--border-strong); }
+
+.theme-switch-thumb{
+  position:absolute; top:var(--space-1); left:var(--space-1);
+  width:26px; height:calc(100% - var(--space-2));
+  background:var(--bg-panel-hover);
+  border:1px solid var(--border-strong);
+  border-radius:var(--radius-sm);
+  transform:translate3d(0,0,0);
+  transition:transform var(--dur-3) var(--ease-expressive);
+}
+:root[data-theme="light"] .theme-switch-thumb{ transform:translate3d(26px,0,0); }
+
+.theme-switch-cell{
+  position:relative; z-index:1;
+  display:flex; align-items:center; justify-content:center;
+  color:var(--text-placeholder);
+  transition:color var(--transition-fast);
+}
+.theme-switch-cell .icon{ width:15px; height:15px; }
+/* The cell the thumb sits under gets full-strength ink. Explicit classes,
+   not :first-of-type — the thumb is a span too, so it is the first of type
+   and the positional selector silently matched nothing in dark. */
+.theme-cell-dark{ color:var(--text-primary); }
+:root[data-theme="light"] .theme-cell-dark{ color:var(--text-placeholder); }
+:root[data-theme="light"] .theme-cell-light{ color:var(--text-primary); }
 .nav-link{
   position:relative; z-index:1;
   font-family:var(--font-display); font-size:var(--text-sm); font-weight:500;
@@ -812,7 +876,7 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
   .nav-indicator{ display:none; }
   /* The toggle lives outside .nav-links so it stays reachable without opening
      the menu — a theme switch is not worth a hamburger tap. */
-  .theme-toggle{ margin-left:auto; margin-right:10px; }
+  .theme-switch{ margin-left:auto; margin-right:var(--space-3); }
 
   .section-inner{ padding:40px 20px; }
   .hero-inner{ padding:0 20px 40px; }

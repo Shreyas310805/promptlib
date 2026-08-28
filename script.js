@@ -115,6 +115,13 @@ document.addEventListener("error", (e) => {
 
 let revealObserver;
 function observeReveals(){
+  /* No IntersectionObserver means nothing would ever add .in-view, and the
+     elements are already hidden by .js .reveal — so reveal them outright
+     rather than leaving the page blank. */
+  if(!("IntersectionObserver" in window)){
+    document.querySelectorAll(".reveal:not(.in-view)").forEach((el) => el.classList.add("in-view"));
+    return;
+  }
   if(!revealObserver){
     revealObserver = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
@@ -234,8 +241,10 @@ function initThemeToggle(){
 
   const apply = (theme) => {
     document.documentElement.setAttribute("data-theme", theme);
-    btn.setAttribute("aria-pressed", String(theme === "light"));
-    btn.setAttribute("aria-label", theme === "light" ? "Switch to dark theme" : "Switch to light theme");
+    /* role=switch, so state is aria-checked. The label names what the switch
+       controls, not what pressing it would do — the state carries that. */
+    btn.setAttribute("aria-checked", String(theme === "light"));
+    btn.setAttribute("aria-label", "Light theme");
   };
 
   apply(current());

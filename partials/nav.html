@@ -1,7 +1,7 @@
 <nav class="nav">
   <div class="nav-inner">
     <a href="index.html" class="logo">
-      <svg class="logo-mark" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="7" fill="#15161b"/><path d="M10 10l7 6-7 6" stroke="#eda93f" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <svg class="logo-mark" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="7" fill="#161a1f"/><path d="M10 10l7 6-7 6" stroke="#4d8dff" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span class="logo-word">promptlib</span>
     </a>
     <button class="nav-toggle" id="navToggle" aria-label="Toggle menu" aria-expanded="false"><span></span><span></span><span></span></button>
@@ -12,9 +12,14 @@
       <a href="text.html" class="nav-link" data-page="text.html">text</a>
       <a href="builder.html" class="nav-link" data-page="builder.html">builder</a>
     </div>
-    <button type="button" class="theme-toggle" id="themeToggle" aria-label="Switch to light theme" aria-pressed="false">
-      <svg class="icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.7 6.7 0 0 0 10.5 10.5z"/></svg>
-      <svg class="icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.4v2.2M12 19.4v2.2M4.2 4.2l1.6 1.6M18.2 18.2l1.6 1.6M2.4 12h2.2M19.4 12h2.2M4.2 19.8l1.6-1.6M18.2 5.8l1.6-1.6"/></svg>
+    <button type="button" class="theme-switch" id="themeToggle" role="switch" aria-checked="false" aria-label="Light theme">
+      <span class="theme-switch-thumb" aria-hidden="true"></span>
+      <span class="theme-switch-cell theme-cell-dark" aria-hidden="true">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.7 6.7 0 0 0 10.5 10.5z"/></svg>
+      </span>
+      <span class="theme-switch-cell theme-cell-light" aria-hidden="true">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.4v2.2M12 19.4v2.2M4.2 4.2l1.6 1.6M18.2 18.2l1.6 1.6M2.4 12h2.2M19.4 12h2.2M4.2 19.8l1.6-1.6M18.2 5.8l1.6-1.6"/></svg>
+      </span>
     </button>
   </div>
 </nav>
