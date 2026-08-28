@@ -38,7 +38,6 @@
   --accent-amber-soft:rgba(237,169,63,.32);
   --accent-blue:#7d9bff;
   --accent-blue-ink:#93abff;
-  --accent-blue-soft:rgba(125,155,255,.32);
 
   /* atmosphere */
   --grid-line:rgba(255,255,255,.028);
@@ -84,7 +83,6 @@
   --accent-amber-soft:rgba(224,154,44,.30);
   --accent-blue:#4560d8;
   --accent-blue-ink:#2f45a8;
-  --accent-blue-soft:rgba(69,96,216,.24);
 
   --grid-line:rgba(0,0,0,.035);
   --scrim:rgba(24,24,26,.42);
@@ -325,7 +323,7 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent-blue); out
    between those rows — with a 20px row-gap, `span 34` renders ~1000px tall
    instead of 340px. Vertical spacing comes from the card's margin instead. */
 .gallery-grid{
-  display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr));
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(min(230px,100%),1fr));
   grid-auto-rows:10px; grid-auto-flow:dense; column-gap:20px; row-gap:0;
 }
 /* Cards are <button> elements — reset the UA chrome but leave background alone,
@@ -380,19 +378,22 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent-blue); out
 /* gallery filter controls */
 .gallery-controls{ margin-bottom:32px; display:flex; flex-direction:column; gap:16px; }
 .gallery-search-wrap{ position:relative; display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
-#gallerySearch{
-  flex:1; min-width:240px;
+/* Class, not ID. This was #gallerySearch, so the identical #categorySearch in
+   partials/text-controls.html inherited nothing and ppt/essay/report/email
+   rendered a raw browser search box. */
+.search-input{
+  flex:1; min-width:0;
   font-family:var(--font-mono); font-size:14px;
   background:var(--bg-panel); color:var(--text-primary);
   border:1px solid var(--border-subtle); border-radius:8px; padding:13px 15px;
   transition:border-color var(--transition-fast);
 }
-#gallerySearch::placeholder{ color:var(--text-placeholder); }
+.search-input::placeholder{ color:var(--text-placeholder); }
 /* outline:none alone left a border-colour shift as the only focus cue, which
    is easy to miss. Keep the amber border and add an on-brand ring using the
    existing --accent-amber-soft token, so the look is unchanged but the
    indicator is unmistakable. */
-#gallerySearch:focus{ outline:none; border-color:var(--accent-amber); box-shadow:0 0 0 3px var(--accent-amber-soft); }
+.search-input:focus{ outline:none; border-color:var(--accent-amber); box-shadow:0 0 0 3px var(--accent-amber-soft); }
 .gallery-count{ font-family:var(--font-mono); font-size:12.5px; color:var(--text-muted); white-space:nowrap; }
 
 .chip-row{ display:flex; gap:8px; flex-wrap:wrap; }
@@ -473,7 +474,10 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent-blue); out
 /* ============================================
    TEXT PROMPT CATEGORY PAGES (ppt / essay / report / email)
    ============================================ */
-.prompt-list{ display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:18px; }
+/* min() so the track can shrink below its ideal on narrow viewports instead of
+   overflowing and being clipped by body{overflow-x:hidden} — that was a WCAG
+   1.4.10 reflow failure at 320px and at 400% zoom. */
+.prompt-list{ display:grid; grid-template-columns:repeat(auto-fill,minmax(min(320px,100%),1fr)); gap:18px; }
 .prompt-card{
   background:var(--bg-panel); border:1px solid var(--border-subtle); border-radius:var(--radius); overflow:hidden;
   display:flex; flex-direction:column;
@@ -600,7 +604,7 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent-blue); out
 
 /* High-contrast modes drop box-shadow, so restore a real outline there. */
 @media (forced-colors: active){
-  #gallerySearch:focus,
+  .search-input:focus,
   .builder-field input:focus,
   .builder-field select:focus{ outline:2px solid; outline-offset:2px; }
 }
@@ -608,6 +612,11 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent-blue); out
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{
     animation-duration:.01ms !important; animation-iteration-count:1 !important;
+    animation-delay:0s !important;
     transition-duration:.01ms !important; scroll-behavior:auto !important;
+    /* Delay too: script.js sets transition-delay inline on every card for the
+       reveal stagger, and zeroing only the duration still made reduced-motion
+       users sit through it. */
+    transition-delay:0s !important;
   }
 }
