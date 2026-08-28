@@ -222,6 +222,16 @@ function initThemeToggle(){
 
   const current = () => document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
 
+  /* Paint the swap over --dur-3 instead of flashing. The class is removed once
+     the transition has run, so no element keeps an all-properties transition. */
+  let fadeTimer;
+  const crossFade = () => {
+    const root = document.documentElement;
+    root.classList.add("theme-transition");
+    clearTimeout(fadeTimer);
+    fadeTimer = setTimeout(() => root.classList.remove("theme-transition"), 400);
+  };
+
   const apply = (theme) => {
     document.documentElement.setAttribute("data-theme", theme);
     btn.setAttribute("aria-pressed", String(theme === "light"));
@@ -232,6 +242,7 @@ function initThemeToggle(){
 
   btn.addEventListener("click", () => {
     const next = current() === "light" ? "dark" : "light";
+    crossFade();
     apply(next);
     try {
       localStorage.setItem("promptlib-theme", next);
@@ -565,7 +576,7 @@ function renderGallery(){
      Children are spans because <button> only admits phrasing content. The img
      is alt="" because the style name sits right beside it in the label. */
   grid.innerHTML = list.map((p, i) => `
-    <button type="button" class="gallery-card reveal swatch-${p.i % 6} ${escapeHTML(p.size || "")}" style="transition-delay:${(i % 3) * 60}ms" data-id="${p.i}" aria-label="${escapeHTML(p.style)}, ${escapeHTML(p.cat)}. View prompt.">
+    <button type="button" class="gallery-card reveal swatch-${p.i % 6} ${escapeHTML(p.size || "")}" style="animation-delay:${(i % 3) * 60}ms" data-id="${p.i}" aria-label="${escapeHTML(p.style)}, ${escapeHTML(p.cat)}. View prompt.">
       <span class="swatch-texture"></span>
       ${hasThumb(p.slug) ? `<img class="real-photo" src="images/${encodeURIComponent(p.slug)}.jpg" alt="" loading="lazy">` : ""}
       <span class="swatch-content">
@@ -747,7 +758,7 @@ function initCategoryPage(){
     }
 
     list.innerHTML = items.map((p, i) => `
-    <div class="prompt-card reveal" style="transition-delay:${(i % 2) * 70}ms">
+    <div class="prompt-card reveal" style="animation-delay:${(i % 2) * 70}ms">
       <div class="prompt-thumb ${visual.swatch}">
         <div class="swatch-texture"></div>
         <span class="prompt-thumb-icon">${ICONS[visual.icon]}</span>

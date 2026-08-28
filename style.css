@@ -251,7 +251,7 @@ main{ position:relative; z-index:1; }
   display:inline-flex; align-items:center; gap:8px; padding:13px 24px; border-radius:var(--radius-sm);
   font-family:var(--font-mono); font-size:var(--text-sm); font-weight:500; cursor:pointer;
   border:1px solid transparent; text-decoration:none; background:none;
-  transition:transform var(--transition-fast), background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+  transition:background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
 }
 .btn-primary{ background:var(--accent); color:var(--on-accent); }
 .btn-primary:hover{ background:var(--accent-hover); }
@@ -277,13 +277,21 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
 .back-link:hover{ color:var(--accent-ink); }
 .back-link .icon{ transform:rotate(180deg); }
 
-/* Entrance curve overshoots a hair so cards feel driven in rather than faded.
-   Both properties are composited, so this never costs layout. */
-.reveal{
-  opacity:0; transform:translateY(14px);
-  transition:opacity var(--dur-4) var(--ease-entrance), transform var(--dur-4) var(--ease-entrance);
+/* An ANIMATION, not a transition. Every card that uses .reveal also declares
+   its own `transition` shorthand for hover, and the shorthand resets the whole
+   property list — .gallery-card{transition:border-color} was silently killing
+   the reveal's opacity and transform, so cards snapped in. Animations are a
+   separate property, so a card's hover transition cannot reach them.
+
+   Both animated properties are composited, so this never costs layout. */
+.reveal{ opacity:0; }
+.reveal.in-view{
+  animation:reveal-in var(--dur-4) var(--ease-entrance) both;
 }
-.reveal.in-view{ opacity:1; transform:none; }
+@keyframes reveal-in{
+  from{ opacity:0; transform:translateY(14px); }
+  to{ opacity:1; transform:none; }
+}
 
 .prompt-block-bar{
   display:flex; align-items:center; gap:8px; padding:10px 14px;
@@ -306,6 +314,31 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
   text-transform:uppercase;
   letter-spacing:var(--track-caps);
   font-weight:500;
+}
+
+
+/* ---- theme cross-fade -----------------------------------------------
+   Switching themes repaints every surface at once, which reads as a flash.
+   The class is added by initThemeToggle() only for the length of the swap,
+   so nothing carries a permanent all-properties transition.
+
+   Deliberately inside no-preference: the global reduced-motion block below
+   uses `*` with !important, and `.theme-transition *` would out-specify it.
+   Gating here means reduced-motion users simply never get these rules. */
+@media (prefers-reduced-motion: no-preference){
+  :root.theme-transition,
+  :root.theme-transition *,
+  :root.theme-transition *::before,
+  :root.theme-transition *::after{
+    transition:background-color var(--dur-3) var(--ease-standard),
+               border-color var(--dur-3) var(--ease-standard),
+               color var(--dur-3) var(--ease-standard),
+               fill var(--dur-3) var(--ease-standard),
+               stroke var(--dur-3) var(--ease-standard),
+               box-shadow var(--dur-3) var(--ease-standard) !important;
+  }
+  /* The indicator must not slide while the palette changes underneath it. */
+  :root.theme-transition .nav-indicator{ transition:none !important; }
 }
 
 /* ============================================
@@ -480,7 +513,7 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
 .nav-card{
   display:block; background:var(--bg-panel); border:1px solid var(--border-subtle); border-radius:var(--radius-lg);
   padding:26px; text-decoration:none; color:var(--text-primary); position:relative;
-  transition:transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition:border-color var(--transition-fast), background var(--transition-fast);
 }
 .nav-card:hover{ border-color:var(--border-strong); background:var(--bg-panel-hover); }
 .nav-card .icon-lg{ color:var(--accent-ink); margin-bottom:16px; }
@@ -505,8 +538,8 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
   appearance:none; -webkit-appearance:none;
   font:inherit; color:inherit; text-align:left; width:100%; padding:0;
   position:relative; overflow:hidden; border-radius:var(--radius); border:1px solid var(--border-subtle);
-  cursor:pointer; grid-row-end:span 30; margin:0 0 20px;
-  transition:transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
+  cursor:pointer; grid-row-end:span 30; margin:0 0 var(--space-5);
+  transition:border-color var(--transition-fast);
 }
 .gallery-card.tall{ grid-row-end:span 38; }
 .gallery-card.short{ grid-row-end:span 24; }
@@ -567,7 +600,9 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
   font-family:var(--font-mono); font-size:var(--text-sm);
   background:var(--bg-panel); color:var(--text-primary);
   border:1px solid var(--border-subtle); border-radius:var(--radius); padding:13px 15px;
-  transition:border-color var(--transition-fast);
+  /* box-shadow too, or the focus ring appears instantly under a border that
+     is still easing — two halves of one indicator arriving separately. */
+  transition:border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 .search-input::placeholder{ color:var(--text-placeholder); }
 /* outline:none alone left a border-colour shift as the only focus cue, which
@@ -579,6 +614,8 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
 
 .chip-row{ display:flex; gap:8px; flex-wrap:wrap; }
 .chip{
+  transition:color var(--transition-fast), border-color var(--transition-fast),
+             background var(--transition-fast);
   font-family:var(--font-mono); font-size:var(--text-xs);
   background:var(--bg-panel); color:var(--text-muted);
   border:1px solid var(--border-subtle); border-radius:var(--radius-sm);
@@ -631,6 +668,7 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
 }
 .modal-backdrop.open .modal{ transform:translateY(0) scale(1); }
 .modal-close{
+  transition:background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
   position:absolute; top:14px; right:14px; width:34px; height:34px; border-radius:50%;
   background:var(--bg-panel-hover); border:1px solid var(--border-subtle); color:var(--text-primary);
   cursor:pointer; z-index:2; display:flex; align-items:center; justify-content:center;
@@ -663,7 +701,7 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
 .prompt-card{
   background:var(--bg-panel); border:1px solid var(--border-subtle); border-radius:var(--radius); overflow:hidden;
   display:flex; flex-direction:column;
-  transition:transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition:border-color var(--transition-fast), background var(--transition-fast);
 }
 .prompt-card:hover{ border-color:var(--border-strong); background:var(--bg-panel-hover); }
 .prompt-card .prompt-text{ flex:1; padding:16px; }
@@ -736,6 +774,7 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
 .footer-line{ font-family:var(--font-mono); font-size:var(--text-sm); color:var(--text-muted); }
 .footer-credit{ margin-top:8px; font-size:var(--text-xs); }
 .footer-credit a{ color:var(--text-muted); }
+.footer-credit a{ transition:color var(--transition-fast); }
 .footer-credit a:hover{ color:var(--accent-ink); }
 
 /* ============================================
