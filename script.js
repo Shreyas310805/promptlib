@@ -78,6 +78,21 @@ function highlightVars(str){
 function copyButtonHTML(label){
   return `${ICONS.copy}<span>${escapeHTML(label)}</span>`;
 }
+/* Fisher-Yates on a copy. Every visit surfaces a different first screen
+   instead of the same handful of prompts, which is the point of a library this
+   size. Callers that need stable positions must stamp their indices AFTER
+   shuffling, not before. */
+function shuffled(list){
+  const out = list.slice();
+  for(let i = out.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = out[i];
+    out[i] = out[j];
+    out[j] = tmp;
+  }
+  return out;
+}
+
 function slugify(str){
   return str.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
@@ -363,9 +378,12 @@ function initGallery(){
     return;
   }
 
-  /* Stamp each entry with its permanent position in imagePrompts, once.
-     renderGallery() used to recover this per card with imagePrompts.indexOf(p)
-     inside a .map() over the filtered list — quadratic, on every keystroke. */
+  /* Shuffle first, THEN stamp. p.i is the position in imagePrompts, which the
+     modal and the swatch colour both index by, so the stamp has to describe the
+     array as it now stands. Reordering after stamping would desync them. */
+  const order = shuffled(imagePrompts);
+  imagePrompts.length = 0;
+  imagePrompts.push(...order);
   imagePrompts.forEach((p, i) => { p.i = i; });
 
   /* Category chips are derived from the data, so adding a new category in
@@ -584,15 +602,89 @@ function initCategoryPage(){
 
   const category = list.dataset.category;
   const prompts = textPromptsData[category] || [];
-
   const visual = categoryVisuals[category] || categoryVisuals.essay;
 
-  list.innerHTML = prompts.map((p, i) => `
+  if(!prompts.length){
+    list.innerHTML = `
+      <div class="gallery-error" role="alert">
+        <p class="gallery-error-title">No prompts in this category.</p>
+        <p>prompts-text.js loaded but has nothing under <code>${escapeHTML(category)}</code>.</p>
+      </div>`;
+    return;
+  }
+
+  /* Reshuffled per visit; the filter and search then work over that order. */
+  const ordered = shuffled(prompts);
+  const state = { tag: "All", query: "" };
+
+  const search = document.getElementById("categorySearch");
+  const chipRow = document.getElementById("categoryChips");
+  const countEl = document.getElementById("categoryCount");
+
+  /* Chips are derived from the tags actually present, so adding a tag in
+     prompts-text.js makes a new filter appear with no edit here. */
+  if(chipRow){
+    const tags = ["All", ...new Set(prompts.map((p) => p.tag).filter(Boolean))];
+    chipRow.innerHTML = tags.map((t) =>
+      `<button type="button" class="chip${t === "All" ? " active" : ""}" data-tag="${escapeHTML(t)}" aria-pressed="${t === "All"}">${escapeHTML(t)}</button>`
+    ).join("");
+
+    chipRow.querySelectorAll(".chip").forEach((chip) => {
+      chip.addEventListener("click", () => {
+        chipRow.querySelectorAll(".chip").forEach((c) => {
+          c.classList.remove("active");
+          c.setAttribute("aria-pressed", "false");
+        });
+        chip.classList.add("active");
+        chip.setAttribute("aria-pressed", "true");
+        state.tag = chip.dataset.tag;
+        render();
+      });
+    });
+  }
+
+  if(search){
+    search.placeholder = search.placeholder.replace(/\d+/, prompts.length);
+    let timer;
+    const apply = () => {
+      const next = search.value.trim().toLowerCase();
+      if(next === state.query) return;
+      state.query = next;
+      render();
+    };
+    search.addEventListener("input", () => {
+      clearTimeout(timer);
+      timer = setTimeout(apply, 120);
+    });
+    search.addEventListener("search", () => { clearTimeout(timer); apply(); });
+    search.addEventListener("keydown", (e) => {
+      if(e.key === "Enter"){ clearTimeout(timer); apply(); }
+    });
+  }
+
+  function matching(){
+    return ordered.filter((p) => {
+      if(state.tag !== "All" && p.tag !== state.tag) return false;
+      if(!state.query) return true;
+      return (p.prompt + " " + (p.tag || "")).toLowerCase().includes(state.query);
+    });
+  }
+
+  function render(){
+    const items = matching();
+    if(countEl) countEl.textContent = `${items.length} prompt${items.length === 1 ? "" : "s"}`;
+
+    if(!items.length){
+      list.innerHTML = `<p class="gallery-empty">No prompts match that search. Try a different word, or pick another filter.</p>`;
+      return;
+    }
+
+    list.innerHTML = items.map((p, i) => `
     <div class="prompt-card reveal" style="transition-delay:${(i % 2) * 70}ms">
       <div class="prompt-thumb ${visual.swatch}">
         <div class="swatch-texture"></div>
         <span class="prompt-thumb-icon">${ICONS[visual.icon]}</span>
-        <span class="prompt-thumb-label">${visual.label}</span>
+        <span class="prompt-thumb-label">${escapeHTML(p.tag || visual.label)}</span>
       </div>
       <div class="prompt-block-bar"><span class="demo-dot"></span><span>${escapeHTML(p.filename)}</span></div>
       <p class="prompt-text">${highlightVars(p.prompt)}</p>
@@ -600,10 +692,13 @@ function initCategoryPage(){
     </div>
   `).join("");
 
-  list.querySelectorAll(".btn-copy").forEach((btn) => {
-    btn.addEventListener("click", function(){ copyText(this.dataset.raw, this); });
-  });
-  observeReveals();
+    list.querySelectorAll(".btn-copy").forEach((btn) => {
+      btn.addEventListener("click", function(){ copyText(this.dataset.raw, this); });
+    });
+    observeReveals();
+  }
+
+  render();
 }
 
 /* ==================================================================
