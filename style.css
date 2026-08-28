@@ -281,20 +281,69 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
    ============================================ */
 .nav{
   position:sticky; top:0; z-index:100;
-  background:var(--nav-bg); backdrop-filter:blur(10px);
-  border-bottom:1px solid var(--border-subtle);
+  background:var(--nav-bg); backdrop-filter:blur(14px) saturate(1.4);
+  -webkit-backdrop-filter:blur(14px) saturate(1.4);
+  /* Transparent at rest so the nav sits ON the page; the rule appears only
+     once content has scrolled under it. Cheaper and calmer than a permanent
+     border, and it tells you where you are. */
+  border-bottom:1px solid transparent;
+  transition:border-color var(--dur-3) var(--ease-standard), background var(--dur-3) var(--ease-standard);
 }
-.nav-inner{ max-width:1180px; margin:0 auto; padding:16px 32px; display:flex; align-items:center; justify-content:space-between; }
-.logo{ display:inline-flex; align-items:center; gap:10px; font-family:var(--font-mono); font-size:var(--text-md); font-weight:500; text-decoration:none; color:var(--text-primary); }
-.nav-links{ display:flex; align-items:center; gap:8px; }
+.nav.is-scrolled{ border-bottom-color:var(--border-subtle); }
+.nav-inner{
+  max-width:var(--container); margin:0 auto;
+  padding:var(--space-3) var(--gutter); min-height:var(--nav-h);
+  display:flex; align-items:center; justify-content:space-between; gap:var(--space-4);
+}
+
+/* Logo lockup: mark and word optically balanced, word slightly tightened so
+   it reads as a wordmark rather than a run of monospace. */
+.logo{
+  display:inline-flex; align-items:center; gap:var(--space-2);
+  font-family:var(--font-display); font-size:var(--text-md); font-weight:600;
+  letter-spacing:var(--track-heading);
+  text-decoration:none; color:var(--text-primary); flex-shrink:0;
+}
+.logo-mark{ width:26px; height:26px; flex-shrink:0; }
+.logo-word{ transition:opacity var(--dur-2) var(--ease-standard); }
+.logo:hover .logo-word{ opacity:.7; }
+
+/* Segmented control. The links sit in one inset track with a single moving
+   indicator behind them, instead of each carrying its own background. */
+.nav-links{
+  position:relative;
+  display:flex; align-items:center; gap:var(--space-1);
+  padding:var(--space-1);
+  background:var(--bg-panel);
+  border:1px solid var(--border-subtle);
+  border-radius:calc(var(--radius) + 2px);
+}
+
+/* The indicator is the ONLY thing that moves, and it moves on transform +
+   width, so travelling between links never triggers layout on the links
+   themselves. Positioned by initNavIndicator() in script.js. */
+.nav-indicator{
+  position:absolute; top:var(--space-1); left:0;
+  height:calc(100% - var(--space-2));
+  border-radius:var(--radius-sm);
+  background:var(--bg-panel-hover);
+  border:1px solid var(--border-subtle);
+  opacity:0;
+  transform:translate3d(0,0,0);
+  transition:transform var(--dur-3) var(--ease-entrance),
+             width var(--dur-3) var(--ease-entrance),
+             opacity var(--dur-2) var(--ease-standard);
+  pointer-events:none;
+}
+.nav-indicator.is-ready{ opacity:1; }
 
 /* Theme toggle — sits at the end of the nav, shows the theme you would switch
    TO rather than the one you are in. */
 .theme-toggle{
   display:inline-flex; align-items:center; justify-content:center;
-  width:34px; height:34px; margin-left:6px; flex-shrink:0;
-  background:transparent; border:1px solid var(--border-subtle);
-  border-radius:8px; color:var(--text-muted); cursor:pointer;
+  width:38px; height:38px; margin-left:var(--space-2); flex-shrink:0;
+  background:var(--bg-panel); border:1px solid var(--border-subtle);
+  border-radius:calc(var(--radius) + 2px); color:var(--text-muted); cursor:pointer;
   transition:color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
 }
 .theme-toggle:hover{ color:var(--text-primary); border-color:var(--border-strong); background:var(--bg-panel); }
@@ -304,11 +353,19 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
 :root[data-theme="light"] .theme-toggle .theme-icon-sun{ display:block; }
 :root[data-theme="light"] .theme-toggle .theme-icon-moon{ display:none; }
 .nav-link{
-  font-family:var(--font-mono); font-size:var(--text-sm); text-decoration:none; color:var(--text-muted);
-  padding:8px 14px; border-radius:6px; transition:color var(--transition-fast), background var(--transition-fast);
+  position:relative; z-index:1;
+  font-family:var(--font-display); font-size:var(--text-sm); font-weight:500;
+  letter-spacing:var(--track-body);
+  text-decoration:none; color:var(--text-muted);
+  padding:var(--space-2) var(--space-4); border-radius:var(--radius-sm);
+  transition:color var(--dur-2) var(--ease-standard);
+  white-space:nowrap;
 }
 .nav-link:hover{ color:var(--text-primary); }
-.nav-link.active{ color:var(--accent-ink); background:var(--bg-panel); }
+/* No background here — the indicator supplies it. Weight and colour carry
+   the active state so it still reads when the indicator has not positioned
+   yet, or when JS is off entirely. */
+.nav-link.active{ color:var(--text-primary); font-weight:600; }
 
 .nav-toggle{ display:none; flex-direction:column; justify-content:center; gap:5px; width:34px; height:34px; background:none; border:none; cursor:pointer; }
 .nav-toggle span{ display:block; width:100%; height:2px; background:var(--text-primary); transition:transform var(--transition-fast), opacity var(--transition-fast); }
@@ -678,7 +735,10 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
     opacity:1; transform:translateY(0); pointer-events:auto; visibility:visible;
     transition:opacity var(--transition-fast), transform var(--transition-fast), visibility 0s;
   }
-  .nav-link{ padding:12px 10px; }
+  .nav-link{ padding:var(--space-3) var(--space-3); width:100%; }
+  /* Stacked panel on mobile — a horizontal indicator has nothing to track. */
+  .nav-links{ padding:var(--space-4) var(--gutter); border:none; border-radius:0; }
+  .nav-indicator{ display:none; }
   /* The toggle lives outside .nav-links so it stays reachable without opening
      the menu — a theme switch is not worth a hamburger tap. */
   .theme-toggle{ margin-left:auto; margin-right:10px; }

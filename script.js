@@ -243,6 +243,73 @@ function initThemeToggle(){
   });
 }
 
+/* Slides one shared pill behind the nav links instead of giving each link its
+   own background. Only transform and width animate, both composited, so
+   moving between links never costs layout on the links themselves.
+
+   The active link is already styled by weight and colour, so if this never
+   runs — JS off, or a viewport where the indicator is display:none — the nav
+   still reads correctly. */
+function initNavIndicator(){
+  const row = document.getElementById("navLinks");
+  const bar = document.getElementById("navIndicator");
+  if(!row || !bar) return;
+
+  const active = () => row.querySelector(".nav-link.active");
+
+  const moveTo = (link) => {
+    if(!link) return;
+    /* display:none on mobile — offsetParent is null, nothing to position. */
+    if(!bar.offsetParent) return;
+    bar.style.width = `${link.offsetWidth}px`;
+    bar.style.transform = `translate3d(${link.offsetLeft - row.clientLeft}px,0,0)`;
+    bar.classList.add("is-ready");
+  };
+
+  const settle = () => moveTo(active());
+
+  /* Fonts land after first paint and change link widths, so measure again
+     once they are ready rather than freezing a stale position. */
+  settle();
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(settle);
+
+  row.querySelectorAll(".nav-link").forEach((link) => {
+    link.addEventListener("mouseenter", () => moveTo(link));
+    link.addEventListener("focus", () => moveTo(link));
+  });
+  row.addEventListener("mouseleave", settle);
+  row.addEventListener("focusout", (e) => {
+    if(!row.contains(e.relatedTarget)) settle();
+  });
+
+  let resizeTimer;
+  window.addEventListener("resize", () => {
+    /* No transition while the layout is still moving under it. */
+    bar.style.transition = "none";
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => { bar.style.transition = ""; settle(); }, 100);
+    settle();
+  });
+}
+
+/* The nav is borderless until something scrolls under it. Passive listener and
+   a class toggle only — no style writes per frame. */
+function initNavScrollState(){
+  const nav = document.querySelector(".nav");
+  if(!nav) return;
+  let ticking = false;
+  const update = () => {
+    nav.classList.toggle("is-scrolled", window.scrollY > 4);
+    ticking = false;
+  };
+  update();
+  window.addEventListener("scroll", () => {
+    if(ticking) return;
+    ticking = true;
+    requestAnimationFrame(update);
+  }, { passive: true });
+}
+
 function initMobileNav(){
   const navToggle = document.getElementById("navToggle");
   const navLinksEl = document.getElementById("navLinks");
@@ -864,6 +931,8 @@ function buildPrompt(){
    INIT — runs on every page; each function no-ops if its elements aren't present
    ================================================================== */
 setActiveNav();
+initNavIndicator();
+initNavScrollState();
 initThemeToggle();
 initMobileNav();
 initPageTransitions();
