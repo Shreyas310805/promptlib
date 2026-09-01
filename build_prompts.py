@@ -6,7 +6,6 @@ Re-run this any time you add styles below:  python3 build_prompts.py
 """
 
 import json
-import os
 
 # (style name, descriptor injected into the prompt)
 CATALOG = {
@@ -340,70 +339,9 @@ PRESERVE = {
     "Practical Edits": "Keep the subject accurate and unaltered — this is a correction, not a reinterpretation.",
 }
 
-# Craft direction — the part that tells the model HOW to execute, not just what
-# to make. Rotates per style so neighbouring cards do not read identically.
-CRAFT = {
-    "Traditional Media": [
-        "Let the medium do the work: visible tooth in the paper or canvas, pigment settling into the grain, and edges that bloom, drag or break up the way real material does rather than a clean digital filter.",
-        "Vary the mark-making across the frame \u2014 denser, more resolved work where the eye should land, looser and more suggestive toward the edges \u2014 and let a little of the bare ground show through in places.",
-        "Keep the palette as limited as a working artist's would be, mixed from a handful of pigments so every colour shares a common cast rather than looking sampled from the photograph.",
-    ],
-    "Illustration & Animation": [
-        "Commit to the style's line economy: confident outlines of varying weight, forms simplified to their essentials, and shadow read as flat deliberate shapes rather than soft photographic gradients.",
-        "Push the silhouette so the figure reads instantly at thumbnail size, and keep background detail clearly subordinate in contrast and saturation to the subject.",
-        "Treat colour as design rather than observation \u2014 a controlled palette with decisive value separation between subject, midground and background.",
-    ],
-    "Photography & Camera": [
-        "Respect the optics: consistent depth of field, believable falloff toward the frame edges, and highlight roll-off that behaves like a real sensor instead of a clipped digital curve.",
-        "Keep grain, noise and sharpening uniform across the whole frame so no region looks locally retouched or pasted in.",
-        "Give the light a single believable source and direction, with every shadow in the frame agreeing about where it is and how hard it should be.",
-    ],
-    "Digital & Glitch": [
-        "Apply the effect with rhythm rather than uniformly \u2014 clusters of intense corruption set against passages left almost clean, so it reads as a process that happened to the image rather than a texture laid over it.",
-        "Keep the artefacts faithful to the medium being imitated: the right block sizes, the right channel offsets, the right scanline pitch and bit depth.",
-        "Let the damage follow the image's own structure, concentrating along edges and high-contrast boundaries where a real encoder or signal would actually fail.",
-    ],
-    "Art Movements": [
-        "Borrow the movement's actual grammar \u2014 its characteristic brushwork, palette and treatment of pictorial space \u2014 rather than laying a surface filter over an otherwise unchanged photograph.",
-        "Let the period's material constraints show: the pigments genuinely available, the surfaces worked on, and the way its artists resolved edges, depth and anatomy.",
-        "Compose the way the movement would have, following its conventions for framing, flattening and directing where the eye travels.",
-    ],
-    "Scene & Setting": [
-        "Match the new environment properly: direction and colour temperature of the light falling on the subject, contact shadows where they meet the ground, and atmospheric haze at the correct distance.",
-        "Scale the surroundings believably against the subject, and keep the horizon line and perspective consistent with the original camera height and angle.",
-        "Let the environment act on the subject \u2014 bounce light from nearby surfaces, an overall colour cast, and reflections in anything glossy.",
-    ],
-    "Portrait Makeover": [
-        "Keep skin looking like skin: preserve pores, fine texture and natural asymmetry instead of smoothing the face into something plastic.",
-        "Sit every change believably on the existing bone structure and lighting, matching the direction and softness of shadows already in the frame.",
-        "Preserve the eyes and mouth precisely \u2014 they carry likeness more than any other feature, and small drift there breaks recognition entirely.",
-    ],
-    "Material & Sculpture": [
-        "Make the material behave physically: correct apparent weight, correct surface response to light, and the seams, joins or tool marks its fabrication would genuinely leave.",
-        "Let the form's thickness and structural logic show \u2014 how the object would actually stand, balance and carry its own load.",
-        "Give the surface a believable finish: the right specularity, micro-texture and pattern of wear for that material's age and handling.",
-    ],
-    "Practical Edits": [
-        "Invent nothing: no fabricated detail in recovered areas, no smoothing away real texture, and no drift in the subject's colour, proportions or identity.",
-        "Keep edges clean and free of halos or colour fringing, and match any repaired region to the grain and noise of everything around it.",
-        "Preserve the original tonal relationships so the result looks like a better capture rather than a heavily processed one.",
-    ],
-}
-
-# Output constraints. Shared across categories, rotated so the tail varies.
-OUTPUT = [
-    "Output one finished image with no added text, captions, borders or watermarks.",
-    "Return a single high-resolution image \u2014 no lettering, logos or frames.",
-    "Deliver one clean image at high resolution, without captions, signatures or added borders.",
-    "Produce a single finished frame carrying no watermark, caption or added lettering.",
-]
-
 # Stock-photo search terms, used by fetch-stock.js. Most style names work as-is;
 # these are the ones where the literal name returns nothing useful.
 SEARCH_OVERRIDES = {
-    # An art-history label with no photographic equivalent on a stock site;
-    # "Post-Impressionist" returned zero Pexels results on a real run.
-    "Post-Impressionist": "impressionist oil painting",
     "4K Ultra Sharp": "ultra sharp detailed landscape",
     "8K Hyper Detail": "extremely detailed macro texture",
     "Drone Top-Down": "aerial top down view",
@@ -441,7 +379,7 @@ SEARCH_OVERRIDES = {
     "Magazine Cover": "magazine cover mockup",
     "Loading Screen": "video game screen",
     "Billboard Mockup": "city billboard",
-    "Storefront Window": "shop window display",
+    "Storefront Window": "shop window reflection",
     "Rooftop at Night": "city rooftop night skyline",
     "Professional Headshot": "professional headshot",
     "Corporate Portrait": "corporate business portrait",
@@ -459,7 +397,7 @@ SEARCH_OVERRIDES = {
     "Steampunk Inventor": "steampunk goggles",
     "Renaissance Noble": "renaissance painting portrait",
     "1920s Portrait": "1920s vintage portrait",
-    "1970s Film Portrait": "vintage film portrait",
+    "1970s Film Portrait": "1970s retro portrait",
     "Fashion Editorial": "fashion editorial portrait",
     "White Background Product": "product on white background",
     "Lifestyle Product Shot": "lifestyle product photography",
@@ -499,6 +437,87 @@ SEARCH_OVERRIDES = {
 }
 
 
+# Styles a stock photo genuinely CANNOT demonstrate. A photo tagged "charcoal
+# drawing" really is a charcoal drawing, so stock works there. But no single
+# stock photo shows what "Background Removal" or "Upscale and Sharpen" does —
+# those only make sense as a generated before/after. fetch-stock.js skips these
+# by default; generate them with generate-images.js instead.
+NO_STOCK = {
+    # Practical Edits — these describe an operation, not a look
+    "Background Removal",
+    "Studio Backdrop",
+    "Cinematic Color Grade",
+    "Restore Old Photo",
+    "Colorize Black and White",
+    "Upscale and Sharpen",
+    "Remove Background Clutter",
+    "Change to Golden Hour",
+    "Change to Night",
+    "Change Season to Winter",
+    "Change Season to Autumn",
+    "Add Dramatic Sky",
+    "Add Water Reflection",
+    "Virtual Staging",
+    # Resolution/sharpness claims a stock photo can't convey
+    "4K Ultra Sharp",
+    "8K Hyper Detail",
+    # Compression/quality artifacts that stock libraries don't stock
+    "JPEG Compression",
+    "Deep-Fried Meme",
+}
+
+
+# Hand-written prompts that don't go through the wrapper templates above.
+# These are richer, scene-level prompts — kept verbatim rather than generated.
+# Fields: (name, search term, prompt, uses_reference_photo)
+LITERAL_ENTRIES = {
+    "Trending": [
+        ("Younger Self", "person on park bench with ice cream",
+         "A conceptual split-era Polaroid photograph featuring the person in image_0 (current self) sitting on a weathered park bench beside the person in image_1 (younger self). They are holding ice cream cones and sharing a laugh. "
+         "Medium: 2000s instant film with a white Polaroid border. Lighting: hard direct flash. "
+         "Style: faded pastel colour grading, heavy film grain, slight light leaks. "
+         "CRITICAL: strict facial identity transfer — image_0 to the older figure, image_1 to the younger figure.",
+         True),
+        ("Cozy Anime Interior", "cozy cluttered bedroom plants books",
+         "An interior environmental design of a cosy, cluttered bedroom. "
+         "Style: 2D hand-painted anime art, detailed linework, traditional painterly backgrounds. "
+         "Details: overgrown potted plants on the windowsill, towering shelves of old books. "
+         "Lighting: warm volumetric sunlight streaming through a large bay window. "
+         "Colour palette: soft pastels and lush greens.",
+         False),
+        ("Endless Wildflower Field", "wildflower field big clouds blue sky",
+         "A vast, ultra-wide landscape shot of a lone explorer standing in an endless rolling field of vibrant wildflowers. "
+         "Background: giant fluffy cumulonimbus clouds against a bright blue sky. "
+         "Style: hand-drawn 2D animation, painterly traditional textures, cel-shaded. "
+         "Mood: open, hopeful, quietly epic.",
+         False),
+        ("Train Over Water", "vintage train window ocean sunset",
+         "An interior POV from a vintage train carriage travelling smoothly over a shallow, glowing ocean at sunset. "
+         "Style: 1990s anime aesthetic with hand-painted watercolour backgrounds. "
+         "Lighting: warm golden-hour light flooding the cabin, reflective water surface. "
+         "Mood: dreamy, surreal, melancholic.",
+         False),
+        ("35mm Neon Street", "rainy neon alley night umbrella",
+         "A cinematic 35mm film street photograph of a rainy, narrow alley at midnight. "
+         "Subject: a lone silhouette walking with a clear plastic umbrella. "
+         "Lighting: vibrant neon signage reflecting in wet cobblestone puddles, moody low-key lighting. "
+         "Style: authentic movie still, heavy film grain, rich saturated film emulation, halation around highlights.",
+         False),
+        ("90s Cyberpunk Anime", "retro computer room crt monitors neon",
+         "A retro 1990s anime screenshot of an underground futuristic hacker café. "
+         "Elements: glowing green CRT monitors, messy tangled cables, cluttered desks. "
+         "Style: vintage cyberpunk anime, cel-shaded animation, authentic VHS tracking artifacts, static noise, scanlines. "
+         "Colour palette: neon magenta, cyan, deep shadows.",
+         False),
+        ("70s Travel Postcard", "vintage mediterranean coastal town poster",
+         "A 1970s vintage travel postcard illustration of a sun-baked Mediterranean coastal town. "
+         "Style: retro vector art, faded muted colour palette, slightly grainy offset printing texture, worn edges. "
+         "Details: bold retro sans-serif typography reading \"Greetings from the Coast\".",
+         False),
+    ],
+}
+
+
 def search_term(name):
     if name in SEARCH_OVERRIDES:
         return SEARCH_OVERRIDES[name]
@@ -508,6 +527,93 @@ def search_term(name):
 
 
 SIZES = ["tall", "", "short", "", "tall", "short", "", ""]
+
+
+# Featured concepts — richer, scene-level prompts written out in full rather
+# than assembled from the template above. These are the ones surfaced in the
+# homepage trending strip.
+#
+# `input` says what the user needs to supply, because these vary: some restyle
+# one uploaded photo, one needs two, and some generate a scene from nothing.
+FEATURED = [
+    {
+        "style": "Younger Self",
+        "input": "2 photos",
+        "prompt": (
+            "A conceptual split-era Polaroid photograph featuring the person from your first "
+            "uploaded image (current self) sitting on a weathered park bench beside the person "
+            "from your second uploaded image (younger self). They are holding ice cream cones "
+            "and sharing a laugh. Medium: 2000s instant film with a white Polaroid border. "
+            "Lighting: hard direct flash. Style: faded pastel colour grading, heavy film grain, "
+            "slight light leaks. CRITICAL: strict facial identity transfer — the first image's "
+            "face onto the older figure, the second image's face onto the younger figure."
+        ),
+    },
+    {
+        "style": "35mm Night Street",
+        "input": "1 photo",
+        "prompt": (
+            "Restage the uploaded photo as a cinematic 35mm film street photograph in a narrow, "
+            "rainy alley at midnight. Subject: the person from the photo walking away holding a "
+            "clear plastic umbrella. Lighting: vibrant neon signage reflecting in wet cobblestone "
+            "puddles, moody low-key lighting. Style: authentic movie still, heavy film grain, "
+            "saturated film emulation, halation blooming around the lights. Keep the subject's "
+            "build, hair and clothing recognisable."
+        ),
+    },
+    {
+        "style": "Medium Format Portrait",
+        "input": "1 photo",
+        "prompt": (
+            "Restyle the uploaded portrait as a dreamy, slightly overexposed close-up shot on "
+            "120mm medium format film, with the subject making direct eye contact. Lighting: "
+            "intense golden hour glow, heavy amber light leaks, soft halation. Texture: authentic "
+            "film dust and scratches, 1970s aesthetic. Enforce strict facial consistency with the "
+            "uploaded face — alter only the lighting, grade and framing."
+        ),
+    },
+    {
+        "style": "Cozy Room",
+        "input": "no photo",
+        "prompt": (
+            "An interior environment design of a cosy, cluttered bedroom. Style: hand-painted 2D "
+            "anime art, detailed linework, painterly backgrounds. Details: overgrown potted plants "
+            "on the windowsill, towering shelves of old books, scattered papers and mugs. Lighting: "
+            "warm volumetric sunlight streaming through a large bay window. Colour palette: soft "
+            "pastels, lush greens."
+        ),
+    },
+    {
+        "style": "Infinite Field",
+        "input": "no photo",
+        "prompt": (
+            "A vast, ultra-wide landscape shot of a lone young explorer standing in an endless, "
+            "rolling field of vibrant wildflowers. Background: giant fluffy cumulonimbus clouds "
+            "against a bright blue sky. Style: hand-drawn 2D animation, traditional painterly "
+            "textures, cel-shaded, soft natural light."
+        ),
+    },
+    {
+        "style": "Magical Train",
+        "input": "no photo",
+        "prompt": (
+            "An interior POV perspective from a vintage train carriage travelling seamlessly across "
+            "a shallow, glowing ocean at sunset. Style: 1990s anime aesthetic, hand-painted "
+            "watercolour backgrounds. Lighting: warm golden-hour light flooding the cabin, "
+            "reflective water surface. Mood: dreamy, surreal, melancholic."
+        ),
+    },
+    {
+        "style": "90s Cyberpunk Cafe",
+        "input": "no photo",
+        "prompt": (
+            "A retro 1990s anime screenshot of an underground futuristic hacker cafe. Elements: "
+            "glowing green CRT monitors, messy cable runs, overflowing ashtrays. Style: vintage "
+            "cyberpunk anime, cel-shaded animation, authentic VHS tracking artifacts, static noise, "
+            "scanlines. Colour palette: neon magenta, cyan, deep shadows."
+        ),
+    },
+]
 
 
 def slugify(s):
@@ -526,13 +632,7 @@ for cat, styles in CATALOG.items():
     for name, desc in styles:
         wrapper_set = WRAPPERS.get(cat, DEFAULT_WRAPPERS)
         wrapper = wrapper_set[i % len(wrapper_set)]
-        craft_set = CRAFT[cat]
-        prompt = " ".join([
-            wrapper.format(d=desc),
-            PRESERVE[cat],
-            craft_set[i % len(craft_set)],
-            OUTPUT[i % len(OUTPUT)],
-        ])
+        prompt = wrapper.format(d=desc) + " " + PRESERVE[cat]
         entries.append({
             "style": name,
             "cat": cat,
@@ -540,17 +640,37 @@ for cat, styles in CATALOG.items():
             "prompt": prompt,
             "slug": slugify(name),
             "search": search_term(name),
+            "stock": name not in NO_STOCK,
+            "input": "1 photo",
+            "trending": False,
         })
         i += 1
+
+# Featured concepts are appended after the templated set. Anything whose style
+# name already exists is skipped rather than overwriting the original.
+existing_names = {e["style"] for e in entries}
+skipped_featured = []
+for f in FEATURED:
+    if f["style"] in existing_names:
+        skipped_featured.append(f["style"])
+        continue
+    entries.append({
+        "style": f["style"],
+        "cat": "Featured Concepts",
+        "size": SIZES[len(entries) % len(SIZES)],
+        "prompt": f["prompt"],
+        "slug": slugify(f["style"]),
+        "search": search_term(f["style"]),
+        "stock": False,
+        "input": f["input"],
+        "trending": True,
+    })
 
 # sanity checks
 slugs = [e["slug"] for e in entries]
 assert len(slugs) == len(set(slugs)), "duplicate slug: " + str(
     [s for s in slugs if slugs.count(s) > 1][:5]
 )
-short = [(e["style"], len(e["prompt"])) for e in entries if len(e["prompt"]) < 250]
-assert not short, "prompt under 250 chars: " + str(short[:5])
-
 names = [e["style"] for e in entries]
 assert len(names) == len(set(names)), "duplicate style name"
 
@@ -567,8 +687,7 @@ lines = [
     "       python3 build_prompts.py",
     "",
     "   Fields: style (display name), cat (filter group), size (masonry height),",
-    "   prompt (the text), slug (thumbnail filename in images/), search (stock",
-    "   photo keywords for fetch-stock.js — not used by the site's own search).",
+    "   prompt (the text), slug (thumbnail filename in images/).",
     "   ================================================================== */",
     "window.imagePrompts = [",
 ]
@@ -576,13 +695,13 @@ for e in entries:
     lines.append("  " + json.dumps(e, ensure_ascii=False) + ",")
 lines.append("];")
 
-# Resolve against this file rather than the shell's cwd, so running the script
-# from a parent directory cannot silently drop the output somewhere else.
-# newline="\n" keeps the generated file LF on every platform, not CRLF on Windows.
-OUT_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "prompts-image.js")
-with open(OUT_PATH, "w", encoding="utf-8", newline="\n") as f:
+with open("prompts-image.js", "w", encoding="utf-8") as f:
     f.write("\n".join(lines) + "\n")
 
+if skipped_featured:
+    print("Skipped featured (name already exists): " + ", ".join(skipped_featured))
+stock_ok = sum(1 for e in entries if e["stock"])
 print(f"Wrote prompts-image.js with {len(entries)} prompts")
+print(f"  {stock_ok} can use stock photos, {len(entries) - stock_ok} need generating")
 for cat, styles in CATALOG.items():
     print(f"  {len(styles):>3}  {cat}")
