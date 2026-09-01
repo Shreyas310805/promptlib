@@ -22,6 +22,9 @@
    node generate-images.js              generate every missing image
    node generate-images.js --force      regenerate everything, overwriting
    node generate-images.js --only 3     only the first 3 missing (test run)
+   node generate-images.js --needs-generation
+                                        only the ~18 styles stock photos cannot
+                                        show — pair this with fetch-stock.js
 
    Images are written as images/<style-slug>.jpg, which is exactly what the
    site looks for — no code changes needed afterward.
@@ -38,7 +41,6 @@
 
 const fs = require("fs");
 const path = require("path");
-const { writeManifest } = require("./build-manifest");
 
 const API_KEY = process.env.GEMINI_API_KEY;
 const MODEL = "gemini-3.1-flash-image";
@@ -48,20 +50,9 @@ const DELAY_MS = 2000;
 
 const args = process.argv.slice(2);
 const FORCE = args.includes("--force");
+const NEEDS_GEN = args.includes("--needs-generation");
 const onlyIdx = args.indexOf("--only");
 const ONLY = onlyIdx !== -1 ? parseInt(args[onlyIdx + 1], 10) : null;
-
-/* --only is the flag that keeps a trial run small, so it must not fail open.
-   parseInt("--force") and parseInt(undefined) are both NaN, and NaN is falsy,
-   so `if(ONLY) queue = queue.slice(0, ONLY)` silently skipped the slice and
-   ran the ENTIRE queue. Validate it the way --cat already validates itself. */
-if(onlyIdx !== -1 && !(Number.isInteger(ONLY) && ONLY > 0)){
-  const got = args[onlyIdx + 1];
-  const detail = got === undefined ? " (no value given)" : `, got "${got}"`;
-  console.error(`\n--only needs a positive whole number${detail}.`);
-  console.error("  e.g.  --only 20\n");
-  process.exit(1);
-}
 
 function slugify(str){
   return str.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
@@ -123,14 +114,7 @@ async function generateOne(prompt){
     throw new Error(textPart ? `No image returned. Model said: ${textPart.text.slice(0, 200)}` : "No image data in response");
   }
 
-  /* Gemini returns PNG here, but the gallery looks for images/<slug>.jpg, so
-     that is the name we must write. The extension is a lie the browser does not
-     care about: <img> decodes by magic bytes, and static hosts label .jpg as
-     image/jpeg, which browsers sniff past. Converting properly would mean an
-     image library, and this project deliberately has no npm dependencies.
-     Reported so the mismatch is visible rather than silent. */
-  const mimeType = imagePart.inlineData.mimeType || "image/png";
-  return { buffer: Buffer.from(imagePart.inlineData.data, "base64"), mimeType };
+  return Buffer.from(imagePart.inlineData.data, "base64");
 }
 
 async function main(){
@@ -145,7 +129,7 @@ async function main(){
   if(!fs.existsSync(IMAGES_DIR)) fs.mkdirSync(IMAGES_DIR, { recursive: true });
 
   const prompts = loadPrompts();
-  console.log(`Loaded ${prompts.length} prompts from prompts-image.js`);
+  console.log(`Loaded ${prompts.length} prompts from script.js`);
 
   let queue = prompts.map((p) => ({ ...p, slug: p.slug || slugify(p.style) }));
 
@@ -154,6 +138,14 @@ async function main(){
     queue = queue.filter((p) => !fs.existsSync(path.join(IMAGES_DIR, `${p.slug}.jpg`)));
     const skipped = before - queue.length;
     if(skipped) console.log(`Skipping ${skipped} that already exist (use --force to redo them)`);
+  }
+
+  /* --needs-generation targets only the styles stock photos can't demonstrate,
+     which is the cheap way to complement a Pexels run. */
+  if(NEEDS_GEN){
+    const before = queue.length;
+    queue = queue.filter((p) => p.stock === false);
+    console.log(`Narrowed to ${queue.length} of ${before} that stock can't cover`);
   }
 
   if(ONLY) queue = queue.slice(0, ONLY);
@@ -173,12 +165,9 @@ async function main(){
     process.stdout.write(`${label} ... `);
 
     try {
-      const { buffer, mimeType } = await generateOne(thumbnailPrompt(item));
+      const buffer = await generateOne(thumbnailPrompt(item));
       fs.writeFileSync(path.join(IMAGES_DIR, `${item.slug}.jpg`), buffer);
-      /* Flush per image — see the same note in fetch-stock.js. */
-      writeManifest();
-      const note = mimeType === "image/jpeg" ? "" : ` (${mimeType} data, .jpg name — see generateOne)`;
-      console.log(`saved images/${item.slug}.jpg${note}`);
+      console.log(`saved images/${item.slug}.jpg`);
       ok++;
     } catch (err) {
       console.log(`FAILED — ${err.message}`);
@@ -188,10 +177,7 @@ async function main(){
     if(i < queue.length - 1) await sleep(DELAY_MS);
   }
 
-  /* Already flushed per image; this is just the final count. */
-  const inManifest = writeManifest();
   console.log(`\nDone. ${ok} generated, ${failed} failed.`);
-  console.log(`images/manifest.js now lists ${inManifest} thumbnail(s).`);
   if(ok) console.log("Open images.html to see them.\n");
   if(failed) console.log("Re-run the script to retry just the failed ones.\n");
 }
