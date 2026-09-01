@@ -28,6 +28,7 @@
    node fetch-stock.js --only 20       just the first 20 missing (good first run)
    node fetch-stock.js --cat "Traditional Media"    one category only
    node fetch-stock.js --force         re-fetch even if the file exists
+   node fetch-stock.js --include-all   also fetch the styles stock can't show
 
    RATE LIMIT: Pexels allows 200 requests per hour on a free key. There are 266
    prompts, so a full run is throttled to stay under that and takes roughly 90
@@ -38,13 +39,10 @@
    LICENCE: Pexels photos are free to use, including commercially. Crediting
    photographers is not required but is requested — images.html carries a Pexels
    credit line in the footer for this reason. Keep it if you use this script.
-   Per-photo credits are appended to images/CREDITS.md, which is committed
-   alongside the thumbnails.
    ================================================================== */
 
 const fs = require("fs");
 const path = require("path");
-const { writeManifest } = require("./build-manifest");
 
 const API_KEY = process.env.PEXELS_API_KEY;
 const IMAGES_DIR = path.join(__dirname, "images");
@@ -58,32 +56,11 @@ const args = process.argv.slice(2);
 const FORCE = args.includes("--force");
 const onlyIdx = args.indexOf("--only");
 const ONLY = onlyIdx !== -1 ? parseInt(args[onlyIdx + 1], 10) : null;
-
-/* --only is the flag that keeps a trial run small, so it must not fail open.
-   parseInt("--force") and parseInt(undefined) are both NaN, and NaN is falsy,
-   so `if(ONLY) queue = queue.slice(0, ONLY)` silently skipped the slice and
-   ran the ENTIRE queue. Validate it the way --cat already validates itself. */
-if(onlyIdx !== -1 && !(Number.isInteger(ONLY) && ONLY > 0)){
-  const got = args[onlyIdx + 1];
-  const detail = got === undefined ? " (no value given)" : `, got "${got}"`;
-  console.error(`\n--only needs a positive whole number${detail}.`);
-  console.error("  e.g.  --only 20\n");
-  process.exit(1);
-}
+const INCLUDE_ALL = args.includes("--include-all");
 const catIdx = args.indexOf("--cat");
 const CAT = catIdx !== -1 ? args[catIdx + 1] : null;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-
-/* Appended as each photo lands, not batched to the end of the run. A full run
-   is over an hour; anything held in memory is lost to Ctrl+C or a crash. The
-   header is written once, when the file does not exist yet. */
-function appendCredit(line){
-  const header = fs.existsSync(CREDITS_FILE)
-    ? ""
-    : "# Photo credits\n\nStock thumbnails from Pexels. Free to use, credit appreciated.\n\n";
-  fs.appendFileSync(CREDITS_FILE, header + line + "\n");
-}
 
 function loadPrompts(){
   const file = path.join(__dirname, "prompts-image.js");
@@ -117,10 +94,7 @@ async function searchPhoto(query){
   if(!photo) throw new Error("no results for that search term");
 
   return {
-    /* 'medium' is ~350px tall. Cards render at 230-360px, so 'large' (940px)
-       was fetching roughly 8x the bytes needed and, since thumbnails are
-       committed to the repo, would have bloated it to ~80MB instead of ~13MB. */
-    url: photo.src?.medium || photo.src?.large || photo.src?.original,
+    url: photo.src?.large || photo.src?.medium || photo.src?.original,
     photographer: photo.photographer,
     link: photo.url
   };
@@ -160,6 +134,16 @@ async function main(){
     console.log(`Filtered to category "${CAT}": ${queue.length}`);
   }
 
+  /* Some styles describe an operation ("Background Removal", "Upscale and
+     Sharpen") that no single stock photo can demonstrate. Skipped by default —
+     use generate-images.js for those, or --include-all to fetch anyway. */
+  if(!INCLUDE_ALL){
+    const before = queue.length;
+    queue = queue.filter((p) => p.stock !== false);
+    const dropped = before - queue.length;
+    if(dropped) console.log(`Skipping ${dropped} that stock photos can't represent (--include-all to override)`);
+  }
+
   if(!FORCE){
     const before = queue.length;
     queue = queue.filter((p) => !fs.existsSync(path.join(IMAGES_DIR, `${p.slug}.jpg`)));
@@ -178,6 +162,7 @@ async function main(){
   console.log(`\nFetching ${queue.length} thumbnail(s). Throttled for the Pexels rate limit — about ${mins} min.`);
   console.log("Safe to stop with Ctrl+C at any point; re-running resumes.\n");
 
+  const credits = [];
   let ok = 0, failed = 0;
 
   for(let i = 0; i < queue.length; i++){
@@ -188,13 +173,7 @@ async function main(){
       const photo = await searchPhoto(item.search);
       const buffer = await download(photo.url);
       fs.writeFileSync(path.join(IMAGES_DIR, `${item.slug}.jpg`), buffer);
-      appendCredit(`- ${item.style} — photo by ${photo.photographer} on Pexels (${photo.link})`);
-      /* Refresh the manifest on every save. Until a slug is listed there the
-         gallery will not render its thumbnail, so batching this to the end of
-         the run left every downloaded image invisible for up to 90 minutes —
-         and invisible forever if the run was interrupted. A directory scan
-         costs nothing next to an 18.5s rate-limit pause. */
-      writeManifest();
+      credits.push(`- ${item.style} — photo by ${photo.photographer} on Pexels (${photo.link})`);
       console.log(`saved (${photo.photographer})`);
       ok++;
     } catch (err) {
@@ -211,10 +190,15 @@ async function main(){
     if(i < queue.length - 1) await sleep(DELAY_MS);
   }
 
-  /* Already flushed per photo; this is just the final count. */
-  const inManifest = writeManifest();
+  if(credits.length){
+    const header = fs.existsSync(CREDITS_FILE)
+      ? "\n"
+      : "# Photo credits\n\nStock thumbnails from Pexels. Free to use, credit appreciated.\n\n";
+    fs.appendFileSync(CREDITS_FILE, header + credits.join("\n") + "\n");
+    console.log(`\nCredits appended to images/CREDITS.md`);
+  }
+
   console.log(`\nDone. ${ok} downloaded, ${failed} failed.`);
-  console.log(`images/manifest.js now lists ${inManifest} thumbnail(s).`);
   if(ok) console.log("Open images.html to see them.\n");
 }
 
