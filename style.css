@@ -1,222 +1,24 @@
 /* ============================================
    DESIGN TOKENS
    ============================================ */
-/* ---------------------------------------------------------------
-   THEME TOKENS
-
-   :root is the dark theme — the site's default and its identity.
-   [data-theme="light"] below overrides the same names; nothing else in this
-   file needs to know which theme is active.
-
-   Accents come in two forms because one value cannot serve both jobs:
-     --accent        the brand fill (button/chip backgrounds, borders)
-     --accent-ink    the same hue at a weight that is readable AS TEXT on the
-                     page background. A fill-strength blue on a light surface
-                     lands near 3:1, so text needs a deeper tone.
-     --on-accent     text sitting on top of an --accent fill.
-   --------------------------------------------------------------- */
 :root{
-  color-scheme:dark;
-
-  /* Cool slate rather than pure black. Black plus orange is a warning
-     palette — high alarm, low credibility — so the surfaces carry a slight
-     blue cast and the accent lives in the same family instead of fighting it. */
-  --bg-void:#0e1013;
-  --bg-panel:#161a1f;
-  --bg-panel-hover:#1e232a;
-  --border-subtle:#252b33;
-  --border-strong:#39424e;
-
-  /* type */
-  /* Muted tones are the primary ink at reduced alpha rather than separate
-     greys, so they stay in the same colour family as the surface beneath. */
-  --text-primary:#e8ecf1;
-  --text-muted:rgba(232,236,241,.64);
-  --text-placeholder:rgba(232,236,241,.45);
-
-  /* ONE accent. It used to be two — amber plus a blue that existed only
-     because amber was overloaded, which gave the site two different focus
-     rings and made hover, focus and error look identical. Now amber is the
-     only hue, and the jobs below are separated by ROLE, not by colour. */
-  --accent:#4d8dff;          /* fills: primary button, active chip           */
-  --accent-ink:#8ab4ff;      /* the same hue at a weight readable as TEXT    */
-  --accent-hover:#6ba0ff;
-  --on-accent:#06101f;       /* label sitting on an --accent fill            */
-  --accent-soft:rgba(77,141,255,.28);
-  --accent-amber:var(--accent);        /* legacy alias, still referenced     */
-  --accent-amber-soft:var(--accent-soft);
-
-  /* Roles that must stay legible independently of the brand hue. */
-  --focus-ring:#8ab4ff;
-  /* Warm, so [fill-in] tokens separate from a now-blue accent. */
-  --syntax-var:#e3b778;
-  --syntax-var-bg:rgba(227,183,120,.12);
-  --ok-ink:#6fcf97;
-  --danger-ink:#ff8f8f;
-
-  /* atmosphere */
-  --grid-line:rgba(255,255,255,.028);
-  --scrim:rgba(8,10,14,.72);
-  --shadow-card:0 14px 34px -16px rgba(0,0,0,.7);
-  --shadow-modal:0 30px 80px -30px rgba(0,0,0,.7);
-  /* Translucent so the grid shows through the sticky nav. Must be tokenised:
-     hardcoded dark here left light-mode nav text at 2.65:1. */
-  --nav-bg:rgba(14,16,19,.62);
-  /* Frosted glass. The tint is the surface at low alpha, the hairline is a
-     light edge catching along the top — that highlight is what separates
-     glass from a plain translucent panel. */
-  --bloom-a:rgba(64,150,255,.26);
-  --bloom-b:rgba(140,80,240,.22);
-  --bloom-c:rgba(0,190,190,.20);
-  --lattice:rgba(255,255,255,.055);
-  --lattice-strong:rgba(255,255,255,.10);
-  /* 30% more transparent (.44 -> .31). Thinner glass shows more of what is
-     behind it, which is the whole point — but it also means the blooms above
-     had to come up, or there is nothing to see through it. */
-  --glass-tint:rgba(30,35,42,.31);
-  --glass-edge:rgba(255,255,255,.14);
-  --glass-blur:saturate(1.56) blur(13px);
-  --accent-hover:#f5bb5e;
-  --danger-ink:#ff8f8f;
-  /* Instrument Sans: editorial grotesque, tighter and less corporate than Plex.
-     JetBrains Mono for anything terminal-flavoured. */
-  /* Archivo is a grotesque with a true condensed sibling, which is what makes
-     small uppercase labels work without faking it by tracking out a normal
-     face. Mono stays for prompt text, where it is functional not decorative. */
-  --font-display:'Archivo',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-  --font-label:'Archivo Narrow','Archivo',-apple-system,sans-serif;
-  --font-mono:'JetBrains Mono','SFMono-Regular',Menlo,Consolas,monospace;
-  /* ---- type scale ----------------------------------------------------
-     A real ratio instead of 18 ad-hoc sizes with half-pixel steps. Fluid
-     where it matters so nothing needs a breakpoint to stay in proportion. */
-  --text-2xs:11px;
-  --text-xs:12px;
-  --text-sm:13px;
-  --text-base:15px;
-  --text-md:17px;
-  --text-lg:clamp(19px,1.4vw,21px);
-  --text-xl:clamp(23px,2.2vw,28px);
-  --text-2xl:clamp(30px,3.4vw,40px);
-  --text-3xl:clamp(38px,5.4vw,62px);
-
-  --leading-tight:1.04;
-  --leading-snug:1.18;
-  --leading-body:1.6;
-  --leading-loose:1.75;
-
-  /* Tracking tightens as size grows — the single clearest signal of
-     typography that was set rather than defaulted. */
-  /* Tracking tightens as size grows and opens up at label sizes — the ratios
-     sharplink.com uses (-0.025em at 52px, -0.01em at 24-44px, +0.08em on
-     13px uppercase). Optical, not decorative. */
-  --track-display:-0.025em;
-  --track-heading:-0.012em;
-  --track-body:-0.005em;
-  --track-caps:0.08em;
-
-  /* Measure. Prompt text used to inherit its width from grid tracks and
-     swung between 39 and 72 characters per line depending on viewport. */
-  --measure:66ch;
-  --measure-tight:52ch;
-
-  /* ---- space scale (4px base) ---------------------------------------- */
-  --space-1:4px;   --space-2:8px;   --space-3:12px;  --space-4:16px;
-  --space-5:20px;  --space-6:24px;  --space-8:32px;  --space-10:40px;
-  --space-12:48px; --space-16:64px; --space-20:80px; --space-24:96px;
-
-  --container:1180px;
-  --gutter:clamp(20px,4vw,32px);
-  --nav-h:64px;
-
-  /* Two families, deliberately not one value everywhere.
-
-     Small interactive controls are CAPSULES — chips, buttons, the nav track,
-     the theme switch. A fully-round end reads as "this is a control you
-     press", and it is what stops a row of them looking like table cells.
-
-     Surfaces that hold content get a modest radius instead: a capsule on a
-     card fights the rectangular photograph inside it.
-
-     (This reverses the zero-radius pass taken from sharplink.com. The rest of
-     that work — light display weight, optical tracking, the condensed label
-     face, alpha muting — is unaffected.) */
-  --radius-pill:999px;
-  --radius-sm:8px;
-  --radius:12px;
-  --radius-lg:18px;
-
-  /* ---- motion --------------------------------------------------------
-     Two curves, used everywhere. `standard` is a gentle ease-out for state
-     changes; `entrance` overshoots very slightly so reveals feel driven
-     rather than faded. Durations are short enough to feel immediate. */
-  --ease-standard:cubic-bezier(.2,.7,.3,1);
-  --ease-entrance:cubic-bezier(.16,.84,.34,1.02);
-  /* Slow in, fast through, slow out. Used where a move should feel deliberate
-     rather than springy — the nav indicator and the reveal. */
-  --ease-expressive:cubic-bezier(.785,.135,.15,.86);
-  --dur-1:120ms;
-  --dur-2:200ms;
-  --dur-3:320ms;
-  --dur-4:520ms;
-  --transition-fast:var(--dur-2) var(--ease-standard);
-  --transition-med:var(--dur-3) var(--ease-standard);
+  --bg-void:#0b0c0e;
+  --bg-panel:#15161b;
+  --bg-panel-hover:#1c1d24;
+  --accent-amber:#ffb238;
+  --accent-amber-soft:rgba(255,178,56,.35);
+  --accent-blue:#6c8eff;
+  --accent-blue-soft:rgba(108,142,255,.35);
+  --text-primary:#ececf1;
+  --text-muted:#8c8f9b;
+  --border-subtle:#24252c;
+  --font-display:'IBM Plex Sans',-apple-system,sans-serif;
+  --font-mono:'IBM Plex Mono','SFMono-Regular',Menlo,monospace;
+  --radius:10px;
+  --radius-lg:16px;
+  --transition-fast:.18s ease;
+  --transition-med:.32s ease;
   --section-pad:clamp(56px,9vw,110px);
-}
-
-/* Light theme. Warm paper white rather than pure #fff, which glares against
-   this much monospace. Applied by the inline bootstrap in each <head> before
-   first paint, so switching never flashes the other theme. */
-:root[data-theme="light"]{
-  color-scheme:light;
-
-  /* Light blue rather than warm paper — same family as the dark theme's
-     slate, so the two themes read as one system seen under two lights. */
-  --bg-void:#e9f0fa;
-  --bg-panel:#ffffff;
-  --bg-panel-hover:#e3ebf6;
-  --border-subtle:#d3e0ee;
-  --border-strong:#b2c4d8;
-
-  --text-primary:#0f1720;
-  --text-muted:rgba(15,23,32,.68);
-  --text-placeholder:rgba(15,23,32,.50);
-
-  --accent:#1f6fe0;
-  --accent-ink:#14539f;
-  --accent-hover:#1a5ec2;
-  /* Dark, not white: --accent is a mid amber here, so a near-white label
-     measured 3.12:1. Dark ink on the same fill is 5.70:1. */
-  --on-accent:#1a1200;
-  --accent-soft:rgba(31,111,224,.24);
-  --accent-amber-soft:var(--accent-soft);
-
-  --focus-ring:#14539f;
-  /* Darkened from #8a5a12. Measured through the thinner glass over the
-     strongest bloom it fell to 4.14:1 — saturated fields raise the effective
-     background luminance, so warm mid-tones stop clearing AA. */
-  --syntax-var:#6f4a0c;
-  --syntax-var-bg:rgba(111,74,12,.10);
-  --ok-ink:#1f7a4d;
-  --danger-ink:#b3261e;
-
-  --grid-line:rgba(15,23,32,.045);
-  --scrim:rgba(15,23,32,.38);
-  --shadow-card:0 14px 30px -18px rgba(24,24,26,.34);
-  --shadow-modal:0 30px 70px -30px rgba(24,24,26,.42);
-  --nav-bg:rgba(238,243,250,.62);
-  /* Electric blue into aqua, violet into magenta. A flat pale field gives a
-     translucent layer nothing to refract, so it reads as a grey box; saturated
-     fields are what produce visible colour separation through the glass. */
-  --bloom-a:rgba(0,122,255,.34);
-  --bloom-b:rgba(168,60,235,.28);
-  --bloom-c:rgba(0,196,196,.30);
-  --lattice:rgba(15,23,32,.075);
-  --lattice-strong:rgba(15,23,32,.14);
-  --glass-tint:rgba(255,255,255,.35);
-  --glass-edge:rgba(255,255,255,.92);
-  --glass-blur:saturate(1.4) blur(13px);
-  --accent-hover:#c9861f;
-  --danger-ink:#b3261e;
 }
 
 *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
@@ -231,55 +33,31 @@ body{
   -webkit-font-smoothing:antialiased;
   overflow-x:hidden;
   position:relative;
+  opacity:0;
+  transition:opacity var(--transition-med) ease;
 }
-/* The page fade is OPT-IN. The inline bootstrap in each <head> adds .js while
-   JS is actually running, and adds .loaded on window load. So if script.js is
-   blocked, 404s or throws — or JS is off entirely — none of these rules apply
-   and the page simply renders. body used to be opacity:0 by default, which
-   meant any of those failures left every page permanently blank. */
-.js body{ opacity:0; transition:opacity var(--transition-med) ease; }
-.js body.loaded{ opacity:1; }
-.js body.leaving{ opacity:0; }
+body.loaded{ opacity:1; }
+body.leaving{ opacity:0; }
 
-/* ---- backdrop -------------------------------------------------------
-   Frosted glass needs something behind it. Over a flat fill, backdrop-filter
-   has nothing to blur and every glass surface collapses to a plain tint —
-   which is what was happening.
-
-   Soft colour fields, not the grid-under-a-radial-mask this file used to
-   carry: that pattern is the stock dark-landing-page backdrop, and I removed
-   it earlier for exactly that reason. These are three wide, low-opacity
-   blooms plus a fine dot lattice. The blooms give the glass colour to bend;
-   the lattice gives it detail to smear, which is what actually reads as
-   refraction rather than as translucency.
-
-   Fixed and pointer-events:none, so it never enters hit-testing or scrolls. */
+/* faint terminal-grid atmosphere, fixed behind everything */
 body::before{
   content:"";
-  position:fixed; inset:-10%;
-  pointer-events:none; z-index:0;
-  background:
-    radial-gradient(38% 32% at 18% 12%, var(--bloom-a) 0%, transparent 68%),
-    radial-gradient(34% 30% at 82% 26%, var(--bloom-b) 0%, transparent 66%),
-    radial-gradient(42% 38% at 52% 88%, var(--bloom-c) 0%, transparent 70%);
-  filter:blur(28px);
-}
-body::after{
-  content:"";
-  position:fixed; inset:0;
-  pointer-events:none; z-index:0;
-  background-image:radial-gradient(var(--lattice) 1px, transparent 1px);
-  background-size:22px 22px;
-  /* Fades out low on the page so the footer stays quiet. */
-  -webkit-mask-image:linear-gradient(to bottom, black 0%, black 55%, transparent 92%);
-  mask-image:linear-gradient(to bottom, black 0%, black 55%, transparent 92%);
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  z-index:0;
+  background-image:
+    linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+  background-size:48px 48px;
+  -webkit-mask-image:radial-gradient(ellipse 80% 55% at 50% 0%, black 0%, transparent 70%);
+  mask-image:radial-gradient(ellipse 80% 55% at 50% 0%, black 0%, transparent 70%);
 }
 
 img{ display:block; max-width:100%; }
 a{ color:inherit; }
 button{ font-family:inherit; }
 main{ position:relative; z-index:1; }
-.footer{ position:relative; z-index:1; }
 
 /* ============================================
    ICONS  (inline SVGs use these for sizing — no emoji anywhere on the site)
@@ -293,534 +71,59 @@ main{ position:relative; z-index:1; }
    ============================================ */
 .eyebrow{
   font-family:var(--font-mono);
-  font-size:var(--text-xs);
-  color:var(--accent-ink);
-  letter-spacing:.04em;
+  font-size:13px;
+  color:var(--accent-amber);
+  letter-spacing:.02em;
   margin-bottom:14px;
 }
-/* The site's own chevron in place of a shell '$'. A literal dollar sign reads
-   as generic terminal dressing; this ties the prompt line to the logo mark. */
-.eyebrow-mark{
-  display:inline-block; vertical-align:-2px; margin-right:8px;
-  color:var(--accent);
-}
-.eyebrow-mark svg{ width:14px; height:14px; display:block; }
-.var{ color:var(--syntax-var); }
+.var{ color:var(--accent-blue); }
 
 @keyframes blink{ 0%,49%{opacity:1;} 50%,100%{opacity:0;} }
-.cursor-blink{ animation:blink 1s step-start infinite; color:var(--accent-ink); font-weight:600; }
+.cursor-blink{ animation:blink 1s step-start infinite; color:var(--accent-amber); font-weight:600; }
 
 .demo-dot{ width:8px; height:8px; border-radius:50%; background:var(--accent-amber); display:inline-block; flex-shrink:0; }
 
 .badge{
-  display:inline-flex; align-items:center; padding:4px 11px; border-radius:var(--radius-pill);
-  font-family:var(--font-mono); font-size:var(--text-2xs); letter-spacing:.02em;
+  display:inline-flex; align-items:center; padding:4px 10px; border-radius:999px;
+  font-family:var(--font-mono); font-size:11px; letter-spacing:.02em;
   background:var(--bg-panel-hover); color:var(--text-muted); border:1px solid var(--border-subtle);
 }
-.badge-model{ color:var(--accent-ink); border-color:var(--accent-amber-soft); }
+.badge-model{ color:var(--accent-amber); border-color:var(--accent-amber-soft); }
 
 .btn{
-  display:inline-flex; align-items:center; gap:8px; padding:13px 26px; border-radius:var(--radius-pill);
-  font-family:var(--font-mono); font-size:var(--text-sm); font-weight:500; cursor:pointer;
+  display:inline-flex; align-items:center; gap:8px; padding:13px 24px; border-radius:6px;
+  font-family:var(--font-mono); font-size:14px; font-weight:500; cursor:pointer;
   border:1px solid transparent; text-decoration:none; background:none;
-  transition:background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+  transition:transform var(--transition-fast), background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
 }
-.btn-primary{ background:var(--accent); color:var(--on-accent); }
-.btn-primary:hover{ background:var(--accent-hover); }
+.btn-primary{ background:var(--accent-amber); color:#1a1200; }
+.btn-primary:hover{ transform:translateY(-2px); background:#ffc25e; }
 .btn-ghost{ border-color:var(--border-subtle); color:var(--text-primary); }
-.btn-ghost:hover{ border-color:var(--border-strong); background:var(--bg-panel-hover); }
-.btn-sm{ padding:9px 16px; font-size:var(--text-sm); }
-.btn-copy.copied{ background:var(--accent); color:var(--on-accent); border-color:var(--accent); }
-.btn-copy.copy-failed{ background:transparent; color:var(--danger-ink); border-color:var(--danger-ink); }
+.btn-ghost:hover{ border-color:var(--accent-amber); transform:translateY(-2px); }
+.btn-sm{ padding:9px 16px; font-size:13px; }
+.btn-copy.copied{ background:var(--accent-blue); color:#0a0e1a; border-color:var(--accent-blue); }
 
-/* Visually hidden but still announced — used by the shared live region. */
-.sr-only{
-  position:absolute; width:1px; height:1px; padding:0; margin:-1px;
-  overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;
-}
-
-a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+a:focus-visible, button:focus-visible{ outline:2px solid var(--accent-blue); outline-offset:2px; }
 
 .back-link{
   display:inline-flex; align-items:center; gap:6px;
-  font-family:var(--font-mono); font-size:var(--text-sm); color:var(--text-muted);
+  font-family:var(--font-mono); font-size:13px; color:var(--text-muted);
   text-decoration:none; margin-bottom:28px; transition:color var(--transition-fast);
 }
-.back-link:hover{ color:var(--accent-ink); }
+.back-link:hover{ color:var(--accent-amber); }
 .back-link .icon{ transform:rotate(180deg); }
 
-/* An ANIMATION, not a transition. Every card that uses .reveal also declares
-   its own `transition` shorthand for hover, and the shorthand resets the whole
-   property list — .gallery-card{transition:border-color} was silently killing
-   the reveal's opacity and transform, so cards snapped in. Animations are a
-   separate property, so a card's hover transition cannot reach them.
-
-   Both animated properties are composited, so this never costs layout. */
-/* Gated on html.js, set by the inline <head> bootstrap. Unconditional
-   opacity:0 here meant that with JavaScript disabled every gallery card, nav
-   card and prompt card was invisible — the same failure the body fade had,
-   in a different place. No JS now means no hiding. */
-.js .reveal{ opacity:0; }
-.reveal.in-view{
-  animation:reveal-in var(--dur-4) var(--ease-entrance) both;
+.reveal{
+  opacity:0; transform:translateY(24px);
+  transition:opacity .6s cubic-bezier(.22,.61,.36,1), transform .6s cubic-bezier(.22,.61,.36,1);
 }
-@keyframes reveal-in{
-  from{ opacity:0; transform:translateY(14px); }
-  to{ opacity:1; transform:none; }
-}
+.reveal.in-view{ opacity:1; transform:translateY(0); }
 
 .prompt-block-bar{
   display:flex; align-items:center; gap:8px; padding:10px 14px;
   background:var(--bg-panel-hover); border-bottom:1px solid var(--border-subtle);
-  font-family:var(--font-mono); font-size:var(--text-xs); color:var(--text-muted);
+  font-family:var(--font-mono); font-size:12px; color:var(--text-muted);
   border-radius:var(--radius) var(--radius) 0 0;
-}
-
-
-/* ---- micro-labels ---------------------------------------------------
-   Condensed, uppercase, tracked out. One treatment shared by every small
-   categorical label on the site so they read as a single system. */
-.badge,
-.chip,
-.gallery-count,
-.prompt-thumb-label,
-.builder-req,
-.builder-opt{
-  font-family:var(--font-label);
-  text-transform:uppercase;
-  letter-spacing:var(--track-caps);
-  font-weight:500;
-}
-
-
-/* ---- theme cross-fade -----------------------------------------------
-   Switching themes repaints every surface at once, which reads as a flash.
-   The class is added by initThemeToggle() only for the length of the swap,
-   so nothing carries a permanent all-properties transition.
-
-   Deliberately inside no-preference: the global reduced-motion block below
-   uses `*` with !important, and `.theme-transition *` would out-specify it.
-   Gating here means reduced-motion users simply never get these rules. */
-@media (prefers-reduced-motion: no-preference){
-  :root.theme-transition,
-  :root.theme-transition *,
-  :root.theme-transition *::before,
-  :root.theme-transition *::after{
-    transition:background-color var(--dur-3) var(--ease-standard),
-               border-color var(--dur-3) var(--ease-standard),
-               color var(--dur-3) var(--ease-standard),
-               fill var(--dur-3) var(--ease-standard),
-               stroke var(--dur-3) var(--ease-standard),
-               box-shadow var(--dur-3) var(--ease-standard) !important;
-  }
-  /* The indicator must not slide while the palette changes underneath it. */
-  :root.theme-transition .nav-indicator{ transition:none !important; }
-}
-
-
-/* ---- frosted surface -------------------------------------------------
-   One class for every floating control. -webkit- prefix included: Safari
-   still needs it, and without it the panel falls back to a flat tint
-   rather than disappearing, which is an acceptable degradation. */
-.glass{
-  background:var(--glass-tint);
-  backdrop-filter:var(--glass-blur);
-  -webkit-backdrop-filter:var(--glass-blur);
-  border:1px solid var(--border-subtle);
-  box-shadow:inset 0 1px 0 var(--glass-edge);
-}
-
-
-/* ============================================
-   HOMEPAGE STATS + USES
-   ============================================ */
-.stats{
-  position:relative;
-  max-width:var(--container); margin:0 auto;
-  padding:var(--space-16) var(--gutter) 0;
-}
-/* Anchors the wide empty band the counters float in. Denser and a touch more
-   present than the page-wide lattice, and clipped to this section so it reads
-   as a surface the cards sit ON rather than more page texture. */
-.stats::before{
-  content:"";
-  position:absolute; inset:var(--space-12) 0 0;
-  pointer-events:none; z-index:0;
-  background-image:radial-gradient(var(--lattice-strong) 1px, transparent 1px);
-  background-size:16px 16px;
-  -webkit-mask-image:radial-gradient(ellipse 70% 80% at 50% 50%, black 30%, transparent 100%);
-  mask-image:radial-gradient(ellipse 70% 80% at 50% 50%, black 30%, transparent 100%);
-}
-.stats > *{ position:relative; z-index:1; }
-/* Horizontal scroller, not a grid. The figures are the point, so each one gets
-   the full width of the eye and you travel between them — which is also what
-   makes the counting read as alive rather than as a static row of four. */
-.stat-row{
-  display:flex; gap:var(--space-4);
-  overflow-x:auto; overflow-y:hidden;
-  scroll-snap-type:x mandatory;
-  /* Half the track minus half a card, so the FIRST and LAST cards can each
-     reach the centre. Without it scrollLeft:0 centres the second card and the
-     first one opens already receded. */
-  padding-inline:max(var(--gutter), calc(50% - min(320px,78vw) / 2));
-  padding-bottom:var(--space-4);
-  -webkit-overflow-scrolling:touch;
-  scrollbar-width:none;
-}
-.stat-row::-webkit-scrollbar{ display:none; }
-
-.stat{
-  flex:0 0 min(320px,78vw);
-  scroll-snap-align:center;
-  background:var(--glass-tint);
-  backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
-  border:1px solid var(--border-subtle);
-  box-shadow:inset 0 1px 0 var(--glass-edge);
-  border-radius:var(--radius-lg);
-  padding:var(--space-8) var(--space-6);
-  display:flex; flex-direction:column-reverse; gap:var(--space-2);
-  /* --focus is written by the scroll handler: 1 at the centre, 0 at the edges.
-     Default 1, so if that never runs every card simply sits at full size. */
-  --focus:1;
-  transform:scale(calc(.94 + .06 * var(--focus)));
-  transition:transform var(--dur-2) linear, border-color var(--transition-fast);
-}
-.stat-value{
-  font-size:var(--text-3xl); font-weight:500;
-  letter-spacing:var(--track-display); line-height:var(--leading-tight);
-  color:var(--text-primary);
-  /* Tabular figures, or the width jitters on every tick while counting. */
-  font-variant-numeric:tabular-nums;
-  opacity:calc(.55 + .45 * var(--focus));
-  transition:opacity var(--dur-2) linear;
-}
-
-/* ---- prompt showcase ------------------------------------------------ */
-.showcase{ max-width:var(--container); margin:0 auto; padding:var(--space-20) 0 0; }
-.showcase-head{ max-width:var(--container); margin:0 auto; padding:0 var(--gutter); }
-.showcase-track{
-  list-style:none; display:flex; gap:var(--space-4);
-  margin-top:var(--space-8);
-  padding-block:var(--space-4);
-  padding-inline:max(var(--gutter), calc(50% - min(340px,76vw) / 2));
-  overflow-x:auto; overflow-y:hidden;
-  scroll-snap-type:x mandatory;
-  -webkit-overflow-scrolling:touch;
-  scrollbar-width:none;
-}
-.showcase-track::-webkit-scrollbar{ display:none; }
-.showcase-track:focus-visible{ outline:2px solid var(--focus-ring); outline-offset:4px; }
-
-.showcase-card{
-  flex:0 0 min(340px,76vw);
-  scroll-snap-align:center;
-  background:var(--bg-panel);
-  border:1px solid var(--border-subtle);
-  border-radius:var(--radius-lg);
-  padding:var(--space-5);
-  display:flex; flex-direction:column; gap:var(--space-3);
-  --focus:1;
-  /* The centred card is bigger and fully saturated; its neighbours recede.
-     Both properties are composited, and the defaults leave every card at full
-     size and colour if the handler never runs. */
-  transform:scale(calc(.9 + .1 * var(--focus)));
-  filter:saturate(calc(.25 + .75 * var(--focus)));
-  opacity:calc(.5 + .5 * var(--focus));
-  transition:transform var(--dur-2) linear, filter var(--dur-2) linear, opacity var(--dur-2) linear;
-}
-.showcase-tag{
-  align-self:flex-start;
-  font-family:var(--font-label); text-transform:uppercase;
-  letter-spacing:var(--track-caps); font-weight:500; font-size:var(--text-2xs);
-  color:var(--accent-ink);
-  border:1px solid var(--accent-soft); border-radius:var(--radius-pill);
-  padding:3px 10px;
-}
-.showcase-text{
-  font-family:var(--font-mono); font-size:var(--text-sm);
-  line-height:var(--leading-loose); color:var(--text-primary);
-  display:-webkit-box; -webkit-line-clamp:6; -webkit-box-orient:vertical; overflow:hidden;
-}
-.showcase-foot{
-  margin-top:auto; display:flex; align-items:center; justify-content:space-between; gap:var(--space-3);
-  font-family:var(--font-label); text-transform:uppercase;
-  letter-spacing:var(--track-caps); font-size:var(--text-2xs); color:var(--text-muted);
-}
-
-/* Image variant: thumbnail runs the full width at the top, so the card leads
-   with the result and the prompt sits underneath it. Padding moves onto the
-   inner parts, or the image would inset. */
-.showcase-card--image{ padding:0; overflow:hidden; }
-.showcase-thumb{
-  display:block; width:100%; height:158px; object-fit:cover;
-  border-bottom:1px solid var(--border-subtle);
-  background:var(--bg-panel-hover);
-}
-.showcase-card--image .showcase-tag{ margin:var(--space-4) var(--space-5) 0; }
-.showcase-card--image .showcase-text{ margin:var(--space-3) var(--space-5) 0; -webkit-line-clamp:4; }
-.showcase-card--image .showcase-foot{ margin:var(--space-4) var(--space-5) var(--space-5); }
-.showcase-copy{
-  display:inline-flex; align-items:center; gap:var(--space-2);
-  padding:6px 12px; border-radius:var(--radius-pill);
-  background:transparent; border:1px solid var(--border-subtle);
-  font-family:inherit; text-transform:inherit; letter-spacing:inherit;
-  font-size:var(--text-2xs); color:var(--text-muted); cursor:pointer;
-  transition:color var(--transition-fast), border-color var(--transition-fast);
-}
-.showcase-copy:hover{ color:var(--text-primary); border-color:var(--border-strong); }
-.showcase-copy .icon{ width:13px; height:13px; }
-.stat-label{
-  font-family:var(--font-label); text-transform:uppercase;
-  letter-spacing:var(--track-caps); font-weight:500;
-  font-size:var(--text-2xs); color:var(--text-muted);
-}
-
-.uses{ max-width:var(--container); margin:0 auto; padding:var(--space-20) var(--gutter) 0; }
-.use-list{ list-style:none; margin-top:var(--space-8); border-top:1px solid var(--border-subtle); }
-.use{ border-bottom:1px solid var(--border-subtle); }
-.use a{
-  display:block; padding:var(--space-6) 0;
-  text-decoration:none; color:var(--text-muted);
-  font-size:var(--text-md); line-height:var(--leading-body);
-  max-width:var(--measure);
-  transition:color var(--transition-fast), padding-left var(--dur-3) var(--ease-standard);
-}
-.use a:hover{ color:var(--text-primary); padding-left:var(--space-3); }
-.use-verb{ color:var(--text-primary); font-weight:500; }
-
-
-
-/* ---- frosted boxes --------------------------------------------------
-   Every boxed component that holds text gets the same recipe, so a page
-   reads as one material rather than a mix of glass and flat panels.
-
-   Deliberately NOT applied to .gallery-card: that box IS a photograph, and
-   frosting it would fight the image instead of floating above it. */
-.nav-card,
-.prompt-card,
-.showcase-card,
-.prompt-block,
-.gallery-error,
-.modal,
-.demo-card{
-  background:var(--glass-tint);
-  backdrop-filter:var(--glass-blur);
-  -webkit-backdrop-filter:var(--glass-blur);
-  box-shadow:inset 0 1px 0 var(--glass-edge);
-}
-
-/* ---- hover: enlarge and reveal --------------------------------------
-   A boxed card grows slightly and lifts its ink on hover; where a card has
-   detail it is holding back, that detail expands into view. transform and
-   opacity are composited; max-height is not, but it runs on one hovered card
-   at a time rather than across a grid. */
-.nav-card,
-.prompt-card,
-.showcase-card,
-.stat{
-  transform:translate3d(0,0,0) scale(1);
-  transition:transform var(--dur-3) var(--ease-standard),
-             border-color var(--transition-fast),
-             background var(--transition-fast);
-}
-/* A real lift on hover. This reverses my earlier removal of the hover-lift —
-   that call was about FIVE identical lifts firing on everything including
-   buttons, which made the gesture meaningless. One consistent lift reserved
-   for cards is a different thing: it tells you the card is the unit you can
-   act on. translate and border only; both cheap, and the border carries the
-   change for anyone who cannot perceive the motion. */
-.nav-card:hover,
-.prompt-card:hover,
-.stat:hover,
-.gallery-card:hover,
-.saved-item:hover{
-  transform:translate3d(0,-4px,0);
-  border-color:var(--border-strong);
-}
-.gallery-card,
-.saved-item{
-  transition:transform var(--dur-3) var(--ease-standard), border-color var(--transition-fast);
-}
-@media (hover:hover){
-  /* Composed, not replaced: the showcase card is already scaled by --focus,
-     so the lift has to be added to that transform rather than overwrite it. */
-  .showcase-card:hover{ transform:translateY(-4px) scale(calc(.94 + .1 * var(--focus))); }
-}
-@media (prefers-reduced-motion:reduce){
-  .nav-card:hover,
-  .prompt-card:hover,
-  .stat:hover,
-  .gallery-card:hover,
-  .saved-item:hover,
-  .showcase-card:hover{ transform:none; }
-}
-
-/* The detail a card holds back until you ask for it. */
-.card-reveal{
-  max-height:0; opacity:0; overflow:hidden;
-  transition:max-height var(--dur-3) var(--ease-standard),
-             opacity var(--dur-2) var(--ease-standard),
-             margin-top var(--dur-3) var(--ease-standard);
-}
-.nav-card:hover .card-reveal,
-.nav-card:focus-visible .card-reveal,
-.prompt-card:hover .card-reveal,
-.prompt-card:focus-within .card-reveal,
-.gallery-card:hover .card-reveal,
-.gallery-card:focus-visible .card-reveal{
-  max-height:9rem; opacity:1; margin-top:var(--space-2);
-}
-.card-reveal p{
-  font-size:var(--text-xs); line-height:var(--leading-body); color:var(--text-muted);
-}
-
-/* Gallery cards reveal a prompt excerpt over the photograph. */
-.gallery-card .card-reveal{
-  font-family:var(--font-mono); font-size:var(--text-2xs);
-  line-height:1.55; color:rgba(255,255,255,.88);
-}
-.gallery-card:hover .card-reveal,
-.gallery-card:focus-visible .card-reveal{ max-height:6.5rem; }
-
-/* ============================================
-   SIDE PANE — saved prompts, settings, about
-   ============================================ */
-.pane-open{
-  position:fixed; left:var(--gutter); bottom:var(--gutter); z-index:120;
-  display:inline-flex; align-items:center; gap:var(--space-2);
-  padding:11px 15px;
-  background:var(--glass-tint);
-  backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
-  border:1px solid var(--border-subtle);
-  box-shadow:inset 0 1px 0 var(--glass-edge), var(--shadow-card);
-  border-radius:var(--radius-pill);
-  color:var(--text-muted); cursor:pointer;
-  transition:color var(--transition-fast), border-color var(--transition-fast), transform var(--dur-2) var(--ease-standard);
-}
-.pane-open:hover{ color:var(--text-primary); border-color:var(--border-strong); }
-.pane-open:active{ transform:scale(.96); }
-.pane-open .icon{ width:17px; height:17px; }
-.pane-open-count{
-  font-family:var(--font-label); font-size:var(--text-2xs); font-weight:600;
-  letter-spacing:var(--track-caps);
-  min-width:19px; height:19px; padding:0 5px;
-  display:inline-flex; align-items:center; justify-content:center;
-  background:var(--accent); color:var(--on-accent); border-radius:var(--radius-pill);
-}
-
-.pane-scrim{
-  position:fixed; inset:0; z-index:130; background:var(--scrim);
-  opacity:0; transition:opacity var(--transition-fast);
-}
-.pane-scrim.is-open{ opacity:1; }
-
-.side-pane{
-  position:fixed; top:0; left:0; bottom:0; z-index:140;
-  width:min(370px,86vw);
-  display:flex; flex-direction:column;
-  background:var(--glass-tint);
-  backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
-  border-right:1px solid var(--border-subtle);
-  box-shadow:inset -1px 0 0 var(--glass-edge), var(--shadow-modal);
-  /* Off-canvas by transform, not by left/right — composited, so opening does
-     not lay out the page behind it. visibility keeps it out of the tab order
-     while closed, delayed so the slide-out still plays. */
-  transform:translate3d(-100%,0,0);
-  visibility:hidden;
-  transition:transform var(--dur-3) var(--ease-expressive),
-             visibility 0s linear var(--dur-3);
-}
-.side-pane.is-open{
-  transform:translate3d(0,0,0); visibility:visible;
-  transition:transform var(--dur-3) var(--ease-expressive), visibility 0s;
-}
-
-.pane-head{
-  display:flex; align-items:center; justify-content:space-between;
-  padding:var(--space-5) var(--space-5) var(--space-4);
-  border-bottom:1px solid var(--border-subtle);
-}
-.pane-title{ font-size:var(--text-lg); font-weight:500; letter-spacing:var(--track-heading); }
-.pane-close{
-  display:inline-flex; align-items:center; justify-content:center;
-  width:34px; height:34px; border-radius:var(--radius-pill);
-  background:transparent; border:1px solid var(--border-subtle);
-  color:var(--text-muted); cursor:pointer;
-  transition:color var(--transition-fast), border-color var(--transition-fast);
-}
-.pane-close:hover{ color:var(--text-primary); border-color:var(--border-strong); }
-.pane-close .icon{ width:16px; height:16px; }
-
-.pane-scroll{ flex:1; overflow-y:auto; padding:var(--space-5); display:flex; flex-direction:column; gap:var(--space-8); }
-.pane-section{ display:flex; flex-direction:column; gap:var(--space-3); }
-.pane-heading{
-  font-family:var(--font-label); text-transform:uppercase;
-  letter-spacing:var(--track-caps); font-weight:500;
-  font-size:var(--text-2xs); color:var(--text-muted);
-}
-.pane-body{ font-size:var(--text-sm); line-height:var(--leading-body); color:var(--text-muted); }
-.pane-empty{ font-size:var(--text-sm); color:var(--text-placeholder); line-height:var(--leading-body); }
-
-/* saved list */
-.saved-item{
-  display:flex; align-items:flex-start; gap:var(--space-2);
-  padding:var(--space-3); border:1px solid var(--border-subtle);
-  border-radius:var(--radius); background:var(--bg-panel);
-  transition:border-color var(--transition-fast);
-}
-.saved-item + .saved-item{ margin-top:var(--space-2); }
-.saved-item:hover{ border-color:var(--border-strong); }
-.saved-text{ flex:1; min-width:0; }
-.saved-name{ display:block; font-size:var(--text-sm); font-weight:500; color:var(--text-primary); }
-.saved-snippet{
-  display:block; margin-top:2px; font-size:var(--text-xs); color:var(--text-muted);
-  line-height:1.5;
-  /* Two lines then ellipsis — a saved prompt is a reminder, not the prompt. */
-  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
-}
-.saved-drop{
-  flex-shrink:0; width:26px; height:26px; padding:0;
-  display:inline-flex; align-items:center; justify-content:center;
-  background:transparent; border:1px solid var(--border-subtle);
-  border-radius:var(--radius-pill); color:var(--text-muted); cursor:pointer;
-  transition:color var(--transition-fast), border-color var(--transition-fast);
-}
-.saved-drop:hover{ color:var(--danger-ink); border-color:var(--danger-ink); }
-.saved-drop .icon{ width:13px; height:13px; }
-
-/* settings switches */
-.setting-list{ list-style:none; display:flex; flex-direction:column; gap:var(--space-1); }
-.setting{
-  display:flex; align-items:center; justify-content:space-between; gap:var(--space-4);
-  padding:var(--space-3) 0; border-bottom:1px solid var(--border-subtle);
-}
-.setting:last-child{ border-bottom:none; }
-.setting-label{ font-size:var(--text-sm); color:var(--text-primary); display:flex; flex-direction:column; gap:2px; cursor:pointer; }
-.setting-hint{ font-size:var(--text-2xs); color:var(--text-muted); }
-
-.switch{
-  position:relative; flex-shrink:0;
-  width:42px; height:24px; padding:0;
-  background:var(--bg-panel-hover); border:1px solid var(--border-subtle);
-  border-radius:var(--radius-pill); cursor:pointer;
-  transition:background var(--transition-fast), border-color var(--transition-fast);
-}
-.switch[aria-checked="true"]{ background:var(--accent); border-color:var(--accent); }
-.switch-thumb{
-  position:absolute; top:2px; left:2px;
-  width:18px; height:18px; border-radius:var(--radius-pill);
-  background:var(--text-primary);
-  transform:translate3d(0,0,0);
-  transition:transform var(--dur-2) var(--ease-expressive), background var(--transition-fast);
-}
-.switch[aria-checked="true"] .switch-thumb{ transform:translate3d(18px,0,0); background:var(--on-accent); }
-
-/* save-to-library button on prompts */
-.btn-save[aria-pressed="true"]{ color:var(--accent-ink); border-color:var(--accent-soft); }
-.btn-save[aria-pressed="true"] .icon{ fill:currentColor; }
-
-@media (max-width:640px){
-  .pane-open{ left:auto; right:var(--gutter); }
 }
 
 /* ============================================
@@ -828,113 +131,18 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
    ============================================ */
 .nav{
   position:sticky; top:0; z-index:100;
-  background:var(--nav-bg);
-  backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
-  /* Transparent at rest so the nav sits ON the page; the rule appears only
-     once content has scrolled under it. Cheaper and calmer than a permanent
-     border, and it tells you where you are. */
-  border-bottom:1px solid transparent;
-  transition:border-color var(--dur-3) var(--ease-standard), background var(--dur-3) var(--ease-standard);
+  background:rgba(11,12,14,.82); backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--border-subtle);
 }
-.nav.is-scrolled{ border-bottom-color:var(--border-subtle); }
-.nav-inner{
-  max-width:var(--container); margin:0 auto;
-  padding:var(--space-3) var(--gutter); min-height:var(--nav-h);
-  display:flex; align-items:center; justify-content:space-between; gap:var(--space-4);
-}
-/* The toggle used to be pushed to the far edge by space-between, leaving a
-   wide dead gap between it and the links. Clustered, they read as one group. */
-.nav-cluster{ display:flex; align-items:center; gap:var(--space-2); }
-
-/* Logo lockup: mark and word optically balanced, word slightly tightened so
-   it reads as a wordmark rather than a run of monospace. */
-.logo{
-  display:inline-flex; align-items:center; gap:var(--space-2);
-  font-family:var(--font-display); font-size:var(--text-md); font-weight:600;
-  letter-spacing:var(--track-heading);
-  text-decoration:none; color:var(--text-primary); flex-shrink:0;
-}
-.logo-mark{ width:26px; height:26px; flex-shrink:0; }
-.logo-word{ transition:opacity var(--dur-2) var(--ease-standard); }
-.logo:hover .logo-word{ opacity:.7; }
-
-/* Segmented control. The links sit in one inset track with a single moving
-   indicator behind them, instead of each carrying its own background. */
-.nav-links{
-  position:relative;
-  display:flex; align-items:center; gap:var(--space-1);
-  padding:var(--space-1);
-  background:var(--glass-tint);
-  backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
-  border:1px solid var(--border-subtle);
-  box-shadow:inset 0 1px 0 var(--glass-edge);
-  border-radius:var(--radius-pill);
-}
-
-/* The indicator is the ONLY thing that moves, and it moves on transform +
-   width, so travelling between links never triggers layout on the links
-   themselves. Positioned by initNavIndicator() in script.js. */
-.nav-indicator{
-  position:absolute; top:var(--space-1); left:0;
-  height:calc(100% - var(--space-2));
-  border-radius:var(--radius-pill);
-  background:var(--bg-panel-hover);
-  border:1px solid var(--border-subtle);
-  opacity:0;
-  transform:translate3d(0,0,0);
-  transition:transform var(--dur-3) var(--ease-entrance),
-             width var(--dur-3) var(--ease-entrance),
-             opacity var(--dur-2) var(--ease-standard);
-  pointer-events:none;
-}
-.nav-indicator.is-ready{ opacity:1; }
-
-/* ---- theme switch ---------------------------------------------------
-   One compact control, not a two-cell track. The two glyphs are stacked and
-   crossfade through a rotation, so the moon does not vanish before the sun
-   arrives — the swap reads as one object turning rather than two icons
-   swapping places. Both animated properties are composited.
-
-   role=switch + aria-checked carries the state; the glyphs are decorative. */
-.theme-switch{
-  position:relative; flex-shrink:0;
-  display:inline-flex; align-items:center; justify-content:center;
-  width:40px; height:40px;
-  background:var(--glass-tint);
-  backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
-  border:1px solid var(--border-subtle);
-  box-shadow:inset 0 1px 0 var(--glass-edge);
-  border-radius:var(--radius-pill);
-  color:var(--text-muted); cursor:pointer;
-  transition:color var(--transition-fast), border-color var(--transition-fast);
-}
-.theme-switch:hover{ color:var(--text-primary); border-color:var(--border-strong); }
-
-.theme-icons{ position:relative; width:18px; height:18px; display:block; }
-.theme-icons .icon{
-  position:absolute; inset:0; width:18px; height:18px;
-  transition:opacity var(--dur-3) var(--ease-standard),
-             transform var(--dur-3) var(--ease-expressive);
-}
-/* Dark: moon settled, sun waiting rotated back and small. */
-.theme-icon-moon{ opacity:1; transform:rotate(0deg) scale(1); }
-.theme-icon-sun{ opacity:0; transform:rotate(-90deg) scale(.5); }
-:root[data-theme="light"] .theme-icon-moon{ opacity:0; transform:rotate(90deg) scale(.5); }
-:root[data-theme="light"] .theme-icon-sun{ opacity:1; transform:rotate(0deg) scale(1); }
+.nav-inner{ max-width:1180px; margin:0 auto; padding:16px 32px; display:flex; align-items:center; justify-content:space-between; }
+.logo{ display:inline-flex; align-items:center; gap:10px; font-family:var(--font-mono); font-size:16px; font-weight:500; text-decoration:none; color:var(--text-primary); }
+.nav-links{ display:flex; gap:8px; }
 .nav-link{
-  position:relative; z-index:1;
-  font-family:var(--font-display); font-size:var(--text-sm); font-weight:500;
-  letter-spacing:var(--track-body);
-  text-decoration:none; color:var(--text-muted);
-  padding:var(--space-2) var(--space-4); border-radius:var(--radius-pill);
-  transition:color var(--dur-2) var(--ease-standard);
-  white-space:nowrap;
+  font-family:var(--font-mono); font-size:14px; text-decoration:none; color:var(--text-muted);
+  padding:8px 14px; border-radius:6px; transition:color var(--transition-fast), background var(--transition-fast);
 }
 .nav-link:hover{ color:var(--text-primary); }
-/* No background here — the indicator supplies it. Weight and colour carry
-   the active state so it still reads when the indicator has not positioned
-   yet, or when JS is off entirely. */
-.nav-link.active{ color:var(--text-primary); font-weight:600; }
+.nav-link.active{ color:var(--accent-amber); background:var(--bg-panel); }
 
 .nav-toggle{ display:none; flex-direction:column; justify-content:center; gap:5px; width:34px; height:34px; background:none; border:none; cursor:pointer; }
 .nav-toggle span{ display:block; width:100%; height:2px; background:var(--text-primary); transition:transform var(--transition-fast), opacity var(--transition-fast); }
@@ -946,101 +154,37 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
    PAGE HEADER (images / text hub / category pages)
    ============================================ */
 .section-inner{ max-width:1180px; margin:0 auto; padding:var(--section-pad) 32px; }
-.section-title{
-  font-size:var(--text-2xl); font-weight:500;
-  line-height:var(--leading-tight); letter-spacing:var(--track-display);
-  max-width:20ch; text-wrap:balance; margin-bottom:var(--space-3);
-}
-.section-sub{ max-width:var(--measure); color:var(--text-muted); font-size:var(--text-md);
-  line-height:var(--leading-body); margin-bottom:var(--space-10); }
+.section-title{ font-size:clamp(28px,4vw,40px); font-weight:700; margin-bottom:10px; }
+.section-sub{ color:var(--text-muted); font-size:16px; margin-bottom:44px; }
 
 /* ============================================
    HERO (index.html only)
    ============================================ */
-.hero{ padding-top:calc(var(--section-pad) * .5); }
-
-/* Editorial two-column: the pitch reads down the left, the live demo sits to
-   the right on its own optical axis. The old layout centred everything, then
-   had .demo-body{text-align:left} quietly fight it back — three different
-   measures floating in one container, sharing no edges. */
-.hero-grid{
-  max-width:var(--container); margin:0 auto; padding:0 var(--gutter) var(--space-12);
-  display:grid; gap:clamp(var(--space-8),5vw,var(--space-16));
-  grid-template-columns:minmax(0,1fr);
-  align-items:center;
-}
-@media (min-width:1000px){
-  .hero-grid{ grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr); }
-}
-.hero-inner{ padding:0; text-align:left; }
-.hero-title{
-  font-size:var(--text-3xl); font-weight:500;
-  line-height:var(--leading-tight); letter-spacing:var(--track-display);
-  max-width:14ch; margin:0 0 var(--space-5); text-wrap:balance;
-}
-/* Was a two-stop gradient clipped to the text. Gradient type is the single
-   most generic thing a dark landing page can do, so this is now a solid accent
-   with a weighted underline — same emphasis, reads as typography instead. */
-.text-gradient{
-  color:var(--accent-ink);
-  box-shadow:inset 0 -0.14em 0 var(--accent-amber-soft);
-}
-.hero-sub{
-  max-width:var(--measure-tight); margin:0 0 var(--space-8);
-  color:var(--text-muted); font-size:var(--text-md); line-height:var(--leading-body);
-}
-.hero-cta-row{ display:flex; gap:var(--space-3); flex-wrap:wrap; }
-
-/* Two cards, offset. The example sits behind and slightly up-left so the
-   prompt card reads as the front plane; both cast a soft shadow so they lift
-   off the gradient rather than sitting flat on it. */
-.demo-stack{ position:relative; padding-top:var(--space-10); }
-
-.demo-behind{
-  position:absolute; top:0; right:var(--space-8); left:var(--space-12);
-  border:1px solid var(--border-subtle); border-radius:var(--radius-lg);
-  background:var(--glass-tint);
-  backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
-  box-shadow:inset 0 1px 0 var(--glass-edge), 0 18px 40px -24px rgba(0,0,0,.55);
-  overflow:hidden;
-  transform:rotate(-1.4deg);
-  transition:transform var(--dur-3) var(--ease-standard);
-}
-.demo-behind-thumb{ display:block; height:104px; }
-.demo-behind-bar{
-  display:flex; align-items:center; gap:var(--space-2);
-  padding:var(--space-2) var(--space-4);
-  border-top:1px solid var(--border-subtle);
-}
-.demo-behind-name{ font-family:var(--font-mono); font-size:var(--text-2xs); color:var(--text-muted); }
+.hero{ padding-top:calc(var(--section-pad) * 0.55); }
+.hero-inner{ max-width:1180px; margin:0 auto; padding:0 32px 56px; text-align:center; }
+.hero-title{ font-size:clamp(36px,6vw,64px); font-weight:700; line-height:1.12; letter-spacing:-.01em; max-width:820px; margin:0 auto 22px; }
+.text-gradient{ background:linear-gradient(100deg, var(--accent-amber), var(--accent-blue)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.hero-sub{ max-width:560px; margin:0 auto 36px; color:var(--text-muted); font-size:17px; }
+.hero-cta-row{ display:flex; gap:14px; justify-content:center; flex-wrap:wrap; }
 
 .demo-card{
-  position:relative; z-index:1; margin:0;
-  border:1px solid var(--border-subtle);
-  border-radius:var(--radius-lg); overflow:hidden;
-  box-shadow:0 26px 56px -28px rgba(0,0,0,.62);
-}
-.demo-stack:hover .demo-behind{ transform:rotate(-2.6deg) translateY(-4px); }
-
-@media (max-width:640px){
-  .demo-stack{ padding-top:var(--space-8); }
-  .demo-behind{ left:var(--space-6); right:var(--space-4); }
-  .demo-behind-thumb{ height:76px; }
+  max-width:640px; margin:56px auto 0; background:var(--bg-panel); border:1px solid var(--border-subtle);
+  border-radius:var(--radius-lg); overflow:hidden; box-shadow:0 30px 80px -30px rgba(0,0,0,.7);
 }
 .demo-card-bar{ display:flex; align-items:center; gap:10px; padding:12px 16px; background:var(--bg-panel-hover); border-bottom:1px solid var(--border-subtle); }
-.demo-filename{ font-family:var(--font-mono); font-size:var(--text-xs); color:var(--text-muted); flex:1; text-align:left; }
+.demo-filename{ font-family:var(--font-mono); font-size:12px; color:var(--text-muted); flex:1; text-align:left; }
 .demo-body{ padding:22px 20px 24px; text-align:left; }
-.demo-prompt-line{ font-family:var(--font-mono); font-size:var(--text-sm); line-height:1.6; min-height:44px; }
-.demo-prompt-prefix{ color:var(--syntax-var); margin-right:6px; }
-.demo-result{ margin-top:16px; border-radius:var(--radius); overflow:hidden; opacity:0; max-height:0; transition:opacity .5s ease, max-height .5s ease; }
+.demo-prompt-line{ font-family:var(--font-mono); font-size:14px; line-height:1.6; min-height:44px; }
+.demo-prompt-prefix{ color:var(--accent-blue); margin-right:6px; }
+.demo-result{ margin-top:16px; border-radius:8px; overflow:hidden; opacity:0; max-height:0; transition:opacity .5s ease, max-height .5s ease; }
 .demo-result.show{ opacity:1; max-height:320px; }
 .demo-swatch{
-  min-height:190px; border-radius:var(--radius); position:relative; overflow:hidden;
+  min-height:190px; border-radius:8px; position:relative; overflow:hidden;
   display:flex; align-items:flex-end; padding:18px;
 }
 .demo-result-text{
-  font-family:var(--font-mono); font-size:var(--text-sm); line-height:1.6; color:var(--text-muted); white-space:pre-wrap;
-  background:var(--bg-void); padding:16px; border:1px solid var(--border-subtle); border-radius:var(--radius);
+  font-family:var(--font-mono); font-size:13px; line-height:1.6; color:var(--text-muted); white-space:pre-wrap;
+  background:var(--bg-void); padding:16px; border:1px solid var(--border-subtle); border-radius:8px;
 }
 
 /* nav cards — used on homepage (2-up) and text hub (4-up) */
@@ -1049,14 +193,14 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
 .nav-card{
   display:block; background:var(--bg-panel); border:1px solid var(--border-subtle); border-radius:var(--radius-lg);
   padding:26px; text-decoration:none; color:var(--text-primary); position:relative;
-  transition:border-color var(--transition-fast), background var(--transition-fast);
+  transition:transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
-.nav-card:hover{ border-color:var(--border-strong); background:var(--bg-panel-hover); }
-.nav-card .icon-lg{ color:var(--accent-ink); margin-bottom:16px; }
-.nav-card h3{ font-size:var(--text-lg); font-weight:500; letter-spacing:var(--track-heading); margin-bottom:var(--space-2); }
-.nav-card p{ color:var(--text-muted); font-size:var(--text-sm); line-height:1.6; }
+.nav-card:hover{ transform:translateY(-4px); border-color:var(--accent-amber); box-shadow:0 16px 40px -14px rgba(0,0,0,.6); }
+.nav-card .icon-lg{ color:var(--accent-amber); margin-bottom:16px; }
+.nav-card h3{ font-size:18px; margin-bottom:8px; }
+.nav-card p{ color:var(--text-muted); font-size:13.5px; line-height:1.6; }
 .nav-card-arrow{ position:absolute; top:26px; right:26px; color:var(--text-muted); transition:transform var(--transition-fast), color var(--transition-fast); }
-.nav-card:hover .nav-card-arrow{ transform:translate(3px,-3px); color:var(--accent-ink); }
+.nav-card:hover .nav-card-arrow{ transform:translate(3px,-3px); color:var(--accent-amber); }
 
 /* ============================================
    IMAGE GALLERY (images.html)
@@ -1065,138 +209,86 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
    between those rows — with a 20px row-gap, `span 34` renders ~1000px tall
    instead of 340px. Vertical spacing comes from the card's margin instead. */
 .gallery-grid{
-  display:grid; grid-template-columns:repeat(auto-fill,minmax(min(230px,100%),1fr));
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr));
   grid-auto-rows:10px; grid-auto-flow:dense; column-gap:20px; row-gap:0;
 }
-/* Cards are <button> elements — reset the UA chrome but leave background alone,
-   the .swatch-N rules below own that. */
 .gallery-card{
-  appearance:none; -webkit-appearance:none;
-  font:inherit; color:inherit; text-align:left; width:100%; padding:0;
   position:relative; overflow:hidden; border-radius:var(--radius); border:1px solid var(--border-subtle);
-  cursor:pointer; grid-row-end:span 30; margin:0 0 var(--space-5);
-  transition:border-color var(--transition-fast);
+  cursor:pointer; grid-row-end:span 30; margin-bottom:20px;
+  transition:transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 .gallery-card.tall{ grid-row-end:span 38; }
 .gallery-card.short{ grid-row-end:span 24; }
-/* Was translateY(-4px) + amber border + shadow, repeated identically on three
-   card types. A lift on every surface means nothing; the image itself is the
-   content, so hovering just brings it forward very slightly. */
-.gallery-card:hover{ border-color:var(--border-strong); }
-.gallery-card:hover .real-photo{ transform:scale(1.03); }
+.gallery-card:hover{ transform:translateY(-4px); border-color:var(--accent-amber); box-shadow:0 16px 40px -14px rgba(0,0,0,.6); }
 
 /* style swatches — generated gradients standing in for a real render, no external images */
-/* Placeholder art for cards without a thumbnail. Deliberately muted and
-   closely related — six saturated rainbow gradients read as generic AI filler
-   and fought the photographs sitting next to them. These stay dark enough for
-   white text in either theme. */
-.swatch-0{ background:linear-gradient(150deg,#c08843,#9c5742); }
-.swatch-1{ background:linear-gradient(150deg,#5866a4,#3b4265); }
-.swatch-2{ background:linear-gradient(150deg,#3f8a80,#2d5a58); }
-.swatch-3{ background:linear-gradient(150deg,#77597f,#4c3b5a); }
-.swatch-4{ background:linear-gradient(150deg,#ae6d5d,#844d50); }
-.swatch-5{ background:linear-gradient(150deg,#5a6f83,#3a4857); }
+.swatch-0{ background:linear-gradient(135deg,#ffb238,#ff6b6b); }
+.swatch-1{ background:linear-gradient(135deg,#6c8eff,#a685ff); }
+.swatch-2{ background:linear-gradient(135deg,#38e8c6,#6c8eff); }
+.swatch-3{ background:linear-gradient(135deg,#ffb238,#a685ff); }
+.swatch-4{ background:linear-gradient(135deg,#ff6b6b,#ffb238); }
+.swatch-5{ background:linear-gradient(135deg,#38e8c6,#ffb238); }
 
 .gallery-card{ display:flex; align-items:flex-end; }
 .real-photo{
   position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0;
-  /* transform only — a composited property, so the hover never triggers layout
-     or paint. scale, not translate, because the image is the content. */
-  transform:scale(1);
-  transition:transform var(--dur-4) var(--ease-standard);
 }
 .swatch-texture{
-  display:block;
   position:absolute; inset:0; pointer-events:none;
   background-image:
-    linear-gradient(rgba(255,255,255,.07) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,.07) 1px, transparent 1px);
+    linear-gradient(rgba(255,255,255,.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.12) 1px, transparent 1px);
   background-size:26px 26px;
   mix-blend-mode:overlay;
 }
 .swatch-content{
-  position:relative; z-index:1; width:100%; padding:var(--space-4);
+  position:relative; z-index:1; width:100%; padding:16px;
   display:flex; flex-direction:column; gap:8px; align-items:flex-start;
   background:linear-gradient(180deg, transparent 0%, rgba(6,7,9,.6) 75%);
 }
 .swatch-name{
-  display:block;
-  font-family:var(--font-display); font-weight:500; font-size:var(--text-lg); color:#fff; letter-spacing:var(--track-heading);
+  font-family:var(--font-display); font-weight:700; font-size:19px; color:#fff;
   text-shadow:0 2px 14px rgba(0,0,0,.4); line-height:1.25;
 }
 
 /* gallery filter controls */
 .gallery-controls{ margin-bottom:32px; display:flex; flex-direction:column; gap:16px; }
 .gallery-search-wrap{ position:relative; display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
-/* Class, not ID. This was #gallerySearch, so the identical #categorySearch in
-   partials/text-controls.html inherited nothing and ppt/essay/report/email
-   rendered a raw browser search box. */
-.search-input{
-  flex:1; min-width:0;
-  font-family:var(--font-mono); font-size:var(--text-sm);
+#gallerySearch{
+  flex:1; min-width:240px;
+  font-family:var(--font-mono); font-size:14px;
   background:var(--bg-panel); color:var(--text-primary);
-  border:1px solid var(--border-subtle); border-radius:var(--radius-pill); padding:13px 19px;
-  /* box-shadow too, or the focus ring appears instantly under a border that
-     is still easing — two halves of one indicator arriving separately. */
-  transition:border-color var(--transition-fast), box-shadow var(--transition-fast);
+  border:1px solid var(--border-subtle); border-radius:8px; padding:13px 15px;
+  transition:border-color var(--transition-fast);
 }
-.search-input::placeholder{ color:var(--text-placeholder); }
-/* outline:none alone left a border-colour shift as the only focus cue, which
-   is easy to miss. Keep the amber border and add an on-brand ring using the
-   existing --accent-amber-soft token, so the look is unchanged but the
-   indicator is unmistakable. */
-.search-input:focus{ outline:none; border-color:var(--accent-amber); box-shadow:0 0 0 3px var(--accent-amber-soft); }
-.gallery-count{ font-family:var(--font-mono); font-size:var(--text-xs); color:var(--text-muted); white-space:nowrap; }
+#gallerySearch::placeholder{ color:#5c5f6b; }
+#gallerySearch:focus{ outline:none; border-color:var(--accent-amber); }
+.gallery-count{ font-family:var(--font-mono); font-size:12.5px; color:var(--text-muted); white-space:nowrap; }
 
 .chip-row{ display:flex; gap:8px; flex-wrap:wrap; }
 .chip{
-  transition:color var(--transition-fast), border-color var(--transition-fast),
-             background var(--transition-fast);
-  font-family:var(--font-mono); font-size:var(--text-xs);
+  font-family:var(--font-mono); font-size:12.5px;
   background:var(--bg-panel); color:var(--text-muted);
-  border:1px solid var(--border-subtle); border-radius:var(--radius-pill);
-  padding:7px 15px; cursor:pointer;
+  border:1px solid var(--border-subtle); border-radius:999px;
+  padding:7px 14px; cursor:pointer;
   transition:color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
 }
 .chip:hover{ color:var(--text-primary); border-color:var(--text-muted); }
-.chip.active{ color:var(--on-accent); background:var(--accent); border-color:var(--accent); }
+.chip.active{ color:#1a1200; background:var(--accent-amber); border-color:var(--accent-amber); }
 
 .gallery-empty{
-  grid-column:1 / -1; color:var(--text-muted); font-size:var(--text-base); padding:40px 0;
-}
-
-/* Shown when prompts-image.js never arrived — deliberately distinct from the
-   empty-search state above, which is a normal outcome rather than a fault. */
-.gallery-error{
-  grid-column:1 / -1; padding:28px; margin-top:8px;
-  background:var(--bg-panel); border:1px solid var(--border-subtle);
-  border-left:3px solid var(--accent-amber); border-radius:var(--radius);
-  color:var(--text-muted); font-size:var(--text-base); line-height:1.7;
-}
-.gallery-error-title{ color:var(--text-primary); font-weight:600; font-size:var(--text-md); margin-bottom:6px; }
-.gallery-error code{
-  font-family:var(--font-mono); font-size:var(--text-sm); color:var(--accent-ink);
-  background:var(--bg-void); padding:2px 6px; border-radius:var(--radius-sm);
+  grid-column:1 / -1; color:var(--text-muted); font-size:15px; padding:40px 0;
 }
 
 /* ============================================
    MODAL (images.html)
    ============================================ */
 .modal-backdrop{
-  position:fixed; inset:0; z-index:200; background:var(--scrim); backdrop-filter:blur(4px);
+  position:fixed; inset:0; z-index:200; background:rgba(6,7,9,.78); backdrop-filter:blur(4px);
   display:flex; align-items:center; justify-content:center; padding:24px;
-  opacity:0; pointer-events:none;
-  /* visibility, not opacity alone: a transparent-but-visible dialog keeps its
-     close and copy buttons in the tab order and the accessibility tree, so
-     keyboard users tabbed through two invisible controls on every visit.
-     Delayed by the fade duration so the close animation still plays. */
-  visibility:hidden;
-  transition:opacity var(--transition-fast), visibility 0s linear var(--transition-fast);
+  opacity:0; pointer-events:none; transition:opacity var(--transition-fast);
 }
-.modal-backdrop.open{
-  opacity:1; pointer-events:auto; visibility:visible;
-  transition:opacity var(--transition-fast), visibility 0s;
-}
+.modal-backdrop.open{ opacity:1; pointer-events:auto; }
 .modal{
   background:var(--bg-panel); border:1px solid var(--border-subtle); border-radius:var(--radius-lg);
   max-width:880px; width:100%; max-height:88vh; overflow-y:auto; display:grid; grid-template-columns:1fr 1fr;
@@ -1204,7 +296,6 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
 }
 .modal-backdrop.open .modal{ transform:translateY(0) scale(1); }
 .modal-close{
-  transition:background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
   position:absolute; top:14px; right:14px; width:34px; height:34px; border-radius:50%;
   background:var(--bg-panel-hover); border:1px solid var(--border-subtle); color:var(--text-primary);
   cursor:pointer; z-index:2; display:flex; align-items:center; justify-content:center;
@@ -1216,104 +307,67 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
 }
 .modal-swatch .swatch-texture{ background-size:32px 32px; }
 .modal-swatch-name{
-  position:relative; z-index:1; font-family:var(--font-display); font-weight:500;
-  font-size:var(--text-xl); color:#fff; text-shadow:0 2px 14px rgba(0,0,0,.4); line-height:1.25;
+  position:relative; z-index:1; font-family:var(--font-display); font-weight:700;
+  font-size:26px; color:#fff; text-shadow:0 2px 14px rgba(0,0,0,.4); line-height:1.25;
 }
 .modal-body{ padding:26px; display:flex; flex-direction:column; gap:18px; }
 .modal-meta{ display:flex; gap:8px; flex-wrap:wrap; }
-.modal-style-name{ font-size:var(--text-xl); font-weight:500; letter-spacing:var(--track-heading); }
-.modal-howto{ font-size:var(--text-xs); color:var(--text-muted); line-height:1.6; }
+.modal-style-name{ font-size:22px; font-weight:700; }
+.modal-howto{ font-size:12.5px; color:var(--text-muted); line-height:1.6; }
 .prompt-block{ border:1px solid var(--border-subtle); border-radius:var(--radius); overflow:hidden; }
-.prompt-text{ font-family:var(--font-mono); font-size:var(--text-sm); line-height:var(--leading-loose);
-  padding:var(--space-4); color:var(--text-primary); max-width:var(--measure); }
+.prompt-text{ font-family:var(--font-mono); font-size:14px; line-height:1.7; padding:16px; color:var(--text-primary); }
 
 /* ============================================
    TEXT PROMPT CATEGORY PAGES (ppt / essay / report / email)
    ============================================ */
-/* min() so the track can shrink below its ideal on narrow viewports instead of
-   overflowing and being clipped by body{overflow-x:hidden} — that was a WCAG
-   1.4.10 reflow failure at 320px and at 400% zoom. */
-.prompt-list{ display:grid; grid-template-columns:repeat(auto-fill,minmax(min(320px,100%),1fr)); gap:18px; }
+.prompt-list{ display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:18px; }
 .prompt-card{
   background:var(--bg-panel); border:1px solid var(--border-subtle); border-radius:var(--radius); overflow:hidden;
   display:flex; flex-direction:column;
-  transition:border-color var(--transition-fast), background var(--transition-fast);
+  transition:transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
-.prompt-card:hover{ border-color:var(--border-strong); background:var(--bg-panel-hover); }
+.prompt-card:hover{ transform:translateY(-4px); border-color:var(--accent-amber); box-shadow:0 16px 40px -14px rgba(0,0,0,.6); }
 .prompt-card .prompt-text{ flex:1; padding:16px; }
-/* ---- send-to-assistant row ------------------------------------------
-   Sits under the copy button. The two destinations are secondary to copying,
-   so they are ghost buttons at small size rather than competing fills. */
-.prompt-actions{ display:flex; flex-direction:column; gap:var(--space-2); align-items:stretch; }
-.send-row{ display:flex; gap:var(--space-2); flex-wrap:wrap; }
-.btn-send{ flex:1 1 auto; justify-content:center; padding:9px 14px; }
-.btn-send .icon{ width:14px; height:14px; }
-/* Filled brand marks need no stroke and read heavier than the outline icons
-   beside them, so they sit slightly smaller. */
-.brand-mark{ width:13px; height:13px; }
-.modal-body .prompt-actions{ gap:var(--space-3); }
-.modal-body .send-row .btn-send{ flex:1 1 0; }
-
-.prompt-card .prompt-actions{ margin:0 16px 16px; }
-.prompt-card .btn{ margin:0; align-self:stretch; justify-content:center; }
+.prompt-card .btn{ margin:0 16px 16px; align-self:flex-start; }
 
 /* ============================================
    PROMPT BUILDER (builder.html)
    ============================================ */
 .builder-layout{ display:grid; grid-template-columns:1.15fr .85fr; gap:28px; align-items:start; }
-/* Frosted, same recipe as the nav and pane, so the builder's two panels read
-   as floating surfaces rather than flat boxes. */
-.builder-form{
-  display:grid; grid-template-columns:1fr 1fr; gap:var(--space-4);
-  padding:var(--space-5);
-  background:var(--glass-tint);
-  backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
-  border:1px solid var(--border-subtle);
-  box-shadow:inset 0 1px 0 var(--glass-edge);
-  border-radius:var(--radius-lg);
-}
+.builder-form{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
 .builder-field{ display:flex; flex-direction:column; gap:7px; }
 .builder-field-wide{ grid-column:1 / -1; }
 .builder-field label{
-  font-family:var(--font-mono); font-size:var(--text-xs); color:var(--text-muted);
+  font-family:var(--font-mono); font-size:12.5px; color:var(--text-muted);
   display:flex; align-items:center; gap:8px;
 }
 .builder-req, .builder-opt{
-  font-size:var(--text-2xs); padding:2px 8px; border-radius:var(--radius-pill); border:1px solid var(--border-subtle);
+  font-size:10px; padding:2px 7px; border-radius:999px; border:1px solid var(--border-subtle);
 }
-.builder-req{ color:var(--accent-ink); border-color:var(--accent-amber-soft); }
+.builder-req{ color:var(--accent-amber); border-color:var(--accent-amber-soft); }
 .builder-opt{ color:var(--text-muted); }
 .builder-field input, .builder-field select{
-  font-family:var(--font-mono); font-size:var(--text-sm);
+  font-family:var(--font-mono); font-size:13.5px;
   background:var(--bg-panel); color:var(--text-primary);
-  border:1px solid var(--border-subtle); border-radius:var(--radius-sm);
+  border:1px solid var(--border-subtle); border-radius:6px;
   padding:11px 12px; width:100%;
   transition:border-color var(--transition-fast);
 }
-.builder-field input::placeholder{ color:var(--text-placeholder); }
-.builder-field input:focus, .builder-field select:focus{ outline:none; border-color:var(--accent-amber); box-shadow:0 0 0 3px var(--accent-amber-soft); }
+.builder-field input::placeholder{ color:#5c5f6b; }
+.builder-field input:focus, .builder-field select:focus{ outline:none; border-color:var(--accent-amber); }
 .builder-field select{ cursor:pointer; appearance:none;
   background-image:linear-gradient(45deg,transparent 50%,var(--text-muted) 50%),linear-gradient(135deg,var(--text-muted) 50%,transparent 50%);
   background-position:calc(100% - 16px) 50%, calc(100% - 11px) 50%;
   background-size:5px 5px, 5px 5px; background-repeat:no-repeat; padding-right:34px;
 }
-.builder-hint{ font-size:var(--text-xs); color:var(--text-muted); line-height:1.5; }
+.builder-hint{ font-size:11.5px; color:var(--text-muted); line-height:1.5; }
 
-.builder-output-panel{
-  position:sticky; top:calc(var(--nav-h) + var(--space-6));
-  display:flex; flex-direction:column; gap:var(--space-3);
-  padding:var(--space-5);
-  background:var(--glass-tint);
-  backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
-  border:1px solid var(--border-subtle);
-  box-shadow:inset 0 1px 0 var(--glass-edge);
-  border-radius:var(--radius-lg);
-}
+.builder-output-panel{ position:sticky; top:88px; display:flex; flex-direction:column; gap:14px; }
 .builder-count{ margin-left:auto; }
 .builder-output{ min-height:150px; white-space:pre-wrap; word-break:break-word; }
 .builder-placeholder{ color:var(--text-muted); }
 .builder-actions{ display:flex; gap:10px; flex-wrap:wrap; }
-.builder-note{ font-family:var(--font-mono); font-size:var(--text-xs); color:var(--text-muted); }
+.builder-note{ font-family:var(--font-mono); font-size:11.5px; color:var(--text-muted); }
 
 @media (max-width:900px){
   .builder-layout{ grid-template-columns:1fr; }
@@ -1330,38 +384,110 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
 }
 .prompt-thumb-icon{ position:relative; z-index:1; color:#fff; display:flex; opacity:.95; }
 .prompt-thumb-label{
-  position:relative; z-index:1; font-family:var(--font-display); font-weight:500;
-  font-size:var(--text-base); color:#fff; text-shadow:0 2px 10px rgba(0,0,0,.3);
+  position:relative; z-index:1; font-family:var(--font-display); font-weight:700;
+  font-size:15px; color:#fff; text-shadow:0 2px 10px rgba(0,0,0,.3);
 }
 
 /* builder generation panel */
+.builder-gen{
+  border:1px solid var(--border-subtle); border-radius:var(--radius);
+  padding:18px; display:flex; flex-direction:column; gap:11px; background:var(--bg-panel);
+}
+.builder-gen-head{ display:flex; align-items:center; gap:10px; }
+.builder-gen-head h3{ font-size:15px; font-weight:600; }
+.builder-gen a{ color:var(--accent-blue); }
+.builder-gen input{
+  font-family:var(--font-mono); font-size:13px;
+  background:var(--bg-void); color:var(--text-primary);
+  border:1px solid var(--border-subtle); border-radius:6px; padding:11px 12px; width:100%;
+  transition:border-color var(--transition-fast);
+}
+.builder-gen input::placeholder{ color:#5c5f6b; }
+.builder-gen input:focus{ outline:none; border-color:var(--accent-amber); }
+.builder-gen .btn{ align-self:flex-start; }
+.builder-gen .btn:disabled{ opacity:.55; cursor:not-allowed; transform:none; }
+.builder-warn{ color:#c9a24a; }
+.builder-gen-status{ font-family:var(--font-mono); font-size:12px; color:var(--text-muted); min-height:16px; }
+.builder-gen-status.is-busy{ color:var(--accent-blue); }
+.builder-gen-status.is-ok{ color:#4ec98a; }
+.builder-gen-status.is-warn{ color:#c9a24a; }
+.builder-gen-status.is-err{ color:#e06c6c; word-break:break-word; }
+.builder-preview:empty{ display:none; }
+.builder-preview{ display:flex; flex-direction:column; gap:10px; align-items:flex-start; }
+.builder-preview img{ width:100%; border-radius:8px; border:1px solid var(--border-subtle); }
+
+/* ============================================
+   TRENDING MARQUEE (index.html)
+   ============================================ */
+.trending{ margin-top:72px; }
+.trending-head{ max-width:1180px; margin:0 auto; padding:0 32px 22px; text-align:center; }
+.trending-title{ font-size:clamp(22px,3vw,30px); font-weight:700; margin-bottom:8px; }
+.trending-sub{ color:var(--text-muted); font-size:14px; }
+
+.marquee{
+  overflow:hidden;
+  /* fade both edges so cards enter and leave instead of being cut off */
+  -webkit-mask-image:linear-gradient(90deg, transparent, black 6%, black 94%, transparent);
+  mask-image:linear-gradient(90deg, transparent, black 6%, black 94%, transparent);
+}
+.marquee-track{
+  display:flex; gap:18px; width:max-content; padding:6px 9px;
+  animation:marquee-ltr 55s linear infinite;
+}
+/* Starts shifted left and travels to 0 — that reads as left-to-right motion.
+   The track holds the card set twice, so 50% is exactly one full set. */
+@keyframes marquee-ltr{
+  from{ transform:translateX(-50%); }
+  to{ transform:translateX(0); }
+}
+.marquee:hover .marquee-track,
+.marquee:focus-within .marquee-track{ animation-play-state:paused; }
+
+.trend-card{
+  position:relative; flex:0 0 280px; height:220px;
+  display:flex; align-items:flex-end; text-align:left;
+  border:1px solid var(--border-subtle); border-radius:var(--radius);
+  overflow:hidden; cursor:pointer; padding:0; background:none; color:inherit;
+  transition:transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.trend-card:hover{ transform:translateY(-4px); border-color:var(--accent-amber); box-shadow:0 16px 40px -14px rgba(0,0,0,.6); }
+.trend-card.copied{ border-color:var(--accent-blue); }
+.trend-card-body{
+  position:relative; z-index:1; width:100%; padding:14px;
+  display:flex; flex-direction:column; gap:6px; align-items:flex-start;
+  background:linear-gradient(180deg, transparent 0%, rgba(6,7,9,.82) 55%);
+}
+.trend-input{ background:rgba(6,7,9,.6); }
+.trend-name{
+  font-family:var(--font-display); font-weight:700; font-size:17px; color:#fff;
+  text-shadow:0 2px 10px rgba(0,0,0,.4);
+}
+.trend-prompt{
+  font-family:var(--font-mono); font-size:11px; line-height:1.5; color:rgba(236,236,241,.72);
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+}
+
+@media (max-width:640px){
+  .trending{ margin-top:52px; }
+  .trending-head{ padding:0 20px 18px; }
+  .trend-card{ flex-basis:230px; height:190px; }
+}
+
+/* With reduced motion the marquee must not animate at all — turn it into a
+   normal horizontal scroller the user drives themselves. */
+@media (prefers-reduced-motion:reduce){
+  .marquee{ overflow-x:auto; }
+  .marquee-track{ animation:none !important; transform:none !important; }
+}
 
 /* ============================================
    FOOTER
    ============================================ */
 .footer{ border-top:1px solid var(--border-subtle); padding:32px; text-align:center; }
-.footer-line{ font-family:var(--font-mono); font-size:var(--text-sm); color:var(--text-muted); }
-.footer-credit{ margin-top:var(--space-2); font-size:var(--text-xs); }
-
-/* Contact row. Small on purpose — it is a signature, not a call to action. */
-.footer-contact{
-  list-style:none; margin-top:var(--space-4);
-  display:flex; justify-content:center; flex-wrap:wrap; gap:var(--space-2);
-}
-.footer-contact a{
-  display:inline-flex; align-items:center; gap:var(--space-2);
-  padding:7px 14px; border-radius:var(--radius-pill);
-  border:1px solid transparent;
-  font-family:var(--font-label); text-transform:uppercase;
-  letter-spacing:var(--track-caps); font-weight:500;
-  font-size:var(--text-2xs); color:var(--text-muted); text-decoration:none;
-  transition:color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
-}
-.footer-contact a:hover{ color:var(--text-primary); border-color:var(--border-subtle); background:var(--bg-panel); }
-.footer-contact .icon{ width:14px; height:14px; }
+.footer-line{ font-family:var(--font-mono); font-size:13px; color:var(--text-muted); }
+.footer-credit{ margin-top:8px; font-size:11.5px; }
 .footer-credit a{ color:var(--text-muted); }
-.footer-credit a{ transition:color var(--transition-fast); }
-.footer-credit a:hover{ color:var(--accent-ink); }
+.footer-credit a:hover{ color:var(--accent-amber); }
 
 /* ============================================
    RESPONSIVE
@@ -1378,27 +504,13 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
   .nav-inner{ padding:14px 20px; }
   .nav-toggle{ display:flex; }
   .nav-links{
-    position:fixed; top:var(--nav-h); left:0; right:0; background:var(--bg-panel);
+    position:fixed; top:60px; left:0; right:0; background:var(--bg-panel);
     flex-direction:column; padding:16px 20px; gap:4px; border-bottom:1px solid var(--border-subtle);
     opacity:0; transform:translateY(-10px); pointer-events:none;
-    /* visibility, not opacity alone: an opacity:0 menu keeps every link in the
-       tab order, so a keyboard user on mobile tabbed through four invisible
-       nav links. Delayed by the fade so the close animation still plays. */
-    visibility:hidden;
-    transition:opacity var(--transition-fast), transform var(--transition-fast),
-               visibility 0s linear var(--transition-fast);
+    transition:opacity var(--transition-fast), transform var(--transition-fast);
   }
-  .nav-links.open{
-    opacity:1; transform:translateY(0); pointer-events:auto; visibility:visible;
-    transition:opacity var(--transition-fast), transform var(--transition-fast), visibility 0s;
-  }
-  .nav-link{ padding:var(--space-3) var(--space-3); width:100%; }
-  /* Stacked panel on mobile — a horizontal indicator has nothing to track. */
-  .nav-links{ padding:var(--space-4) var(--gutter); border:none; border-radius:0; }
-  .nav-indicator{ display:none; }
-  /* The toggle lives outside .nav-links so it stays reachable without opening
-     the menu — a theme switch is not worth a hamburger tap. */
-  .nav-cluster{ gap:var(--space-2); }
+  .nav-links.open{ opacity:1; transform:translateY(0); pointer-events:auto; }
+  .nav-link{ padding:12px 10px; }
 
   .section-inner{ padding:40px 20px; }
   .hero-inner{ padding:0 20px 40px; }
@@ -1412,32 +524,9 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
   .modal{ max-width:100%; max-height:100%; height:100%; border-radius:0; }
 }
 
-/* High-contrast modes drop box-shadow, so restore a real outline there. */
-@media (forced-colors: active){
-  .search-input:focus,
-  .builder-field input:focus,
-  .builder-field select:focus{ outline:2px solid; outline-offset:2px; }
-}
-
-/* The settings panel can force this on independently of the OS setting.
-   Same declarations as the media query below, applied by class. */
-:root.reduce-motion *,
-:root.reduce-motion *::before,
-:root.reduce-motion *::after{
-  animation-duration:.01ms !important; animation-iteration-count:1 !important;
-  animation-delay:0s !important;
-  transition-duration:.01ms !important; transition-delay:0s !important;
-  scroll-behavior:auto !important;
-}
-
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{
     animation-duration:.01ms !important; animation-iteration-count:1 !important;
-    animation-delay:0s !important;
     transition-duration:.01ms !important; scroll-behavior:auto !important;
-    /* Delay too: script.js sets transition-delay inline on every card for the
-       reveal stagger, and zeroing only the duration still made reduced-motion
-       users sit through it. */
-    transition-delay:0s !important;
   }
 }
