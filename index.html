@@ -1,62 +1,38 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PromptLib — prompts that already work</title>
-<!-- @partial head -->
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230e1013'/%3E%3Cpath d='M10 10l7 6-7 6' stroke='%234d8dff' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0c0e'/%3E%3Cpath d='M10 10l7 6-7 6' stroke='%23ffb238' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=Archivo+Narrow:wght@500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
-<script>
-/* Bootstrap — keep inline and keep it tiny. Opts this page into the CSS fade
-   only while JS is running, then guarantees a reveal on load even if script.js
-   never arrives. An external file here could 404 and take the page with it. */
-document.documentElement.classList.add("js");
-try {
-  var t = localStorage.getItem("promptlib-theme");
-  if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
-} catch (e) { /* private mode / storage blocked — dark default is fine */ }
-addEventListener("load", function(){ document.body.classList.add("loaded"); });
-</script>
-<!-- @end head -->
 </head>
 <body>
 
-<!-- @partial nav -->
 <nav class="nav">
   <div class="nav-inner">
     <a href="index.html" class="logo">
-      <svg class="logo-mark" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="7" fill="#161a1f"/><path d="M10 10l7 6-7 6" stroke="#4d8dff" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <span class="logo-word">promptlib</span>
+      <svg class="logo-mark" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="7" fill="#15161b"/><path d="M10 10l7 6-7 6" stroke="#ffb238" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>promptlib</span>
     </a>
     <button class="nav-toggle" id="navToggle" aria-label="Toggle menu" aria-expanded="false"><span></span><span></span><span></span></button>
-    <div class="nav-cluster">
     <div class="nav-links" id="navLinks">
-      <span class="nav-indicator" id="navIndicator" aria-hidden="true"></span>
       <a href="index.html" class="nav-link" data-page="index.html">home</a>
       <a href="images.html" class="nav-link" data-page="images.html">images</a>
       <a href="text.html" class="nav-link" data-page="text.html">text</a>
       <a href="builder.html" class="nav-link" data-page="builder.html">builder</a>
     </div>
-    <button type="button" class="theme-switch" id="themeToggle" role="switch" aria-checked="false" aria-label="Light theme">
-      <span class="theme-icons" aria-hidden="true">
-        <svg class="icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.7 6.7 0 0 0 10.5 10.5z"/></svg>
-        <svg class="icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.4v2.2M12 19.4v2.2M4.2 4.2l1.6 1.6M18.2 18.2l1.6 1.6M2.4 12h2.2M19.4 12h2.2M4.2 19.8l1.6-1.6M18.2 5.8l1.6-1.6"/></svg>
-      </span>
-    </button>
-    </div>
   </div>
 </nav>
-<!-- @end nav -->
 
 <main>
   <section class="hero">
-    <div class="hero-grid">
     <div class="hero-inner">
-      <p class="eyebrow"><span class="eyebrow-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6.5l5.5 5.5L8 17.5"/><path d="M14.5 17.5H19"/></svg></span>browse --prompts --tested</p>
+      <p class="eyebrow">$ browse --prompts --tested</p>
       <h1 class="hero-title">Stop guessing. Start with a prompt that <span class="text-gradient">already works</span>.</h1>
       <p class="hero-sub">Every prompt here has been run against the real model first. Click any result to see exactly what produced it — then copy it and go.</p>
       <div class="hero-cta-row">
@@ -65,14 +41,6 @@ addEventListener("load", function(){ document.body.classList.add("loaded"); });
       </div>
     </div>
 
-    <div class="demo-stack">
-    <div class="demo-behind" aria-hidden="true">
-      <span class="demo-behind-thumb swatch-2"></span>
-      <span class="demo-behind-bar">
-        <span class="demo-dot"></span>
-        <span class="demo-behind-name">watercolor-painting.jpg</span>
-      </span>
-    </div>
     <div class="demo-card" aria-hidden="true">
       <div class="demo-card-bar">
         <span class="demo-dot"></span>
@@ -84,54 +52,16 @@ addEventListener("load", function(){ document.body.classList.add("loaded"); });
         <div class="demo-result" id="demoResult"></div>
       </div>
     </div>
-    </div>
-    </div>
 
-
-    <section class="stats" aria-labelledby="statsHeading">
-      <h2 class="sr-only" id="statsHeading">What is in the library</h2>
-      <dl class="stat-row" id="statRow" data-focus-track>
-        <div class="stat reveal">
-          <dt class="stat-label">Image prompts</dt>
-          <dd class="stat-value" data-count-to="266">0</dd>
-        </div>
-        <div class="stat reveal">
-          <dt class="stat-label">Text templates</dt>
-          <dd class="stat-value" data-count-to="456">0</dd>
-        </div>
-        <div class="stat reveal">
-          <dt class="stat-label">Categories</dt>
-          <dd class="stat-value" data-count-to="21">0</dd>
-        </div>
-        <div class="stat reveal">
-          <dt class="stat-label">Cost to use</dt>
-          <dd class="stat-value" data-count-to="0" data-count-prefix="$">0</dd>
-        </div>
-        <div class="stat reveal">
-          <dt class="stat-label">Sign-ups required</dt>
-          <dd class="stat-value" data-count-to="0">0</dd>
-        </div>
-      </dl>
-    </section>
-
-
-    <section class="showcase" aria-labelledby="showcaseHeading">
-      <div class="showcase-head">
-        <h2 class="section-title" id="showcaseHeading">A few, to see the shape of them</h2>
-        <p class="section-sub">Scroll sideways. Every prompt on the site is written like these.</p>
+    <section class="trending" id="trendingSection">
+      <div class="trending-head">
+        <p class="eyebrow">$ trending --now</p>
+        <h2 class="trending-title">Trending prompts</h2>
+        <p class="trending-sub">Richer, scene-level prompts. Hover to pause, click any card to copy.</p>
       </div>
-      <ul class="showcase-track" id="showcaseTrack" tabindex="0" role="region" aria-label="Example prompts, scroll horizontally"></ul>
-    </section>
-
-    <section class="uses" aria-labelledby="usesHeading">
-      <h2 class="section-title" id="usesHeading">Written for the work you actually do</h2>
-      <ul class="use-list">
-        <li class="use reveal"><a href="essay.html"><span class="use-verb">Draft and edit</span> an essay — thesis, structure, counter-arguments, a revision pass that does not just reword.</a></li>
-        <li class="use reveal"><a href="report.html"><span class="use-verb">Build a report</span> — scope it, summarise findings, turn analysis into recommendations someone can act on.</a></li>
-        <li class="use reveal"><a href="ppt.html"><span class="use-verb">Shape a deck</span> — narrative arc, slide-ready bullets, speaker notes timed to the slot you were given.</a></li>
-        <li class="use reveal"><a href="email.html"><span class="use-verb">Send the email</span> — cold outreach, a status update, or the difficult one you have rewritten four times.</a></li>
-        <li class="use reveal"><a href="images.html"><span class="use-verb">Restyle a photo</span> — 266 transformations that keep your subject recognisable instead of inventing a new one.</a></li>
-      </ul>
+      <div class="marquee" id="trendingMarquee">
+        <div class="marquee-track" id="trendingTrack"></div>
+      </div>
     </section>
 
     <div class="nav-cards">
@@ -140,97 +70,24 @@ addEventListener("load", function(){ document.body.classList.add("loaded"); });
         <span class="nav-card-arrow"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg></span>
         <h3>Image prompts</h3>
         <p>Style, lighting, and composition prompts for Midjourney, DALL·E, and Stable Diffusion.</p>
-        <span class="card-reveal"><p>Every one written for a photo you upload, and detailed enough to say what to preserve — face, pose, composition — so the subject stays recognisable.</p></span>
       </a>
       <a href="text.html" class="nav-card reveal">
         <svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h9l5 5v15a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M14 2v5h5M8 13h8M8 17h5"/></svg>
         <span class="nav-card-arrow"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg></span>
         <h3>Text prompts</h3>
         <p>Fill-in-the-blank templates for PPTs, essays, reports, and emails.</p>
-        <span class="card-reveal"><p>114 in each category, filterable by what you are actually doing: planning, drafting, revising, or the difficult email you have rewritten four times.</p></span>
       </a>
     </div>
   </section>
 </main>
 
-<!-- @partial pane -->
-<button type="button" class="pane-open" id="paneOpen" aria-label="Open saved prompts and settings" aria-expanded="false" aria-controls="sidePane">
-  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
-  <span class="pane-open-count" id="paneOpenCount" hidden></span>
-</button>
-
-<div class="pane-scrim" id="paneScrim" hidden></div>
-
-<aside class="side-pane" id="sidePane" aria-labelledby="paneTitle" aria-hidden="true" inert>
-  <div class="pane-head">
-    <h2 class="pane-title" id="paneTitle">Your library</h2>
-    <button type="button" class="pane-close" id="paneClose" aria-label="Close panel">
-      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
-    </button>
-  </div>
-
-  <div class="pane-scroll">
-    <section class="pane-section" aria-labelledby="savedHeading">
-      <h3 class="pane-heading" id="savedHeading">Saved prompts</h3>
-      <div id="savedList"></div>
-    </section>
-
-    <section class="pane-section" aria-labelledby="settingsHeading">
-      <h3 class="pane-heading" id="settingsHeading">Settings</h3>
-      <ul class="setting-list">
-        <li class="setting">
-          <label class="setting-label" for="setTheme">Light theme</label>
-          <button type="button" class="switch" id="setTheme" role="switch" aria-checked="false"><span class="switch-thumb" aria-hidden="true"></span></button>
-        </li>
-        <li class="setting">
-          <label class="setting-label" for="setShuffle">Shuffle prompts on open<span class="setting-hint">Off shows them in a fixed order</span></label>
-          <button type="button" class="switch" id="setShuffle" role="switch" aria-checked="true"><span class="switch-thumb" aria-hidden="true"></span></button>
-        </li>
-        <li class="setting">
-          <label class="setting-label" for="setMotion">Reduce motion<span class="setting-hint">Also follows your system setting</span></label>
-          <button type="button" class="switch" id="setMotion" role="switch" aria-checked="false"><span class="switch-thumb" aria-hidden="true"></span></button>
-        </li>
-      </ul>
-    </section>
-
-    <section class="pane-section" aria-labelledby="aboutHeading">
-      <h3 class="pane-heading" id="aboutHeading">About</h3>
-      <p class="pane-body">PromptLib is a browsable library of prompts that have been run against a real model first &mdash; 266 image transformations and 456 fill-in-the-blank text templates.</p>
-      <p class="pane-body">Everything runs in your browser. No account, no tracking, no key required. Saved prompts stay on this device.</p>
-    </section>
-  </div>
-</aside>
-<!-- @end pane -->
-
 <footer class="footer">
-<!-- @partial footer -->
   <p class="footer-line">// end of file — copy a prompt and go make something.</p>
-
-  <ul class="footer-contact">
-    <li>
-      <a href="mailto:shreyastiwari0531@gmail.com">
-        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
-        <span>Email</span>
-      </a>
-    </li>
-    <li>
-      <a href="https://www.linkedin.com/in/shreyas-tiwari-ba2aa6340/" target="_blank" rel="noopener noreferrer">
-        <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.94 5.5a1.94 1.94 0 1 1-3.88 0 1.94 1.94 0 0 1 3.88 0zM3.3 8.98h3.4V21H3.3zM13.4 8.74c-1.77 0-2.67.93-3.06 1.6V8.98H6.96c.04.9 0 12.02 0 12.02h3.38v-6.6c0-.31.02-.61.11-.83.25-.6.8-1.24 1.75-1.24 1.24 0 1.79.93 1.79 2.3V21h3.38v-6.77c0-3.1-1.68-4.49-3.97-4.49z"/></svg>
-        <span>LinkedIn</span>
-      </a>
-    </li>
-    <li>
-      <a href="https://github.com/Shreyas310805" target="_blank" rel="noopener noreferrer">
-        <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 1.8a10.2 10.2 0 0 0-3.23 19.87c.51.1.7-.22.7-.49v-1.9c-2.84.62-3.44-1.2-3.44-1.2-.47-1.18-1.14-1.5-1.14-1.5-.93-.63.07-.62.07-.62 1.03.07 1.57 1.06 1.57 1.06.91 1.57 2.4 1.12 2.99.86.09-.66.36-1.12.65-1.38-2.27-.26-4.65-1.13-4.65-5.04 0-1.12.4-2.03 1.05-2.74-.1-.26-.46-1.3.1-2.71 0 0 .86-.28 2.81 1.05a9.7 9.7 0 0 1 5.12 0c1.95-1.33 2.81-1.05 2.81-1.05.56 1.41.2 2.45.1 2.71.66.71 1.05 1.62 1.05 2.74 0 3.92-2.39 4.78-4.66 5.03.37.32.7.94.7 1.9v2.81c0 .27.18.6.7.49A10.2 10.2 0 0 0 12 1.8z"/></svg>
-        <span>GitHub</span>
-      </a>
-    </li>
-  </ul>
-<!-- @end footer -->
 </footer>
 
-<!-- prompts-image.js is deliberately not loaded here: only images.html reads
-     window.imagePrompts, and script.js already tolerates its absence. -->
+<script src="prompts-image.js"></script>
 <script src="script.js"></script>
 </body>
 </html>
+index.html
+Displaying email.html.
