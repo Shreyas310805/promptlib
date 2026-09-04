@@ -32,7 +32,9 @@ drifted from its partial, which is what used to happen silently.
 """
 
 import glob
+import json
 import os
+import subprocess
 import re
 import sys
 
@@ -92,6 +94,56 @@ def sync_counts(text, counts):
             return m.group(0)
 
     return COUNT_RE.sub(swap, text)
+
+
+TRENDING_OUT = "prompts-trending.js"
+
+
+def write_trending():
+    """Emit just the trending prompts as their own tiny module.
+
+    index.html deliberately does not load prompts-image.js — it is 112KB and
+    the homepage reads none of it. The marquee needs seven of those entries,
+    so rather than undoing that decision, the subset is generated here and the
+    homepage loads ~4KB instead. Keeps trending:true in the data as the single
+    source of truth, with no slug list in the view.
+    """
+    src = os.path.join(BASE, "prompts-image.js")
+    if not os.path.exists(src):
+        return 0
+
+    dump = subprocess.run(
+        ["node", "-e",
+         "global.window={};require('./prompts-image.js');"
+         "const t=(global.window.imagePrompts||[]).filter(p=>p.trending===true)"
+         ".map(p=>({style:p.style,cat:p.cat,slug:p.slug,input:p.input,prompt:p.prompt}));"
+         "process.stdout.write(JSON.stringify(t));"],
+        cwd=BASE, capture_output=True, text=True, encoding="utf-8",
+    )
+    if dump.returncode != 0:
+        print("  ! could not read prompts-image.js; skipping trending subset")
+        return 0
+
+    items = json.loads(dump.stdout or "[]")
+    lines = [
+        "/* ==================================================================",
+        "   prompts-trending.js — GENERATED, do not edit by hand.",
+        "",
+        "   The entries flagged trending:true in prompts-image.js, extracted so",
+        "   the homepage marquee does not have to pull in the full 112KB image",
+        "   dataset it otherwise has no use for.",
+        "",
+        "   Regenerate with:  python3 build_pages.py",
+        "   ================================================================== */",
+        "window.trendingPrompts = [",
+    ]
+    for it in items:
+        lines.append("  " + json.dumps(it, ensure_ascii=False) + ",")
+    lines.append("];")
+
+    with open(os.path.join(BASE, TRENDING_OUT), "w", encoding="utf-8", newline="\n") as f:
+        f.write("\n".join(lines) + "\n")
+    return len(items)
 
 
 def load_partials():
@@ -159,6 +211,11 @@ def main():
     print(f"pages scanned: {len(pages)}")
     if unmarked:
         print(f"  no markers (skipped): {', '.join(unmarked)}")
+
+    if not check_only:
+        n = write_trending()
+        if n:
+            print(f"  {TRENDING_OUT}: {n} trending prompt(s)")
 
     if check_only:
         if changed:

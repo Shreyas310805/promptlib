@@ -6,48 +6,23 @@
    and must be loaded before this one. To add or edit image prompts, edit
    build_prompts.py and re-run it — don't edit prompts-image.js by hand.
    ================================================================== */
-const imagePrompts = window.imagePrompts || [];
+const imagePrompts = Array.isArray(window.imagePrompts) ? window.imagePrompts : [];
 
-/* To add a new TEXT prompt: push {filename, prompt} into the matching array.
-   [bracketed] words are auto-highlighted as fill-in variables — keep placeholders
-   in that format. Each key (ppt/essay/report/email) feeds its own page:
-   the page's #categoryPromptList element has a matching data-category attribute. */
-const textPromptsData = {
-  ppt: [
-    { filename:"ppt_01.txt", prompt:"Create a [number]-slide presentation outline on [topic] for a [audience type] audience. Include a title slide, an agenda, [number] content slides with 3 bullet points each, and a closing summary slide. Keep language [tone]." },
-    { filename:"ppt_02.txt", prompt:"Turn the following notes into slide-ready bullet points, max 5 words per line, grouped under clear section headers: [paste notes]" },
-    { filename:"ppt_03.txt", prompt:"Suggest a slide-by-slide structure for a [duration]-minute pitch deck for [product or idea], following a problem → solution → market → ask format." },
-    { filename:"ppt_04.txt", prompt:"Write speaker notes for a slide titled '[slide title]', assuming the audience already knows [background context]. Keep it under 100 words, conversational tone." }
-  ],
-  essay: [
-    { filename:"essay_01.txt", prompt:"Write a [word count]-word essay on [topic] in a [tone] tone. Structure it with an introduction that states a clear thesis, [number] body paragraphs each covering one supporting point, and a conclusion that restates the thesis without repeating it word-for-word." },
-    { filename:"essay_02.txt", prompt:"Give me 5 possible thesis statements for an essay about [topic], each taking a slightly different angle." },
-    { filename:"essay_03.txt", prompt:"Rewrite this paragraph to sound more [tone] while keeping the same meaning: [paste paragraph]" },
-    { filename:"essay_04.txt", prompt:"Write a counter-argument paragraph for an essay arguing that [position], addressing the strongest opposing view and rebutting it in [word count] words." }
-  ],
-  report: [
-    { filename:"report_01.txt", prompt:"Write a [report type] report on [topic] for [audience], structured as: Executive Summary, Background, Findings ([number] key points), Recommendations, Conclusion. Total length: [word count] words." },
-    { filename:"report_02.txt", prompt:"Summarize the following data into a concise 'Key Findings' section with [number] bullet points, each starting with the most important number or result: [paste data]" },
-    { filename:"report_03.txt", prompt:"Draft an executive summary for a report about [topic], written for [audience] who won't read the full report — under 200 words." },
-    { filename:"report_04.txt", prompt:"Convert this list of raw observations into a formal 'Recommendations' section, phrased as clear action items: [paste observations]" }
-  ],
-  email: [
-    { filename:"email_01.txt", prompt:"Write a [tone] email to [recipient] about [topic]. Keep it under [word count] words, include a clear subject line, and end with a specific call to action." },
-    { filename:"email_02.txt", prompt:"Draft a follow-up email to [recipient] after [event or meeting], referencing [specific detail] and proposing [next step]." },
-    { filename:"email_03.txt", prompt:"Write a polite decline email to [recipient] regarding [request], keeping the door open for future collaboration." },
-    { filename:"email_04.txt", prompt:"Turn these rough notes into a professional email to [recipient]: [paste notes]. Tone: [tone]." }
-  ]
-};
+/* Text prompt templates live in prompts-text.js, loaded only by the four
+   category pages. Builder vocabulary lives in builder-data.js, loaded only
+   by builder.html. Both are absent on most pages by design — null means
+   'this page does not have it', which the inits below check for. */
+const textPromptsData = window.textPromptsData || null;
 
 /* Hero demo (index.html only) — cycles automatically, mixing image and text
    results so the hero shows both halves of the site. */
 const demoPairs = [
-  { type:"image", filename:"image_04.txt", model:"Midjourney", style:"Neon Noir", hue:4, keywords:"cyberpunk,alley,neon",
+  { type:"image", filename:"image_04.txt", model:"Midjourney", style:"Neon Noir", hue:4,
     prompt:"cyberpunk alley, neon rain reflections, cinematic wide shot, teal and magenta lighting --ar 16:9 --v 6" },
   { type:"text", filename:"email_02.txt", model:"Claude",
     prompt:"Write a confident cold email to a hiring manager about a Frontend role, under 120 words, no generic flattery.",
     result:"Subject: A tool I built that might help your onboarding flow\n\nHi Priya — I recently cut my team's deploy time in half with a small internal tool. I think something similar could streamline onboarding for new engineers on your team. Worth a quick 15-minute call this week?" },
-  { type:"image", filename:"image_11.txt", model:"Midjourney", style:"Watercolor Whimsy", hue:0, keywords:"forest,mist,dawn",
+  { type:"image", filename:"image_11.txt", model:"Midjourney", style:"Watercolor Whimsy", hue:0,
     prompt:"misty pine forest at dawn, volumetric light rays through fog, muted teal and amber palette --ar 16:9" },
   { type:"text", filename:"ppt_03.txt", model:"GPT",
     prompt:"Give me a 3-slide pitch outline for a campus food delivery startup: problem, solution, ask.",
@@ -84,32 +59,72 @@ const categoryVisuals = {
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-function highlightVars(str){
-  return str.replace(/\[([^\]]+)\]/g, '<span class="var">[$1]</span>');
+/* Correct for BOTH element text and quoted attribute values, so one function
+   covers every interpolation site. The previous escapeAttr() handled only & and
+   ", which left < > and ' raw — fine for today's data by luck, not by design.
+   Deliberate exceptions: the ICONS constants (trusted inline SVG) and
+   highlightVars(), which escapes first and then adds its own markup. */
+const HTML_ESCAPES = { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" };
+function escapeHTML(value){
+  return String(value == null ? "" : value).replace(/[&<>"']/g, (ch) => HTML_ESCAPES[ch]);
 }
-function escapeAttr(str){
-  return str.replace(/&/g,"&amp;").replace(/"/g,"&quot;");
+
+/* Escape BEFORE wrapping [placeholders], so prompt text can never introduce
+   markup — this fed straight into innerHTML unescaped. Escaping leaves the
+   square brackets alone, so the match still works. */
+function highlightVars(str){
+  return escapeHTML(str).replace(/\[([^\]]+)\]/g, '<span class="var">[$1]</span>');
 }
 function copyButtonHTML(label){
-  return `${ICONS.copy}<span>${label}</span>`;
+  return `${ICONS.copy}<span>${escapeHTML(label)}</span>`;
 }
+/* Fisher-Yates on a copy. Every visit surfaces a different first screen
+   instead of the same handful of prompts, which is the point of a library this
+   size. Callers that need stable positions must stamp their indices AFTER
+   shuffling, not before. */
+function shuffled(list){
+  /* Opt-out: the setting panel can pin the order so a prompt stays where the
+     visitor last saw it. */
+  if(readStore(STORE_KEYS.shuffle, true) === false) return list.slice();
+  const out = list.slice();
+  for(let i = out.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = out[i];
+    out[i] = out[j];
+    out[j] = tmp;
+  }
+  return out;
+}
+
 function slugify(str){
   return str.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
-/* Tries a local image first (images/<slug>.jpg — see /images/README.md), falls back
-   to a keyword-matched stock photo if that's missing, then to the plain gradient
-   swatch if that fails too. Never leaves a broken-image icon. */
-function onImgError(img){
-  if(img.dataset.fallback){
-    img.src = img.dataset.fallback;
-    img.removeAttribute("data-fallback");
-  } else {
-    img.remove();
-  }
-}
+/* Thumbnails are optional: images/<slug>.jpg if present (see images/README.md),
+   otherwise the gradient swatch underneath shows through. Dropping the <img> on
+   error is what reveals it, and avoids a broken-image icon.
+
+   'error' does not bubble, so this captures instead — one listener covers every
+   thumbnail, including ones rendered later, and replaces the inline onerror
+   attributes these images used to carry.
+
+   NB: the previous helper here described a local -> stock photo -> swatch chain.
+   No such chain existed; nothing ever called it and no fallback URL was ever
+   set. fetch-stock.js downloads stock photos INTO images/ ahead of time, so at
+   runtime there is only ever the one source. */
+document.addEventListener("error", (e) => {
+  const img = e.target;
+  if(img instanceof HTMLImageElement && img.classList.contains("real-photo")) img.remove();
+}, true);
 
 let revealObserver;
 function observeReveals(){
+  /* No IntersectionObserver means nothing would ever add .in-view, and the
+     elements are already hidden by .js .reveal — so reveal them outright
+     rather than leaving the page blank. */
+  if(!("IntersectionObserver" in window)){
+    document.querySelectorAll(".reveal:not(.in-view)").forEach((el) => el.classList.add("in-view"));
+    return;
+  }
   if(!revealObserver){
     revealObserver = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
@@ -123,15 +138,855 @@ function observeReveals(){
   document.querySelectorAll(".reveal:not(.in-view)").forEach((el) => revealObserver.observe(el));
 }
 
+/* Screen-reader announcements. One shared polite live region, created lazily so
+   pages that never announce anything don't carry the node. */
+let liveRegion;
+function announce(message){
+  if(!liveRegion){
+    liveRegion = document.createElement("div");
+    liveRegion.className = "sr-only";
+    liveRegion.setAttribute("role", "status");
+    liveRegion.setAttribute("aria-live", "polite");
+    document.body.appendChild(liveRegion);
+  }
+  /* Clear first, or repeating the same string is not re-announced. */
+  liveRegion.textContent = "";
+  setTimeout(() => { liveRegion.textContent = message; }, 60);
+}
+
+/* Pre-async-clipboard fallback. navigator.clipboard is undefined on every
+   non-secure origin, which includes opening these pages straight off the
+   filesystem — a supported way to use this site — so this path is not exotic. */
+function legacyCopy(text){
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.setAttribute("readonly", "");
+  /* Off-screen, not display:none — execCommand needs a real selection. */
+  ta.style.cssText = "position:fixed;top:0;left:-9999px;opacity:0;";
+  document.body.appendChild(ta);
+
+  let ok = false;
+  try {
+    ta.select();
+    ta.setSelectionRange(0, ta.value.length);
+    ok = document.execCommand("copy");
+  } catch(err){
+    ok = false;
+  }
+  ta.remove();
+  return ok;
+}
+
+function flashCopyResult(btn, ok){
+  if(btn.dataset.copyBusy) return;
+  btn.dataset.copyBusy = "1";
+
+  const original = btn.innerHTML;
+  btn.innerHTML = ok
+    ? `${ICONS.check}<span>Copied!</span>`
+    : `${ICONS.close}<span>Copy failed</span>`;
+  btn.classList.add(ok ? "copied" : "copy-failed");
+  announce(ok ? "Prompt copied to clipboard" : "Copy failed — select the prompt text and copy it manually");
+
+  setTimeout(() => {
+    btn.innerHTML = original;
+    btn.classList.remove("copied", "copy-failed");
+    delete btn.dataset.copyBusy;
+  }, ok ? 1600 : 2800);
+}
+
+/* Async clipboard where it exists, textarea fallback where it doesn't, and a
+   visible failure state if both are refused — previously a rejected promise or
+   a missing API produced no feedback at all. */
 function copyText(text, btn){
-  navigator.clipboard.writeText(text).then(() => {
-    const original = btn.innerHTML;
-    btn.innerHTML = `${ICONS.check}<span>Copied!</span>`;
-    btn.classList.add("copied");
+  if(navigator.clipboard && window.isSecureContext){
+    navigator.clipboard.writeText(text).then(
+      () => flashCopyResult(btn, true),
+      () => flashCopyResult(btn, legacyCopy(text))
+    );
+    return;
+  }
+  flashCopyResult(btn, legacyCopy(text));
+}
+
+/* ==================================================================
+   STORED PREFERENCES
+
+   One wrapper over localStorage, because every read has to survive a browser
+   that throws on access (private mode, storage blocked) rather than taking
+   the page down with it.
+   ================================================================== */
+const STORE_KEYS = { saved:"promptlib-saved", shuffle:"promptlib-shuffle", motion:"promptlib-motion" };
+
+function readStore(key, fallback){
+  try {
+    const raw = localStorage.getItem(key);
+    return raw === null ? fallback : JSON.parse(raw);
+  } catch(err){
+    return fallback;
+  }
+}
+function writeStore(key, value){
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch(err){ /* not fatal */ }
+}
+
+/* Saved prompts are stored as {id, name, snippet}. The full text is NOT
+   stored: prompts are regenerated by build_prompts.py, so a copy kept here
+   would quietly go stale. The id is enough to find the live one. */
+function savedPrompts(){
+  const list = readStore(STORE_KEYS.saved, []);
+  return Array.isArray(list) ? list : [];
+}
+function isSaved(id){ return savedPrompts().some((s) => s.id === id); }
+
+function toggleSaved(entry){
+  const list = savedPrompts();
+  const at = list.findIndex((s) => s.id === entry.id);
+  if(at === -1) list.unshift(entry); else list.splice(at, 1);
+  writeStore(STORE_KEYS.saved, list);
+  renderSaved();
+  return at === -1;
+}
+
+/* ==================================================================
+   SIDE PANE
+   ================================================================== */
+let paneReturnFocus = null;
+
+function renderSaved(){
+  const host = document.getElementById("savedList");
+  const badge = document.getElementById("paneOpenCount");
+  if(!host) return;
+
+  const list = savedPrompts();
+
+  if(badge){
+    badge.textContent = list.length;
+    badge.hidden = list.length === 0;
+  }
+
+  if(!list.length){
+    host.innerHTML = `<p class="pane-empty">Nothing saved yet. Use the bookmark on any prompt and it will appear here, on this device.</p>`;
+    return;
+  }
+
+  host.innerHTML = list.map((s) => `
+    <div class="saved-item">
+      <span class="saved-text">
+        <span class="saved-name">${escapeHTML(s.name)}</span>
+        <span class="saved-snippet">${escapeHTML(s.snippet)}</span>
+      </span>
+      <button type="button" class="saved-drop" data-drop="${escapeHTML(s.id)}" aria-label="Remove ${escapeHTML(s.name)} from saved">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>`).join("");
+}
+
+function paneFocusables(){
+  const pane = document.getElementById("sidePane");
+  if(!pane) return [];
+  return [...pane.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')]
+    .filter((el) => !el.disabled && el.getClientRects().length);
+}
+
+function onPaneKeydown(e){
+  if(e.key === "Escape"){ e.preventDefault(); closePane(); return; }
+  if(e.key !== "Tab") return;
+  const list = paneFocusables();
+  if(!list.length) return;
+  const first = list[0];
+  const last = list[list.length - 1];
+  if(e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+  else if(!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+}
+
+function openPane(){
+  const pane = document.getElementById("sidePane");
+  const scrim = document.getElementById("paneScrim");
+  const opener = document.getElementById("paneOpen");
+  if(!pane || pane.classList.contains("is-open")) return;
+
+  /* Fall back to the trigger: a click may leave activeElement on <body>, and
+     restoring focus there on close strands the keyboard at the top of the
+     document instead of where the user was. */
+  paneReturnFocus = (document.activeElement && document.activeElement !== document.body)
+    ? document.activeElement
+    : opener;
+  scrim.hidden = false;
+  /* Next frame, or the scrim animates from its just-unhidden state. */
+  requestAnimationFrame(() => scrim.classList.add("is-open"));
+
+  pane.classList.add("is-open");
+  pane.removeAttribute("inert");
+  pane.setAttribute("aria-hidden", "false");
+  if(opener) opener.setAttribute("aria-expanded", "true");
+  document.body.style.overflow = "hidden";
+  document.addEventListener("keydown", onPaneKeydown, true);
+  document.getElementById("paneClose").focus();
+}
+
+function closePane(){
+  const pane = document.getElementById("sidePane");
+  const scrim = document.getElementById("paneScrim");
+  const opener = document.getElementById("paneOpen");
+  if(!pane || !pane.classList.contains("is-open")) return;
+
+  pane.classList.remove("is-open");
+  pane.setAttribute("inert", "");
+  pane.setAttribute("aria-hidden", "true");
+  scrim.classList.remove("is-open");
+  setTimeout(() => { scrim.hidden = true; }, 320);
+
+  if(opener) opener.setAttribute("aria-expanded", "false");
+  document.body.style.overflow = "";
+  document.removeEventListener("keydown", onPaneKeydown, true);
+
+  if(paneReturnFocus && document.contains(paneReturnFocus)) paneReturnFocus.focus();
+  paneReturnFocus = null;
+}
+
+function initPane(){
+  const pane = document.getElementById("sidePane");
+  if(!pane) return;
+
+  document.getElementById("paneOpen").addEventListener("click", openPane);
+  document.getElementById("paneClose").addEventListener("click", closePane);
+  document.getElementById("paneScrim").addEventListener("click", closePane);
+
+  /* Delegated: the saved list is replaced wholesale on every change. */
+  document.getElementById("savedList").addEventListener("click", (e) => {
+    const drop = e.target.closest("[data-drop]");
+    if(!drop) return;
+    const id = drop.dataset.drop;
+    const list = savedPrompts().filter((s) => s.id !== id);
+    writeStore(STORE_KEYS.saved, list);
+    renderSaved();
+    syncSaveButtons();
+    announce("Removed from saved prompts");
+  });
+
+  renderSaved();
+  initSettings();
+}
+
+/* ==================================================================
+   SETTINGS
+   ================================================================== */
+function initSettings(){
+  const theme = document.getElementById("setTheme");
+  const shuffle = document.getElementById("setShuffle");
+  const motion = document.getElementById("setMotion");
+
+  const bind = (btn, get, set) => {
+    if(!btn) return;
+    btn.setAttribute("aria-checked", String(get()));
+    btn.addEventListener("click", () => {
+      const next = btn.getAttribute("aria-checked") !== "true";
+      btn.setAttribute("aria-checked", String(next));
+      set(next);
+    });
+  };
+
+  bind(theme,
+    () => document.documentElement.getAttribute("data-theme") === "light",
+    (on) => {
+      const next = on ? "light" : "dark";
+      document.documentElement.classList.add("theme-transition");
+      setTimeout(() => document.documentElement.classList.remove("theme-transition"), 400);
+      document.documentElement.setAttribute("data-theme", next);
+      writeStore("promptlib-theme-raw", next);
+      try { localStorage.setItem("promptlib-theme", next); } catch(err){ /* ignore */ }
+      const navBtn = document.getElementById("themeToggle");
+      if(navBtn){
+        navBtn.setAttribute("aria-checked", String(on));
+      }
+      announce(on ? "Light theme enabled" : "Dark theme enabled");
+    });
+
+  bind(shuffle,
+    () => readStore(STORE_KEYS.shuffle, true) !== false,
+    (on) => {
+      writeStore(STORE_KEYS.shuffle, on);
+      announce(on ? "Prompts will be shuffled on each visit" : "Prompts will keep a fixed order — reload to see it");
+    });
+
+  bind(motion,
+    () => readStore(STORE_KEYS.motion, false) === true,
+    (on) => {
+      writeStore(STORE_KEYS.motion, on);
+      document.documentElement.classList.toggle("reduce-motion", on);
+      announce(on ? "Motion reduced" : "Motion restored");
+    });
+
+  /* Apply the stored motion preference immediately. */
+  if(readStore(STORE_KEYS.motion, false) === true){
+    document.documentElement.classList.add("reduce-motion");
+  }
+}
+
+/* ==================================================================
+   CENTRE-FOCUS SCROLLERS (index.html)
+
+   Writes --focus on each child: 1 when its centre sits on the container's
+   centre, falling to 0 a container-width away. CSS turns that into scale,
+   saturation and opacity.
+
+   Everything defaults to --focus:1 in the stylesheet, so if this never runs
+   — no JS, an error earlier in the file, a browser that does not fire scroll
+   — every card sits at full size and full colour. The effect can only ever
+   recede things, never hide them.
+   ================================================================== */
+function initCentreFocus(){
+  const tracks = document.querySelectorAll("[data-focus-track]");
+  if(!tracks.length) return;
+
+  const paint = (track) => {
+    const box = track.getBoundingClientRect();
+    const mid = box.left + box.width / 2;
+    /* Falloff over half the container: a card one half-width from centre is
+       fully receded. Narrower than the container would make the middle card
+       pop; wider would flatten the effect entirely. */
+    const reach = Math.max(box.width / 2, 1);
+
+    for(const card of track.children){
+      const r = card.getBoundingClientRect();
+      const dist = Math.abs((r.left + r.width / 2) - mid);
+      const focus = Math.max(0, Math.min(1, 1 - dist / reach));
+      card.style.setProperty("--focus", focus.toFixed(3));
+    }
+  };
+
+  tracks.forEach((track) => {
+    /* Reduced motion: pin everything on, so nothing scales or desaturates. */
+    if(prefersReducedMotion || document.documentElement.classList.contains("reduce-motion")){
+      for(const card of track.children) card.style.setProperty("--focus", "1");
+      return;
+    }
+
+    let ticking = false;
+    const onScroll = () => {
+      if(ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => { paint(track); ticking = false; });
+    };
+
+    track.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll, { passive: true });
+    paint(track);
+
+    /* scrollLeft 0 now centres the FIRST card, because the track carries end
+       padding of half its width minus half a card. */
+    track.scrollLeft = 0;
+  });
+}
+
+/* ==================================================================
+   PROMPT SHOWCASE (index.html)
+
+   Pulls real prompts from whichever datasets the page has. index.html loads
+   neither by design, so this falls back to a small hand-picked set rather
+   than pulling 96KB back onto the homepage to fill a carousel.
+   ================================================================== */
+/* Alternating text and image, so the row reads as a sample of the whole
+   library rather than of one half of it. Image entries carry a slug, which is
+   the thumbnail filename in images/. */
+const SHOWCASE_FALLBACK = [
+  { kind:"text", tag:"Essay", meta:"essay", text:"Sharpen this thesis into a single arguable sentence that names the claim, the ground it stands on, and what it is arguing against: [paste your thesis]" },
+  { kind:"image", tag:"Image", meta:"Traditional Media", slug:"watercolor-painting", text:"Transform the uploaded photo into a soft watercolour painting with bleeding edges, visible paper texture and translucent washes. Keep the subject's pose, proportions and facial features clearly recognisable." },
+  { kind:"text", tag:"Report", meta:"report", text:"Turn these findings into [number] recommendations, each with an owner, a timeframe and the cost of doing nothing, ordered by impact: [paste findings]" },
+  { kind:"image", tag:"Image", meta:"Art Movements", slug:"cubism", text:"Reimagine the uploaded image as a Cubist painting, the subject fractured into overlapping geometric planes seen from several angles at once. Keep the pose and composition intact while adopting the movement's visual language." },
+  { kind:"text", tag:"Slides", meta:"ppt", text:"Turn the following rough notes into [number] slide-ready bullet points of at most 8 words each, grouped under clear section headers, in a [tone] register: [paste notes]" },
+  { kind:"image", tag:"Image", meta:"Photography & Camera", slug:"film-noir", text:"Restyle this image as a film noir frame with hard directional key light, deep black shadows and venetian-blind patterning. Keep the subject and composition exactly as they are — change only the photographic treatment." },
+  { kind:"text", tag:"Email", meta:"email", text:"Rewrite this angry draft as a firm, professional message that keeps every factual point but removes the heat, under [word count] words: [paste draft]" }
+];
+
+function initShowcase(){
+  const track = document.getElementById("showcaseTrack");
+  if(!track) return;
+
+  const items = SHOWCASE_FALLBACK.map((item) => {
+    /* Prefer a live prompt when the page happens to have the data. */
+    if(item.kind === "image" && imagePrompts.length){
+      const p = imagePrompts.find((x) => x.slug === item.slug);
+      if(p) return { ...item, meta:p.cat, text:p.prompt };
+    }
+    if(item.kind === "text" && textPromptsData && textPromptsData[item.meta] && textPromptsData[item.meta].length){
+      const p = textPromptsData[item.meta][0];
+      return { ...item, meta:p.tag || item.meta, text:p.prompt };
+    }
+    return item;
+  });
+
+  track.innerHTML = items.map((item) => {
+    if(item.kind === "image"){
+      return `
+    <li class="showcase-card showcase-card--image">
+      <img class="showcase-thumb" src="images/${encodeURIComponent(item.slug)}.jpg" alt="" loading="lazy">
+      <span class="showcase-tag">${escapeHTML(item.tag)}</span>
+      <p class="showcase-text">${highlightVars(item.text)}</p>
+      <span class="showcase-foot">
+        <span>${escapeHTML(item.meta)}</span>
+        <button type="button" class="showcase-copy btn-copy" data-raw="${escapeHTML(item.text)}">${ICONS.copy}<span>Copy</span></button>
+      </span>
+    </li>`;
+    }
+    return `
+    <li class="showcase-card">
+      <span class="showcase-tag">${escapeHTML(item.tag)}</span>
+      <p class="showcase-text">${highlightVars(item.text)}</p>
+      <span class="showcase-foot"><span>${escapeHTML(item.meta)}</span><span>${item.text.length} chars</span></span>
+    </li>`;
+  }).join("");
+
+  /* Delegated, so the copy buttons survive any future re-render of the row. */
+  track.addEventListener("click", (e) => {
+    const btn = e.target.closest(".showcase-copy");
+    if(btn) copyText(btn.dataset.raw, btn);
+  });
+
+  track.setAttribute("data-focus-track", "");
+}
+
+/* ==================================================================
+   COMMAND PALETTE  (Cmd/Ctrl-K, or "/")
+
+   Indexes whatever the current page happens to have loaded — the image set on
+   images.html, the text templates on a category page, the trending subset on
+   the homepage — plus the categories and pages themselves. No page pulls in
+   data it would not otherwise need just to make search work.
+   ================================================================== */
+let cmdkIndex = [];
+let cmdkResults = [];
+let cmdkActive = 0;
+let cmdkReturnFocus = null;
+
+const CMDK_ICON = {
+  page: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h9l5 5v13H5z"/><path d="M14 3v5h5"/></svg>`,
+  category: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>`,
+  prompt: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6.5l5.5 5.5L8 17.5"/><path d="M14.5 17.5H19"/></svg>`
+};
+
+function buildCmdkIndex(){
+  const out = [];
+
+  [
+    ["Home", "index.html"], ["Image prompts", "images.html"],
+    ["Text prompts", "text.html"], ["Prompt builder", "builder.html"],
+    ["Slides", "ppt.html"], ["Essays", "essay.html"],
+    ["Reports", "report.html"], ["Emails", "email.html"]
+  ].forEach(([title, href]) => out.push({ kind:"page", title, sub:href, href }));
+
+  /* Categories are derived, so a new one in build_prompts.py is searchable
+     with no edit here. */
+  new Set(imagePrompts.map((p) => p.cat)).forEach((cat) => {
+    out.push({ kind:"category", title:cat, sub:"Image category", href:`images.html?cat=${encodeURIComponent(cat)}` });
+  });
+
+  imagePrompts.forEach((p) => out.push({ kind:"prompt", title:p.style, sub:p.cat, prompt:p.prompt }));
+
+  (Array.isArray(window.trendingPrompts) ? window.trendingPrompts : []).forEach((p) => {
+    if(out.some((x) => x.kind === "prompt" && x.title === p.style)) return;
+    out.push({ kind:"prompt", title:p.style, sub:p.cat, prompt:p.prompt });
+  });
+
+  if(textPromptsData){
+    Object.entries(textPromptsData).forEach(([cat, list]) => {
+      list.forEach((p) => out.push({ kind:"prompt", title:p.filename, sub:`${cat} · ${p.tag || ""}`.trim(), prompt:p.prompt }));
+    });
+  }
+
+  return out;
+}
+
+function cmdkSearch(q){
+  const query = q.trim().toLowerCase();
+  if(!query){
+    /* Empty state is a shortcut menu, not "no results" — pages and categories
+       first, because with nothing typed the user is browsing, not searching. */
+    return cmdkIndex.filter((x) => x.kind !== "prompt").slice(0, 10);
+  }
+  const scored = [];
+  for(const item of cmdkIndex){
+    const title = item.title.toLowerCase();
+    const hay = `${title} ${(item.sub || "").toLowerCase()} ${(item.prompt || "").toLowerCase()}`;
+    if(!hay.includes(query)) continue;
+    /* Rank: title prefix, then title match, then anywhere. Keeps an exact
+       style name above a prompt that merely mentions the word. */
+    const rank = title.startsWith(query) ? 0 : title.includes(query) ? 1 : 2;
+    scored.push({ item, rank });
+  }
+  scored.sort((a, b) => a.rank - b.rank);
+  return scored.slice(0, 40).map((x) => x.item);
+}
+
+function renderCmdk(){
+  const host = document.getElementById("cmdkResults");
+  if(!host) return;
+
+  if(!cmdkResults.length){
+    host.innerHTML = `<p class="cmdk-empty">No prompts match that. Try a category, a model, or a use case.</p>`;
+    return;
+  }
+
+  let html = "";
+  let lastKind = null;
+  cmdkResults.forEach((item, i) => {
+    if(item.kind !== lastKind){
+      const label = item.kind === "page" ? "Go to" : item.kind === "category" ? "Categories" : "Prompts";
+      html += `<p class="cmdk-group">${label}</p>`;
+      lastKind = item.kind;
+    }
+    html += `
+      <button type="button" class="cmdk-item" role="option" id="cmdk-opt-${i}" data-i="${i}" aria-selected="${i === cmdkActive}">
+        ${CMDK_ICON[item.kind]}
+        <span class="cmdk-item-body">
+          <span class="cmdk-item-title">${escapeHTML(item.title)}</span>
+          <span class="cmdk-item-sub">${escapeHTML(item.sub || "")}</span>
+        </span>
+        <span class="cmdk-item-kind">${item.kind === "prompt" ? "copy" : "open"}</span>
+      </button>`;
+  });
+  host.innerHTML = html;
+
+  const active = host.querySelector('[aria-selected="true"]');
+  if(active) active.scrollIntoView({ block:"nearest" });
+  const input = document.getElementById("cmdkInput");
+  if(input && active) input.setAttribute("aria-activedescendant", active.id);
+}
+
+function cmdkMove(delta){
+  if(!cmdkResults.length) return;
+  cmdkActive = (cmdkActive + delta + cmdkResults.length) % cmdkResults.length;
+  renderCmdk();
+}
+
+function cmdkRun(i){
+  const item = cmdkResults[i];
+  if(!item) return;
+  if(item.href){
+    closeCmdk();
+    window.location.href = item.href;
+    return;
+  }
+  /* A prompt result copies rather than navigating: copying is the primary
+     action everywhere else on the site, so it should be here too. */
+  const ok = (navigator.clipboard && window.isSecureContext)
+    ? null
+    : legacyCopy(item.prompt || "");
+  if(ok === null){
+    navigator.clipboard.writeText(item.prompt || "").then(
+      () => announce("Prompt copied to clipboard"),
+      () => announce(legacyCopy(item.prompt || "") ? "Prompt copied to clipboard" : "Copy failed")
+    );
+  } else {
+    announce(ok ? "Prompt copied to clipboard" : "Copy failed");
+  }
+  closeCmdk();
+}
+
+function openCmdk(){
+  const root = document.getElementById("cmdk");
+  if(!root || !root.hidden) return;
+  cmdkReturnFocus = document.activeElement;
+  if(!cmdkIndex.length) cmdkIndex = buildCmdkIndex();
+
+  root.hidden = false;
+  document.body.style.overflow = "hidden";
+  const input = document.getElementById("cmdkInput");
+  input.value = "";
+  cmdkResults = cmdkSearch("");
+  cmdkActive = 0;
+  renderCmdk();
+  input.focus();
+}
+
+function closeCmdk(){
+  const root = document.getElementById("cmdk");
+  if(!root || root.hidden) return;
+  root.hidden = true;
+  document.body.style.overflow = "";
+  if(cmdkReturnFocus && document.contains(cmdkReturnFocus)) cmdkReturnFocus.focus();
+  cmdkReturnFocus = null;
+}
+
+function initCmdk(){
+  const root = document.getElementById("cmdk");
+  if(!root) return;
+
+  const input = document.getElementById("cmdkInput");
+  const results = document.getElementById("cmdkResults");
+
+  document.querySelectorAll("[data-cmdk-open]").forEach((btn) => btn.addEventListener("click", openCmdk));
+  root.querySelectorAll("[data-cmdk-close]").forEach((el) => el.addEventListener("click", closeCmdk));
+
+  document.addEventListener("keydown", (e) => {
+    const open = !root.hidden;
+
+    if((e.key === "k" || e.key === "K") && (e.metaKey || e.ctrlKey)){
+      e.preventDefault();
+      open ? closeCmdk() : openCmdk();
+      return;
+    }
+    /* "/" only when the user is not already typing somewhere. */
+    if(!open && e.key === "/" && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName) && !document.activeElement.isContentEditable){
+      e.preventDefault();
+      openCmdk();
+      return;
+    }
+    if(!open) return;
+
+    if(e.key === "Escape"){ e.preventDefault(); closeCmdk(); }
+    else if(e.key === "ArrowDown"){ e.preventDefault(); cmdkMove(1); }
+    else if(e.key === "ArrowUp"){ e.preventDefault(); cmdkMove(-1); }
+    else if(e.key === "Enter"){ e.preventDefault(); cmdkRun(cmdkActive); }
+  });
+
+  let timer;
+  input.addEventListener("input", () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      cmdkResults = cmdkSearch(input.value);
+      cmdkActive = 0;
+      renderCmdk();
+    }, 90);
+  });
+
+  results.addEventListener("click", (e) => {
+    const btn = e.target.closest(".cmdk-item");
+    if(btn) cmdkRun(Number(btn.dataset.i));
+  });
+  results.addEventListener("mousemove", (e) => {
+    const btn = e.target.closest(".cmdk-item");
+    if(!btn) return;
+    const i = Number(btn.dataset.i);
+    if(i !== cmdkActive){ cmdkActive = i; renderCmdk(); }
+  });
+}
+
+/* ==================================================================
+   TRENDING MARQUEE (index.html)
+
+   Reads trending:true off the data rather than carrying a list of slugs in
+   the view, so marking another prompt trending in build_prompts.py puts it
+   in the strip with no edit here.
+   ================================================================== */
+function initMarquee(){
+  const track = document.getElementById("trendingTrack");
+  if(!track) return;
+
+  /* The homepage loads a generated subset; images.html has the full dataset.
+     Either source works, so the strip is not tied to one page. */
+  const featured = Array.isArray(window.trendingPrompts) && window.trendingPrompts.length
+    ? window.trendingPrompts
+    : imagePrompts.filter((p) => p.trending === true);
+  if(!featured.length){
+    const section = document.querySelector(".marquee-section");
+    if(section) section.hidden = true;
+    return;
+  }
+
+  const tile = (p, i) => `
+    <button type="button" class="marquee-tile" data-raw="${escapeHTML(p.prompt)}" aria-label="Copy the ${escapeHTML(p.style)} prompt">
+      <span class="marquee-thumb swatch-${i % 6}"><span class="swatch-texture"></span></span>
+      <span class="marquee-body">
+        <span class="marquee-input">${escapeHTML(p.input || "1 photo")}</span>
+        <span class="marquee-name">${escapeHTML(p.style)}</span>
+        <span class="marquee-text">${escapeHTML(p.prompt)}</span>
+      </span>
+    </button>`;
+
+  /* Rendered TWICE. The keyframe travels exactly -50% -> 0, so the moment it
+     wraps, the second copy is sitting where the first one started and the
+     seam is invisible. Any other distance shows a jump. */
+  const set = featured.map(tile).join("");
+  track.innerHTML = set + set;
+
+  /* The duplicate set is decorative repetition — hide it from assistive tech
+     and the tab order so the seven prompts are not announced fourteen times. */
+  const tiles = [...track.children];
+  tiles.slice(featured.length).forEach((el) => {
+    el.setAttribute("aria-hidden", "true");
+    el.tabIndex = -1;
+  });
+
+  track.addEventListener("click", (e) => {
+    const btn = e.target.closest(".marquee-tile");
+    if(!btn) return;
+    copyMarqueePrompt(btn);
+  });
+}
+
+/* Deliberately NOT copyText(): flashCopyResult swaps the element's innerHTML
+   for its "Copied!" markup, which on a tile would destroy the thumbnail, the
+   badge and the preview. Only the name label's textContent changes here. */
+function copyMarqueePrompt(btn){
+  const label = btn.querySelector(".marquee-name");
+  const prompt = btn.dataset.raw || "";
+  if(!label || btn.dataset.copyBusy) return;
+
+  const done = (ok) => {
+    btn.dataset.copyBusy = "1";
+    const original = label.textContent;
+    label.textContent = ok ? "Copied" : "Copy failed";
+    announce(ok ? "Prompt copied to clipboard" : "Copy failed — open the prompt to copy it manually");
     setTimeout(() => {
-      btn.innerHTML = original;
-      btn.classList.remove("copied");
+      label.textContent = original;
+      delete btn.dataset.copyBusy;
     }, 1600);
+  };
+
+  if(navigator.clipboard && window.isSecureContext){
+    navigator.clipboard.writeText(prompt).then(() => done(true), () => done(legacyCopy(prompt)));
+    return;
+  }
+  done(legacyCopy(prompt));
+}
+
+/* ==================================================================
+   COUNT-UP STATS (index.html)
+
+   Runs when the figure scrolls into view, once. Eases out so it decelerates
+   into the final number instead of arriving at a constant rate, and writes
+   through requestAnimationFrame rather than setInterval so it stays on the
+   compositor's clock.
+   ================================================================== */
+function initCountUp(){
+  const figures = document.querySelectorAll("[data-count-to]");
+  if(!figures.length) return;
+
+  const render = (el, value) => {
+    const prefix = el.dataset.countPrefix || "";
+    el.textContent = prefix + value.toLocaleString();
+  };
+
+  /* Reduced motion: no tally, just the number. */
+  if(prefersReducedMotion || !("IntersectionObserver" in window)){
+    figures.forEach((el) => render(el, Number(el.dataset.countTo)));
+    return;
+  }
+
+  const run = (el) => {
+    const target = Number(el.dataset.countTo) || 0;
+    if(target === 0){ render(el, 0); return; }
+
+    const duration = 1100;
+    let start = null;
+    const step = (now) => {
+      if(start === null) start = now;
+      const t = Math.min((now - start) / duration, 1);
+      /* easeOutExpo — fast off the mark, long settle. */
+      const eased = t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
+      render(el, Math.round(target * eased));
+      if(t < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  };
+
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if(!entry.isIntersecting) return;
+      io.unobserve(entry.target);
+      run(entry.target);
+    });
+  }, { threshold: 0.4 });
+
+  figures.forEach((el) => io.observe(el));
+}
+
+/* ==================================================================
+   SEND TO AN ASSISTANT
+
+   ChatGPT accepts a ?q= prefill; Gemini has no documented equivalent, so
+   opening it lands on an empty composer. Both buttons therefore copy the
+   prompt FIRST and open second — paste works regardless of whether the
+   destination honours a parameter, and the behaviour is identical either
+   way from the visitor's side.
+   ================================================================== */
+const SEND_TARGETS = [
+  {
+    id: "chatgpt",
+    label: "ChatGPT",
+    /* Prefills the composer. Prompts here top out around 540 characters, so
+       the encoded URL stays far inside every browser's length limit. */
+    url: (prompt) => `https://chatgpt.com/?q=${encodeURIComponent(prompt)}`,
+    /* OpenAI's mark, filled rather than stroked so it stays legible at 14px.
+       Used nominatively, to label a link to their product. */
+    icon: `<svg class="icon brand-mark" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21.18 9.83a5.42 5.42 0 0 0-.47-4.45 5.5 5.5 0 0 0-5.9-2.63A5.42 5.42 0 0 0 10.74.94a5.5 5.5 0 0 0-5.24 3.8 5.42 5.42 0 0 0-3.62 2.63 5.5 5.5 0 0 0 .67 6.44 5.42 5.42 0 0 0 .47 4.45 5.5 5.5 0 0 0 5.9 2.63 5.42 5.42 0 0 0 4.07 1.81 5.5 5.5 0 0 0 5.24-3.8 5.42 5.42 0 0 0 3.62-2.63 5.5 5.5 0 0 0-.67-6.44zM13 21.1a4.07 4.07 0 0 1-2.61-.94l.13-.07 4.34-2.5a.71.71 0 0 0 .36-.62v-6.11l1.83 1.06a.07.07 0 0 1 .04.05v5.06A4.09 4.09 0 0 1 13 21.1zM4.24 17.36a4.07 4.07 0 0 1-.49-2.73l.13.08 4.34 2.5a.71.71 0 0 0 .71 0l5.3-3.06v2.12a.07.07 0 0 1-.03.06l-4.39 2.53a4.09 4.09 0 0 1-5.57-1.5zM3.1 7.9a4.07 4.07 0 0 1 2.13-1.79v5.15a.7.7 0 0 0 .35.61l5.28 3.05-1.83 1.06a.07.07 0 0 1-.06 0L4.53 13.4A4.09 4.09 0 0 1 3.1 7.9zm15.07 3.5-5.3-3.07 1.83-1.05a.07.07 0 0 1 .06 0l4.39 2.53a4.08 4.08 0 0 1-.63 7.36v-5.15a.7.7 0 0 0-.35-.61zm1.82-2.74-.13-.08-4.33-2.52a.71.71 0 0 0-.72 0L9.51 9.12V7a.07.07 0 0 1 .03-.06l4.39-2.53a4.08 4.08 0 0 1 6.06 4.23zM8.51 12.41 6.68 11.35a.07.07 0 0 1-.04-.05V6.24a4.08 4.08 0 0 1 6.69-3.13l-.13.07-4.34 2.5a.71.71 0 0 0-.36.62zm1-2.14 2.36-1.36 2.36 1.36v2.72l-2.36 1.36-2.36-1.36z"/></svg>`
+  },
+  {
+    id: "gemini",
+    label: "Gemini",
+    url: () => "https://gemini.google.com/app",
+    /* Gemini's four-point star, filled to match the OpenAI mark's weight. */
+    icon: `<svg class="icon brand-mark" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 1.5c.55 5.4 3.6 8.45 9 9-5.4.55-8.45 3.6-9 9-.55-5.4-3.6-8.45-9-9 5.4-.55 8.45-3.6 9-9z"/></svg>`
+  }
+];
+
+function saveButtonHTML(id, name, prompt){
+  const on = isSaved(id);
+  return `<button type="button" class="btn btn-ghost btn-sm btn-save" data-save-id="${escapeHTML(id)}" data-save-name="${escapeHTML(name)}" data-raw="${escapeHTML(prompt)}" aria-pressed="${on}" aria-label="${on ? "Remove from" : "Add to"} saved prompts"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 3.8h11a1 1 0 0 1 1 1v15.4l-6.5-4-6.5 4V4.8a1 1 0 0 1 1-1z"/></svg><span>${on ? "Saved" : "Save"}</span></button>`;
+}
+
+/* Re-reads storage and repaints every save button on the page. Called after a
+   change anywhere, so the same prompt shown twice cannot disagree with itself. */
+function syncSaveButtons(){
+  document.querySelectorAll(".btn-save").forEach((btn) => {
+    const on = isSaved(btn.dataset.saveId);
+    btn.setAttribute("aria-pressed", String(on));
+    btn.setAttribute("aria-label", `${on ? "Remove from" : "Add to"} saved prompts`);
+    const label = btn.querySelector("span");
+    if(label) label.textContent = on ? "Saved" : "Save";
+  });
+}
+
+function bindSaveButtons(root){
+  if(root.dataset.saveBound) return;
+  root.dataset.saveBound = "1";
+  root.addEventListener("click", (e) => {
+    const btn = e.target.closest(".btn-save");
+    if(!btn || !root.contains(btn)) return;
+    const added = toggleSaved({
+      id: btn.dataset.saveId,
+      name: btn.dataset.saveName,
+      snippet: (btn.dataset.raw || "").slice(0, 120)
+    });
+    syncSaveButtons();
+    announce(added ? "Saved to your library" : "Removed from saved prompts");
+  });
+}
+
+function sendRowHTML(prompt){
+  return SEND_TARGETS.map((t) =>
+    `<button type="button" class="btn btn-ghost btn-sm btn-send" data-send="${t.id}" data-raw="${escapeHTML(prompt)}">${t.icon}<span>Open in ${escapeHTML(t.label)}</span></button>`
+  ).join("");
+}
+
+/* Delegated: a category page renders 114 cards, so per-button listeners meant
+   228 of them re-attached on every filter and every debounced keystroke. One
+   listener on the container survives innerHTML replacement of its children. */
+function bindSendButtons(root){
+  if(root.dataset.sendBound) return;
+  root.dataset.sendBound = "1";
+
+  root.addEventListener("click", (e) => {
+    const btn = e.target.closest(".btn-send");
+    if(!btn || !root.contains(btn)) return;
+
+    const target = SEND_TARGETS.find((t) => t.id === btn.dataset.send);
+    if(!target) return;
+    const prompt = btn.dataset.raw || "";
+
+    /* Opened synchronously, inside the click, or a popup blocker rejects it —
+       an await before this point loses the user-gesture context. */
+    const win = window.open(target.url(prompt), "_blank", "noopener,noreferrer");
+
+    copyText(prompt, btn);
+
+    /* copyText announces its own result on a short timer; delay this so the
+       two messages queue rather than clobbering each other. */
+    if(!win){
+      setTimeout(() => announce("The new tab was blocked, but the prompt is copied — paste it into " + target.label + "."), 240);
+    }
   });
 }
 
@@ -149,6 +1004,119 @@ function setActiveNav(){
   });
 }
 
+/* Dark is the default and the site's identity; the toggle is an override that
+   persists per browser. The stored value is applied by the inline bootstrap in
+   <head> so the page never paints one theme then swaps to the other. */
+function initThemeToggle(){
+  const btn = document.getElementById("themeToggle");
+  if(!btn) return;
+
+  const current = () => document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
+
+  /* Paint the swap over --dur-3 instead of flashing. The class is removed once
+     the transition has run, so no element keeps an all-properties transition. */
+  let fadeTimer;
+  const crossFade = () => {
+    const root = document.documentElement;
+    root.classList.add("theme-transition");
+    clearTimeout(fadeTimer);
+    fadeTimer = setTimeout(() => root.classList.remove("theme-transition"), 400);
+  };
+
+  const apply = (theme) => {
+    document.documentElement.setAttribute("data-theme", theme);
+    /* role=switch, so state is aria-checked. The label names what the switch
+       controls, not what pressing it would do — the state carries that. */
+    btn.setAttribute("aria-checked", String(theme === "light"));
+    btn.setAttribute("aria-label", "Light theme");
+    /* The panel has a switch for the same setting; keep them in agreement. */
+    const panelSwitch = document.getElementById("setTheme");
+    if(panelSwitch) panelSwitch.setAttribute("aria-checked", String(theme === "light"));
+  };
+
+  apply(current());
+
+  btn.addEventListener("click", () => {
+    const next = current() === "light" ? "dark" : "light";
+    crossFade();
+    apply(next);
+    try {
+      localStorage.setItem("promptlib-theme", next);
+    } catch(err){
+      /* Storage can throw in private mode. The switch still works for this
+         page; it just will not be remembered. */
+    }
+    announce(next === "light" ? "Light theme enabled" : "Dark theme enabled");
+  });
+}
+
+/* Slides one shared pill behind the nav links instead of giving each link its
+   own background. Only transform and width animate, both composited, so
+   moving between links never costs layout on the links themselves.
+
+   The active link is already styled by weight and colour, so if this never
+   runs — JS off, or a viewport where the indicator is display:none — the nav
+   still reads correctly. */
+function initNavIndicator(){
+  const row = document.getElementById("navLinks");
+  const bar = document.getElementById("navIndicator");
+  if(!row || !bar) return;
+
+  const active = () => row.querySelector(".nav-link.active");
+
+  const moveTo = (link) => {
+    if(!link) return;
+    /* display:none on mobile — offsetParent is null, nothing to position. */
+    if(!bar.offsetParent) return;
+    bar.style.width = `${link.offsetWidth}px`;
+    bar.style.transform = `translate3d(${link.offsetLeft - row.clientLeft}px,0,0)`;
+    bar.classList.add("is-ready");
+  };
+
+  const settle = () => moveTo(active());
+
+  /* Fonts land after first paint and change link widths, so measure again
+     once they are ready rather than freezing a stale position. */
+  settle();
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(settle);
+
+  row.querySelectorAll(".nav-link").forEach((link) => {
+    link.addEventListener("mouseenter", () => moveTo(link));
+    link.addEventListener("focus", () => moveTo(link));
+  });
+  row.addEventListener("mouseleave", settle);
+  row.addEventListener("focusout", (e) => {
+    if(!row.contains(e.relatedTarget)) settle();
+  });
+
+  let resizeTimer;
+  window.addEventListener("resize", () => {
+    /* No transition while the layout is still moving under it. */
+    bar.style.transition = "none";
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => { bar.style.transition = ""; settle(); }, 100);
+    settle();
+  });
+}
+
+/* The nav is borderless until something scrolls under it. Passive listener and
+   a class toggle only — no style writes per frame. */
+function initNavScrollState(){
+  const nav = document.querySelector(".nav");
+  if(!nav) return;
+  let ticking = false;
+  const update = () => {
+    nav.classList.toggle("is-scrolled", window.scrollY > 4);
+    ticking = false;
+  };
+  update();
+  window.addEventListener("scroll", () => {
+    if(ticking) return;
+    ticking = true;
+    requestAnimationFrame(update);
+  }, { passive: true });
+}
+
 function initMobileNav(){
   const navToggle = document.getElementById("navToggle");
   const navLinksEl = document.getElementById("navLinks");
@@ -164,15 +1132,27 @@ function initMobileNav(){
    PAGE TRANSITIONS — fade in on load, fade out before internal navigation
    ================================================================== */
 function initPageTransitions(){
-  requestAnimationFrame(() => requestAnimationFrame(() => document.body.classList.add("loaded")));
-
+  /* No reveal here any more — CSS owns that. This only handles the fade-out
+     before an internal navigation. */
   document.addEventListener("click", (e) => {
+    /* Anything that is not a plain left-click belongs to the browser: modifier
+       clicks open new tabs or windows, and middle-click arrives as auxclick. */
+    if(e.defaultPrevented || e.button !== 0) return;
+    if(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+
     const link = e.target.closest("a");
-    if(!link) return;
+    if(!link || link.target === "_blank" || link.hasAttribute("download")) return;
+
     const href = link.getAttribute("href");
-    if(!href || href.startsWith("#") || href.startsWith("http") || href.startsWith("mailto:") || link.target === "_blank") return;
+    if(!href || href.startsWith("#")) return;
+
+    /* Only relative in-site navigations get the fade. Any href carrying an
+       explicit scheme — http:, mailto:, tel:, data:, blob: — is left alone.
+       data: matters: browsers refuse top-level data: navigation, so routing the
+       builder's Download link through window.location silently did nothing. */
+    if(href.startsWith("//") || /^[a-z][a-z0-9+.-]*:/i.test(href)) return;
+
     e.preventDefault();
-    document.body.classList.remove("loaded");
     document.body.classList.add("leaving");
     setTimeout(() => { window.location.href = href; }, prefersReducedMotion ? 0 : 260);
   });
@@ -183,31 +1163,151 @@ function initPageTransitions(){
    ================================================================== */
 let galleryState = { cat: "All", query: "" };
 
+/* ---- URL state -------------------------------------------------------
+   Filters live in the query string, so a filtered view can be linked, shared
+   and bookmarked, and Back undoes a filter instead of leaving the page.
+
+   Category changes push a history entry: they are discrete, deliberate acts,
+   and Back undoing them is exactly what people expect. Typing only replaces
+   the current entry — pushing per debounced keystroke would bury the previous
+   page under a dozen near-identical entries. Say the word if you would rather
+   search be pushed too. */
+function syncUrl(push){
+  const search = document.getElementById("gallerySearch");
+  const params = new URLSearchParams();
+  if(galleryState.cat !== "All") params.set("cat", galleryState.cat);
+  const raw = search ? search.value.trim() : "";
+  if(raw) params.set("q", raw);
+
+  const qs = params.toString();
+  const url = qs ? `?${qs}` : location.pathname;
+  try {
+    history[push ? "pushState" : "replaceState"](null, "", url);
+  } catch(err){
+    /* Some browsers reject history manipulation on file:// origins. Opening
+       the page straight off disk is supported, so degrade quietly: the
+       filters still work, they just are not linkable there. */
+  }
+}
+
+function readStateFromUrl(){
+  const params = new URLSearchParams(location.search);
+  const cat = params.get("cat") || "All";
+  /* A category that is not in the data — a stale link, a typo, a renamed
+     category in build_prompts.py — falls back to All rather than rendering an
+     empty grid the visitor cannot explain. */
+  galleryState.cat = (cat === "All" || imagePrompts.some((p) => p.cat === cat)) ? cat : "All";
+
+  const raw = params.get("q") || "";
+  const search = document.getElementById("gallerySearch");
+  if(search) search.value = raw;
+  galleryState.query = raw.trim().toLowerCase();
+}
+
+/* Push the state we just read back onto the controls, for first load and for
+   Back/Forward, where the chips and the search box are otherwise stale. */
+function syncControlsToState(){
+  const chipRow = document.getElementById("galleryChips");
+  if(chipRow){
+    chipRow.querySelectorAll(".chip").forEach((c) => {
+      const on = c.dataset.cat === galleryState.cat;
+      c.classList.toggle("active", on);
+      c.setAttribute("aria-pressed", String(on));
+    });
+  }
+}
+
+/* prompts-image.js is a separate <script>; if it 404s, is blocked, or fails to
+   parse, we arrive here with nothing. Say that plainly — an empty grid plus
+   "no prompts match that search" blames the visitor for a load failure. */
+function renderGalleryUnavailable(){
+  const grid = document.getElementById("galleryGrid");
+  const countEl = document.getElementById("galleryCount");
+  const chipRow = document.getElementById("galleryChips");
+  const search = document.getElementById("gallerySearch");
+
+  if(countEl) countEl.textContent = "unavailable";
+  if(chipRow) chipRow.innerHTML = "";
+  if(search){
+    search.disabled = true;
+    search.placeholder = "Search unavailable";
+  }
+
+  grid.innerHTML = `
+    <div class="gallery-error" role="alert">
+      <p class="gallery-error-title">The prompt library didn&rsquo;t load.</p>
+      <p>prompts-image.js is missing or failed to parse, so there is nothing to show.
+      Try reloading. If it keeps happening, regenerate it with
+      <code>python3 build_prompts.py</code>.</p>
+    </div>`;
+}
+
 function initGallery(){
   const grid = document.getElementById("galleryGrid");
   if(!grid) return;
+
+  if(!imagePrompts.length){
+    renderGalleryUnavailable();
+    return;
+  }
+
+  /* Shuffle first, THEN stamp. p.i is the position in imagePrompts, which the
+     modal and the swatch colour both index by, so the stamp has to describe the
+     array as it now stands. Reordering after stamping would desync them. */
+  const order = shuffled(imagePrompts);
+  imagePrompts.length = 0;
+  imagePrompts.push(...order);
+  imagePrompts.forEach((p, i) => { p.i = i; });
 
   /* Category chips are derived from the data, so adding a new category in
      build_prompts.py makes a new filter appear with no edit here. */
   const cats = ["All", ...new Set(imagePrompts.map((p) => p.cat))];
   const chipRow = document.getElementById("galleryChips");
   chipRow.innerHTML = cats.map((c) =>
-    `<button class="chip${c === "All" ? " active" : ""}" data-cat="${escapeAttr(c)}">${c}</button>`
+    `<button type="button" class="chip${c === "All" ? " active" : ""}" data-cat="${escapeHTML(c)}" aria-pressed="${c === "All"}">${escapeHTML(c)}</button>`
   ).join("");
 
   chipRow.querySelectorAll(".chip").forEach((chip) => {
     chip.addEventListener("click", () => {
-      chipRow.querySelectorAll(".chip").forEach((c) => c.classList.remove("active"));
+      /* aria-pressed tracks .active so the selected filter is announced, not
+         just coloured — the class alone tells assistive tech nothing. */
+      chipRow.querySelectorAll(".chip").forEach((c) => {
+        c.classList.remove("active");
+        c.setAttribute("aria-pressed", "false");
+      });
       chip.classList.add("active");
+      chip.setAttribute("aria-pressed", "true");
       galleryState.cat = chip.dataset.cat;
+      syncUrl(true);
       renderGallery();
     });
   });
 
+  /* Coalesce keystrokes. Each render rebuilds all 266 cards and re-runs the
+     IntersectionObserver over them, so firing per character made fast typing
+     do that work a dozen times to show one result. 120ms is below the point
+     where the list feels laggy but well above burst typing. */
   const search = document.getElementById("gallerySearch");
-  search.addEventListener("input", () => {
-    galleryState.query = search.value.trim().toLowerCase();
+  /* The count in the placeholder is hardcoded in images.html as a no-JS
+     fallback; take it from the data so it cannot drift when build_prompts.py
+     gains or loses styles. */
+  search.placeholder = search.placeholder.replace(/\d+/, imagePrompts.length);
+  let searchTimer;
+  const applySearch = () => {
+    const next = search.value.trim().toLowerCase();
+    if(next === galleryState.query) return;
+    galleryState.query = next;
+    syncUrl(false);
     renderGallery();
+  };
+  search.addEventListener("input", () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(applySearch, 120);
+  });
+  /* Enter and the type=search clear button should feel immediate. */
+  search.addEventListener("search", () => { clearTimeout(searchTimer); applySearch(); });
+  search.addEventListener("keydown", (e) => {
+    if(e.key === "Enter"){ clearTimeout(searchTimer); applySearch(); }
   });
 
   const modalCloseBtn = document.getElementById("modalClose");
@@ -218,8 +1318,18 @@ function initGallery(){
 
   modalCloseBtn.addEventListener("click", closeModal);
   modalBackdrop.addEventListener("click", (e) => { if(e.target === modalBackdrop) closeModal(); });
-  document.addEventListener("keydown", (e) => { if(e.key === "Escape") closeModal(); });
   modalCopyBtn.addEventListener("click", function(){ copyText(this.dataset.raw, this); });
+
+  /* Adopt whatever the incoming URL asked for before the first paint. */
+  readStateFromUrl();
+  syncControlsToState();
+
+  window.addEventListener("popstate", () => {
+    closeModal();
+    readStateFromUrl();
+    syncControlsToState();
+    renderGallery();
+  });
 
   renderGallery();
 }
@@ -244,20 +1354,32 @@ function renderGallery(){
     return;
   }
 
-  /* Index into imagePrompts is stored on the card so the modal can find the
-     original entry even while a filter is active. */
-  grid.innerHTML = list.map((p, i) => {
-    const realIndex = imagePrompts.indexOf(p);
-    return `
-    <div class="gallery-card reveal swatch-${realIndex % 6} ${p.size || ""}" style="transition-delay:${(i % 3) * 60}ms" data-id="${realIndex}">
-      <div class="swatch-texture"></div>
-      <img class="real-photo" src="images/${p.slug}.jpg" alt="${escapeAttr(p.style)} example" loading="lazy" onerror="this.remove()">
-      <div class="swatch-content">
-        <span class="badge">${p.cat}</span>
-        <span class="swatch-name">${p.style}</span>
-      </div>
-    </div>`;
-  }).join("");
+  /* Which thumbnails actually exist, per images/manifest.js (generated by
+     build-manifest.js). Emitting <img> for all 266 meant 266 404s on any
+     deploy without thumbnails, which is the default since images/ is
+     gitignored. If the manifest is absent we stay optimistic and emit them
+     all, so deleting it degrades to the old behaviour rather than hiding
+     images someone placed by hand. */
+  const manifest = window.imageManifest;
+  const known = Array.isArray(manifest) ? new Set(manifest) : null;
+  const hasThumb = (slug) => known === null || known.has(slug);
+
+  /* p.i (stamped in initGallery) is the index into imagePrompts, carried on the
+     card so the modal can find the original entry while a filter is active. */
+  /* A real <button>, not a div+click: keyboard reachable, Enter/Space activate
+     it for free, and it is exposed to assistive tech as an actionable control.
+     Children are spans because <button> only admits phrasing content. The img
+     is alt="" because the style name sits right beside it in the label. */
+  grid.innerHTML = list.map((p, i) => `
+    <button type="button" class="gallery-card reveal swatch-${p.i % 6} ${escapeHTML(p.size || "")}" style="animation-delay:${(i % 3) * 60}ms" data-id="${p.i}" aria-label="${escapeHTML(p.style)}, ${escapeHTML(p.cat)}. View prompt.">
+      <span class="swatch-texture"></span>
+      ${hasThumb(p.slug) ? `<img class="real-photo" src="images/${encodeURIComponent(p.slug)}.jpg" alt="" loading="lazy">` : ""}
+      <span class="swatch-content">
+        <span class="badge">${escapeHTML(p.cat)}</span>
+        <span class="swatch-name">${escapeHTML(p.style)}</span>
+        <span class="card-reveal">${escapeHTML(p.prompt.slice(0, 130))}&hellip;</span>
+      </span>
+    </button>`).join("");
 
   grid.querySelectorAll(".gallery-card").forEach((card) => {
     card.addEventListener("click", () => openModal(Number(card.dataset.id)));
@@ -265,35 +1387,79 @@ function renderGallery(){
   observeReveals();
 }
 
+/* The card that opened the dialog, so focus can go back to it on close. */
+let modalReturnFocus = null;
+
+function modalFocusables(){
+  const modal = document.querySelector("#modalBackdrop .modal");
+  if(!modal) return [];
+  return [...modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')]
+    .filter((el) => !el.disabled && el.getClientRects().length);
+}
+
+/* Only bound while the dialog is open. Escape closes; Tab wraps at both ends so
+   focus cannot escape into the page behind the overlay. */
+function onModalKeydown(e){
+  if(e.key === "Escape"){ e.preventDefault(); closeModal(); return; }
+  if(e.key !== "Tab") return;
+
+  const list = modalFocusables();
+  if(!list.length) return;
+  const first = list[0];
+  const last = list[list.length - 1];
+
+  if(e.shiftKey && document.activeElement === first){
+    e.preventDefault();
+    last.focus();
+  } else if(!e.shiftKey && document.activeElement === last){
+    e.preventDefault();
+    first.focus();
+  }
+}
+
 function openModal(id){
   const p = imagePrompts[id];
   const modalSwatch = document.getElementById("modalSwatch");
   modalSwatch.className = `modal-swatch swatch-${id % 6}`;
-  modalSwatch.innerHTML = `<div class="swatch-texture"></div><img class="real-photo" src="images/${p.slug}.jpg" alt="${escapeAttr(p.style)} example" onerror="this.remove()"><span class="modal-swatch-name">${p.style}</span>`;
+  /* alt="" — the name is in the heading and in .modal-swatch-name already. */
+  const manifest = window.imageManifest;
+  const hasThumb = !Array.isArray(manifest) || manifest.includes(p.slug);
+  const thumb = hasThumb ? `<img class="real-photo" src="images/${encodeURIComponent(p.slug)}.jpg" alt="">` : "";
+  modalSwatch.innerHTML = `<div class="swatch-texture"></div>${thumb}<span class="modal-swatch-name">${escapeHTML(p.style)}</span>`;
   document.getElementById("modalStyleName").textContent = p.style;
   document.getElementById("modalModel").textContent = p.cat;
-  document.getElementById("modalInput").textContent = `needs: ${p.input || "1 photo"}`;
   document.getElementById("modalPromptText").innerHTML = highlightVars(p.prompt);
   document.getElementById("modalCopyBtn").dataset.raw = p.prompt;
 
-  const howto = document.getElementById("modalHowto");
-  if(p.input === "no photo"){
-    howto.textContent = "Generates a scene from scratch — no upload needed. Paste straight into any image model.";
-  } else if(p.input === "2 photos"){
-    howto.textContent = "Attach two photos in the order the prompt describes, then paste this alongside them.";
-  } else {
-    howto.textContent = "Attach your own photo in ChatGPT, Gemini, or any image tool that accepts a reference image, then paste this prompt alongside it.";
+  const sendRow = document.getElementById("modalSendRow");
+  if(sendRow){
+    sendRow.innerHTML = saveButtonHTML("img:" + p.slug, p.style, p.prompt) + sendRowHTML(p.prompt);
+    bindSendButtons(sendRow);
+    bindSaveButtons(sendRow);
   }
+
+  modalReturnFocus = document.querySelector(`.gallery-card[data-id="${id}"]`) || document.activeElement;
 
   document.getElementById("modalBackdrop").classList.add("open");
   document.body.style.overflow = "hidden";
+  document.addEventListener("keydown", onModalKeydown, true);
+  /* Move focus into the dialog, or the trap has nothing to hold and a screen
+     reader never learns the dialog opened. */
+  document.getElementById("modalClose").focus();
 }
 
 function closeModal(){
   const backdrop = document.getElementById("modalBackdrop");
-  if(!backdrop) return;
+  if(!backdrop || !backdrop.classList.contains("open")) return;
+
   backdrop.classList.remove("open");
   document.body.style.overflow = "";
+  document.removeEventListener("keydown", onModalKeydown, true);
+
+  /* Back to the card that opened it — otherwise focus falls to <body> and a
+     keyboard user restarts from the top of a 266-card grid. */
+  if(modalReturnFocus && document.contains(modalReturnFocus)) modalReturnFocus.focus();
+  modalReturnFocus = null;
 }
 
 /* ==================================================================
@@ -302,28 +1468,123 @@ function closeModal(){
 function initCategoryPage(){
   const list = document.getElementById("categoryPromptList");
   if(!list) return;
+
+  /* prompts-text.js is a separate <script>; if it 404s or fails to parse the
+     page would otherwise render an empty list with no explanation. */
+  if(!textPromptsData){
+    list.innerHTML = `
+      <div class="gallery-error" role="alert">
+        <p class="gallery-error-title">These prompts didn&rsquo;t load.</p>
+        <p>prompts-text.js is missing or failed to parse. Try reloading &mdash; if it
+        keeps happening, check that the file sits next to this page.</p>
+      </div>`;
+    return;
+  }
+
   const category = list.dataset.category;
   const prompts = textPromptsData[category] || [];
-
   const visual = categoryVisuals[category] || categoryVisuals.essay;
 
-  list.innerHTML = prompts.map((p, i) => `
-    <div class="prompt-card reveal" style="transition-delay:${(i % 2) * 70}ms">
+  if(!prompts.length){
+    list.innerHTML = `
+      <div class="gallery-error" role="alert">
+        <p class="gallery-error-title">No prompts in this category.</p>
+        <p>prompts-text.js loaded but has nothing under <code>${escapeHTML(category)}</code>.</p>
+      </div>`;
+    return;
+  }
+
+  /* Reshuffled per visit; the filter and search then work over that order. */
+  const ordered = shuffled(prompts);
+  const state = { tag: "All", query: "" };
+
+  const search = document.getElementById("categorySearch");
+  const chipRow = document.getElementById("categoryChips");
+  const countEl = document.getElementById("categoryCount");
+
+  /* Chips are derived from the tags actually present, so adding a tag in
+     prompts-text.js makes a new filter appear with no edit here. */
+  if(chipRow){
+    const tags = ["All", ...new Set(prompts.map((p) => p.tag).filter(Boolean))];
+    chipRow.innerHTML = tags.map((t) =>
+      `<button type="button" class="chip${t === "All" ? " active" : ""}" data-tag="${escapeHTML(t)}" aria-pressed="${t === "All"}">${escapeHTML(t)}</button>`
+    ).join("");
+
+    chipRow.querySelectorAll(".chip").forEach((chip) => {
+      chip.addEventListener("click", () => {
+        chipRow.querySelectorAll(".chip").forEach((c) => {
+          c.classList.remove("active");
+          c.setAttribute("aria-pressed", "false");
+        });
+        chip.classList.add("active");
+        chip.setAttribute("aria-pressed", "true");
+        state.tag = chip.dataset.tag;
+        render();
+      });
+    });
+  }
+
+  if(search){
+    search.placeholder = search.placeholder.replace(/\d+/, prompts.length);
+    let timer;
+    const apply = () => {
+      const next = search.value.trim().toLowerCase();
+      if(next === state.query) return;
+      state.query = next;
+      render();
+    };
+    search.addEventListener("input", () => {
+      clearTimeout(timer);
+      timer = setTimeout(apply, 120);
+    });
+    search.addEventListener("search", () => { clearTimeout(timer); apply(); });
+    search.addEventListener("keydown", (e) => {
+      if(e.key === "Enter"){ clearTimeout(timer); apply(); }
+    });
+  }
+
+  function matching(){
+    return ordered.filter((p) => {
+      if(state.tag !== "All" && p.tag !== state.tag) return false;
+      if(!state.query) return true;
+      return (p.prompt + " " + (p.tag || "")).toLowerCase().includes(state.query);
+    });
+  }
+
+  function render(){
+    const items = matching();
+    if(countEl) countEl.textContent = `${items.length} prompt${items.length === 1 ? "" : "s"}`;
+
+    if(!items.length){
+      list.innerHTML = `<p class="gallery-empty">No prompts match that search. Try a different word, or pick another filter.</p>`;
+      return;
+    }
+
+    list.innerHTML = items.map((p, i) => `
+    <div class="prompt-card reveal" style="animation-delay:${(i % 2) * 70}ms">
       <div class="prompt-thumb ${visual.swatch}">
         <div class="swatch-texture"></div>
         <span class="prompt-thumb-icon">${ICONS[visual.icon]}</span>
-        <span class="prompt-thumb-label">${visual.label}</span>
+        <span class="prompt-thumb-label">${escapeHTML(p.tag || visual.label)}</span>
       </div>
-      <div class="prompt-block-bar"><span class="demo-dot"></span><span>${p.filename}</span></div>
+      <div class="prompt-block-bar"><span class="demo-dot"></span><span>${escapeHTML(p.filename)}</span></div>
       <p class="prompt-text">${highlightVars(p.prompt)}</p>
-      <button class="btn btn-ghost btn-copy btn-sm" data-raw="${escapeAttr(p.prompt)}">${copyButtonHTML("Copy prompt")}</button>
+      <div class="prompt-actions">
+        <button type="button" class="btn btn-ghost btn-copy btn-sm" data-raw="${escapeHTML(p.prompt)}">${copyButtonHTML("Copy prompt")}</button>
+        <div class="send-row">${saveButtonHTML(category + ":" + p.filename, p.filename, p.prompt)}${sendRowHTML(p.prompt)}</div>
+      </div>
     </div>
   `).join("");
 
-  list.querySelectorAll(".btn-copy").forEach((btn) => {
-    btn.addEventListener("click", function(){ copyText(this.dataset.raw, this); });
-  });
-  observeReveals();
+    list.querySelectorAll(".btn-copy").forEach((btn) => {
+      btn.addEventListener("click", function(){ copyText(this.dataset.raw, this); });
+    });
+    bindSendButtons(list);
+    bindSaveButtons(list);
+    observeReveals();
+  }
+
+  render();
 }
 
 /* ==================================================================
@@ -356,9 +1617,13 @@ async function runDemoCycle(){
     await sleep(450);
 
     if(pair.type === "image"){
-      resultEl.innerHTML = `<div class="demo-swatch swatch-${pair.hue}"><div class="swatch-texture"></div><img class="real-photo" src="https://loremflickr.com/560/320/${pair.keywords}" alt="Generated result" onerror="this.remove()"><span class="swatch-name">${pair.style}</span></div>`;
+      /* The gradient swatch stands in for the render. This used to pull a photo
+         from loremflickr.com, which put a third-party request on the homepage,
+         broke the promise that the site works from disk with no network, and
+         showed an unrelated stock photo rather than anything the prompt made. */
+      resultEl.innerHTML = `<div class="demo-swatch swatch-${pair.hue}"><div class="swatch-texture"></div><span class="swatch-name">${escapeHTML(pair.style)}</span></div>`;
     } else {
-      resultEl.innerHTML = `<pre class="demo-result-text">${pair.result}</pre>`;
+      resultEl.innerHTML = `<pre class="demo-result-text">${escapeHTML(pair.result)}</pre>`;
     }
     requestAnimationFrame(() => resultEl.classList.add("show"));
 
@@ -369,121 +1634,9 @@ async function runDemoCycle(){
   }
 }
 
-/* ==================================================================
-   PROMPT BUILDER DATA (builder.html)
-   Pure templates — no API key, no network call. To add an option, just add a
-   string to the relevant array; it appears in the dropdown automatically.
-   Each entry is the literal phrase injected into the assembled prompt.
-   ================================================================== */
-const builderOptions = {
-  style: [
-    "lush hand-painted watercolor style, soft bleeding edges, textured paper grain",
-    "charcoal drawing, monochromatic smoky gradients, heavy shading",
-    "traditional woodblock print, strong black outlines, flat color zones",
-    "ink wash painting, fluid brushstrokes, varying opacity, negative space",
-    "colored pencil sketch, visible textured linework, soft shading",
-    "gouache painting, heavy opaque matte color, deep saturated tones",
-    "oil painting with thick impasto brushstrokes, visible 3D relief",
-    "linocut print, bold blocky negative space, raw chiseled edges",
-    "stained glass, bold black leading, glowing translucent panes",
-    "layered papercraft and origami, flat folded-paper shapes, 3D depth",
-    "claymation stop-motion, molded clay texture, visible fingerprints",
-    "embroidery, characters woven from visible threads and fabric texture",
-    "fresco mural, cracked plaster texture, faded historical pigment",
-    "1980s VHS home-video look, muted tones, chromatic aberration, scanlines",
-    "city pop album-cover aesthetic, sleek 80s urban nightscape, neon reflections",
-    "lo-fi aesthetic, high grain, low contrast, drifting dust particles",
-    "Technicolor glow, oversaturated primaries, blooming halo around lights",
-    "sepia-toned vintage photography, monochromatic brown tones",
-    "8-bit pixel art, retro video game squares, limited palette",
-    "16-bit JRPG pixel sprites, vibrant parallax background",
-    "risograph print, misaligned two-color layers, visible grain",
-    "art deco poster, bold geometric linework, metallic gold and teal",
-    "art nouveau, whiplash curves, elegant floral framing",
-    "low-poly 3D render, faceted geometric surfaces, flat shading",
-    "vector illustration, ultra-clean geometric lines, flat color",
-    "glitch art and datamoshing, corrupted artifacts, color-channel bleed",
-    "psychedelic swirling neon palette, melting tie-dye distortion",
-    "fisheye lens distortion, ultra-wide bulbous perspective",
-    "heat-haze mirage, shimmering warping distortion",
-    "steampunk, cluttered brass gears and rusted mechanical detail",
-    "dieselpunk, dark oily heavy machinery under a grey sky",
-    "cottagecore, cozy overgrown cabin, wildflowers, warm domestic detail",
-    "dark fantasy, moody shadowy forest, pale spirits, gothic undertones",
-    "cosmic horror, soft pastel depiction of colossal indifferent entities",
-    "post-apocalyptic ruins reclaimed by vibrant green moss and trees",
-    "biomechanical fusion of living tissue and vintage machinery",
-    "chibi super-deformed proportions, oversized head, simple dot eyes",
-    "liminal space, empty and unsettlingly quiet, flat even lighting"
-  ],
-  lighting: [
-    "golden hour lighting, long warm shadows, amber light leaks",
-    "blue hour, cool dusk tones, soft ambient glow",
-    "overcast diffused light, shadowless and even",
-    "dramatic god rays piercing heavy clouds",
-    "bioluminescent glow, deep blues and indigos",
-    "neon noir, blinding commercial neon against wet dark pavement",
-    "harsh direct midday sun, hard-edged shadows",
-    "soft studio lighting, single gentle shadow",
-    "rim lighting, subject outlined against a dark background",
-    "candlelight, warm flickering pools of light",
-    "moonlight, cool silver highlights, deep shadow",
-    "backlit silhouette, subject dark against bright haze"
-  ],
-  composition: [
-    "cinematic wide shot",
-    "extreme close-up",
-    "overhead flat lay",
-    "low angle looking up",
-    "high angle looking down",
-    "symmetrical centered composition",
-    "rule-of-thirds off-center framing",
-    "shallow depth of field, blurred background",
-    "wide establishing landscape shot",
-    "tight portrait crop",
-    "over-the-shoulder view",
-    "macro detail shot"
-  ],
-  mood: [
-    "nostalgic and warm",
-    "quiet and melancholy",
-    "tense and ominous",
-    "peaceful and serene",
-    "energetic and chaotic",
-    "dreamlike and surreal",
-    "gritty and somber",
-    "whimsical and playful",
-    "epic and awe-inspiring",
-    "lonely and isolated",
-    "cozy and intimate",
-    "cold and clinical"
-  ],
-  palette: [
-    "muted earth tones",
-    "vibrant jewel tones",
-    "monochrome black and white",
-    "teal and orange contrast",
-    "soft pastel palette",
-    "high-contrast primary colors",
-    "desaturated washed-out tones",
-    "warm amber and gold",
-    "cool blues and greys",
-    "neon magenta and cyan"
-  ],
-  finish: [
-    "highly detailed, ultra sharp",
-    "soft focus, gentle blur",
-    "heavy film grain",
-    "clean and minimal, lots of negative space",
-    "richly textured surfaces",
-    "glossy and reflective",
-    "matte and flat",
-    "painterly and loose"
-  ]
-};
-
-/* Aspect ratios — the flag syntax differs per model, handled in buildPrompt(). */
-const builderRatios = ["1:1", "16:9", "9:16", "4:5", "3:2", "2:3"];
+/* See builder-data.js — only builder.html loads it. */
+const builderOptions = window.builderOptions || null;
+const builderRatios = Array.isArray(window.builderRatios) ? window.builderRatios : [];
 
 /* ==================================================================
    PROMPT BUILDER (builder.html only)
@@ -492,19 +1645,36 @@ function initBuilder(){
   const form = document.getElementById("builderForm");
   if(!form) return;
 
+  /* builder-data.js supplies every dropdown. Without it the selects would sit
+     there empty and the page would look broken for no stated reason. */
+  if(!builderOptions){
+    const panel = document.querySelector(".builder-output-panel") || form;
+    panel.insertAdjacentHTML("afterbegin", `
+      <div class="gallery-error" role="alert">
+        <p class="gallery-error-title">The builder didn&rsquo;t load.</p>
+        <p>builder-data.js is missing or failed to parse, so there are no options
+        to choose from. Try reloading.</p>
+      </div>`);
+    return;
+  }
+
   const fields = ["style","lighting","composition","mood","palette","finish"];
 
   fields.forEach((field) => {
     const select = document.getElementById(`builder-${field}`);
     select.innerHTML = `<option value="">— none —</option>` +
-      builderOptions[field].map((opt) => `<option value="${escapeAttr(opt)}">${opt}</option>`).join("");
+      builderOptions[field].map((opt) => `<option value="${escapeHTML(opt)}">${escapeHTML(opt)}</option>`).join("");
   });
 
   const ratioSelect = document.getElementById("builder-ratio");
-  ratioSelect.innerHTML = builderRatios.map((r) => `<option value="${r}">${r}</option>`).join("");
+  ratioSelect.innerHTML = builderRatios.map((r) => `<option value="${escapeHTML(r)}">${escapeHTML(r)}</option>`).join("");
 
   form.addEventListener("input", buildPrompt);
   form.addEventListener("change", buildPrompt);
+
+  /* Real <form> so Reset can use native reset(), but there is nothing to submit
+     to — swallow Enter rather than letting it reload the page. */
+  form.addEventListener("submit", (e) => e.preventDefault());
 
   document.getElementById("builderRandomBtn").addEventListener("click", () => {
     fields.forEach((field) => {
@@ -514,9 +1684,10 @@ function initBuilder(){
     buildPrompt();
   });
 
+  /* Native reset() restores every control to its first/blank option, which for
+     the six style selects is the "— none —" entry rendered above. */
   document.getElementById("builderResetBtn").addEventListener("click", () => {
     form.reset();
-    fields.forEach((field) => { document.getElementById(`builder-${field}`).value = ""; });
     buildPrompt();
   });
 
@@ -574,159 +1745,39 @@ function buildPrompt(){
   }
 }
 
-/* ==================================================================
-   TRENDING MARQUEE (index.html only)
-
-   Scrolls left-to-right forever. The track holds two identical copies of the
-   card set and the animation moves it by exactly 50%, so the seam is invisible
-   and the loop never jumps. Clicking a card copies its prompt.
-   ================================================================== */
-function initTrending(){
-  const track = document.getElementById("trendingTrack");
-  if(!track) return;
-
-  const trending = imagePrompts.filter((p) => p.trending);
-  if(!trending.length){
-    document.getElementById("trendingSection").remove();
-    return;
-  }
-
-  const cardHTML = (p, i) => `
-    <button class="trend-card swatch-${i % 6}" data-slug="${escapeAttr(p.slug)}" title="Click to copy this prompt">
-      <div class="swatch-texture"></div>
-      <img class="real-photo" src="images/${p.slug}.jpg" alt="" loading="lazy" onerror="this.remove()">
-      <div class="trend-card-body">
-        <span class="badge trend-input">${p.input}</span>
-        <span class="trend-name">${p.style}</span>
-        <span class="trend-prompt">${p.prompt}</span>
-      </div>
-    </button>`;
-
-  /* Two passes of the same list — the second is the seamless continuation. */
-  const once = trending.map(cardHTML).join("");
-  track.innerHTML = once + once;
-
-  /* Longer lists should scroll proportionally longer, not faster. */
-  track.style.animationDuration = `${Math.max(30, trending.length * 7)}s`;
-
-  track.querySelectorAll(".trend-card").forEach((card) => {
-    card.addEventListener("click", function(){
-      const entry = trending.find((p) => p.slug === this.dataset.slug);
-      if(!entry) return;
-      /* copyText() swaps the button's innerHTML for its feedback, which would
-         wipe this card's contents — so swap just the name label instead. */
-      const name = this.querySelector(".trend-name");
-      navigator.clipboard.writeText(entry.prompt).then(() => {
-        const original = name.textContent;
-        name.textContent = "Copied!";
-        this.classList.add("copied");
-        setTimeout(() => {
-          name.textContent = original;
-          this.classList.remove("copied");
-        }, 1600);
-      });
-    });
-  });
-}
-
-/* ==================================================================
-   OPTIONAL LIVE GENERATION (builder.html)
-
-   The key is typed into the page at runtime and held in memory for this tab
-   only — it is never written into any file and never saved to disk, so nothing
-   secret ships with the site. Closing the tab clears it.
-
-   DO NOT hardcode your key anywhere in script.js or the HTML. Anything in those
-   files is downloaded by every visitor and readable via View Source. For bulk
-   generation of the gallery images, use generate-images.js instead — that runs
-   on your machine with the key in an environment variable.
-   ================================================================== */
-const GEMINI_MODEL = "gemini-3.1-flash-image";
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
-
-async function generateWithGemini(prompt, apiKey){
-  const res = await fetch(GEMINI_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-  });
-
-  if(!res.ok){
-    let detail = `HTTP ${res.status}`;
-    try {
-      const err = await res.json();
-      if(err?.error?.message) detail = err.error.message;
-    } catch(e){ /* keep the status-code fallback */ }
-    throw new Error(detail);
-  }
-
-  const data = await res.json();
-  const parts = data?.candidates?.[0]?.content?.parts || [];
-  const imagePart = parts.find((p) => p.inlineData?.data);
-
-  if(!imagePart){
-    const textPart = parts.find((p) => p.text);
-    throw new Error(textPart ? `No image returned — model said: ${textPart.text.slice(0, 160)}` : "No image in response");
-  }
-  return `data:${imagePart.inlineData.mimeType || "image/png"};base64,${imagePart.inlineData.data}`;
-}
-
-function initBuilderGenerate(){
-  const genBtn = document.getElementById("builderGenBtn");
-  if(!genBtn) return;
-
-  const keyInput = document.getElementById("builderApiKey");
-  const statusEl = document.getElementById("builderGenStatus");
-  const previewEl = document.getElementById("builderPreview");
-
-  genBtn.innerHTML = `${ICONS.spark}<span>Generate preview</span>`;
-
-  genBtn.addEventListener("click", async () => {
-    const prompt = document.getElementById("builderOutput").dataset.raw || "";
-    const apiKey = keyInput.value.trim();
-
-    if(!prompt){
-      statusEl.textContent = "Build a prompt first — start with a subject.";
-      statusEl.className = "builder-gen-status is-warn";
-      return;
-    }
-    if(!apiKey){
-      statusEl.textContent = "Paste your Gemini API key above to generate.";
-      statusEl.className = "builder-gen-status is-warn";
-      keyInput.focus();
-      return;
-    }
-
-    genBtn.disabled = true;
-    statusEl.textContent = "Generating…";
-    statusEl.className = "builder-gen-status is-busy";
-    previewEl.innerHTML = "";
-
-    try {
-      const dataUrl = await generateWithGemini(prompt, apiKey);
-      previewEl.innerHTML = `<img src="${dataUrl}" alt="Generated preview">
-        <a class="btn btn-ghost btn-sm builder-download" href="${dataUrl}" download="promptlib-preview.jpg">Download</a>`;
-      statusEl.textContent = "Done.";
-      statusEl.className = "builder-gen-status is-ok";
-    } catch (err) {
-      statusEl.textContent = `Failed — ${err.message}`;
-      statusEl.className = "builder-gen-status is-err";
-    } finally {
-      genBtn.disabled = false;
-    }
-  });
-}
 
 /* ==================================================================
    INIT — runs on every page; each function no-ops if its elements aren't present
    ================================================================== */
-setActiveNav();
-initMobileNav();
-initPageTransitions();
-initGallery();
-initCategoryPage();
-initTrending();
-initBuilder();
-initBuilderGenerate();
-observeReveals();
-runDemoCycle();
+/* Each feature is initialised in isolation. Previously a throw in any one of
+   these — a missing element, a malformed data file, a browser without some
+   API — aborted the whole sequence, so one broken feature took every feature
+   after it down with it. Now the rest of the page still comes up, and the
+   failure is reported rather than swallowed. */
+function boot(name, fn){
+  try {
+    fn();
+  } catch(err){
+    /* Console only: a visitor cannot act on this, and the page is still
+       usable without whichever feature failed. */
+    console.error(`[promptlib] ${name} failed to initialise:`, err);
+  }
+}
+
+boot("setActiveNav", setActiveNav);
+boot("navIndicator", initNavIndicator);
+boot("navScrollState", initNavScrollState);
+boot("themeToggle", initThemeToggle);
+boot("mobileNav", initMobileNav);
+boot("pageTransitions", initPageTransitions);
+boot("gallery", initGallery);
+boot("cmdk", initCmdk);
+boot("marquee", initMarquee);
+boot("countUp", initCountUp);
+boot("showcase", initShowcase);
+boot("centreFocus", initCentreFocus);
+boot("pane", initPane);
+boot("categoryPage", initCategoryPage);
+boot("builder", initBuilder);
+boot("reveals", observeReveals);
+boot("demoCycle", runDemoCycle);

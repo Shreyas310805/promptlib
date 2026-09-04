@@ -4,13 +4,16 @@
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=Archivo+Narrow:wght@500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <script>
-/* Bootstrap — keep inline and keep it tiny. Opts this page into the CSS fade
-   only while JS is running, then guarantees a reveal on load even if script.js
-   never arrives. An external file here could 404 and take the page with it. */
+/* Bootstrap — keep inline and keep it tiny. Sets html.js for the few rules
+   that legitimately need to know JS is running, and applies the stored theme
+   before first paint so switching never flashes.
+
+   It no longer reveals the page: that is a pure CSS animation now, so page
+   visibility does not depend on this script, on script.js, or on either of
+   them running without throwing. */
 document.documentElement.classList.add("js");
 try {
   var t = localStorage.getItem("promptlib-theme");
   if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
 } catch (e) { /* private mode / storage blocked — dark default is fine */ }
-addEventListener("load", function(){ document.body.classList.add("loaded"); });
 </script>
