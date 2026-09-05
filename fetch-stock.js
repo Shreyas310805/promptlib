@@ -55,7 +55,20 @@ const DELAY_MS = 18500;
 const args = process.argv.slice(2);
 const FORCE = args.includes("--force");
 const onlyIdx = args.indexOf("--only");
-const ONLY = onlyIdx !== -1 ? parseInt(args[onlyIdx + 1], 10) : null;
+/* Validated, not just parsed. `--only` with a missing or non-numeric value
+   used to give NaN, which is falsy, so `if(ONLY) queue = queue.slice(...)`
+   was skipped and the FULL queue ran -- the opposite of what the flag asks
+   for, and on a billed API. Fail loudly instead. */
+const ONLY = (() => {
+  if(onlyIdx === -1) return null;
+  const raw = args[onlyIdx + 1];
+  const n = Number(raw);
+  if(!raw || raw.startsWith("--") || !Number.isInteger(n) || n < 1){
+    console.error(`--only needs a positive whole number, got: ${raw === undefined ? "(nothing)" : raw}`);
+    process.exit(1);
+  }
+  return n;
+})();
 const INCLUDE_ALL = args.includes("--include-all");
 const catIdx = args.indexOf("--cat");
 const CAT = catIdx !== -1 ? args[catIdx + 1] : null;

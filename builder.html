@@ -60,90 +60,118 @@ try {
 </nav>
 <!-- @end nav -->
 
-<main>
-  <div class="section-inner">
-    <p class="eyebrow"><span class="eyebrow-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6.5l5.5 5.5L8 17.5"/><path d="M14.5 17.5H19"/></svg></span>build --prompt --from-keywords</p>
-    <h1 class="section-title">Prompt builder</h1>
-    <p class="section-sub">Describe your subject, pick the look, and the prompt assembles itself as you go.</p>
+<main class="workspace">
+  <div class="ws-head">
+    <div>
+      <p class="eyebrow"><span class="eyebrow-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6.5l5.5 5.5L8 17.5"/><path d="M14.5 17.5H19"/></svg></span>build --prompt --from-keywords</p>
+      <h1 class="ws-title">Prompt builder</h1>
+    </div>
+    <p class="ws-sub">Describe your subject, pick the look, and the prompt assembles itself as you go. Everything runs in your browser.</p>
+  </div>
 
-    <div class="builder-layout">
-      <form class="builder-form" id="builderForm" novalidate>
-        <div class="builder-field builder-field-wide">
-          <label for="builder-subject">Subject <span class="builder-req">required</span></label>
-          <input type="text" id="builder-subject" placeholder="a lighthouse on a rocky cliff during a storm" autocomplete="off">
-          <p class="builder-hint">The what. Be specific — "a lighthouse on a rocky cliff" beats "a building".</p>
-        </div>
+  <form class="ws-grid" id="builderForm" novalidate>
 
-        <div class="builder-field">
+    <!-- LEFT: the components you switch on and off ------------------- -->
+    <aside class="ws-panel ws-rail" aria-labelledby="railHeading">
+      <div class="ws-panel-bar"><h2 class="ws-panel-title" id="railHeading">Components</h2></div>
+      <div class="ws-panel-body">
+
+        <fieldset class="wgroup">
+          <legend class="wgroup-legend">Look</legend>
+        <div class="wfield">
           <label for="builder-style">Art style</label>
           <select id="builder-style"></select>
         </div>
-
-        <div class="builder-field">
+        <div class="wfield">
           <label for="builder-lighting">Lighting</label>
           <select id="builder-lighting"></select>
         </div>
-
-        <div class="builder-field">
+        <div class="wfield">
           <label for="builder-composition">Composition</label>
           <select id="builder-composition"></select>
         </div>
+        </fieldset>
 
-        <div class="builder-field">
+        <fieldset class="wgroup">
+          <legend class="wgroup-legend">Treatment</legend>
+        <div class="wfield">
           <label for="builder-mood">Mood</label>
           <select id="builder-mood"></select>
         </div>
-
-        <div class="builder-field">
-          <label for="builder-palette">Color palette</label>
+        <div class="wfield">
+          <label for="builder-palette">Colour palette</label>
           <select id="builder-palette"></select>
         </div>
-
-        <div class="builder-field">
+        <div class="wfield">
           <label for="builder-finish">Finish</label>
           <select id="builder-finish"></select>
         </div>
+        </fieldset>
 
-        <div class="builder-field">
-          <label for="builder-model">Target model</label>
-          <select id="builder-model">
-            <option value="Midjourney">Midjourney</option>
-            <option value="Stable Diffusion">Stable Diffusion</option>
-            <option value="DALL-E">DALL·E</option>
-            <option value="Gemini">Gemini</option>
-          </select>
+        <fieldset class="wgroup">
+          <legend class="wgroup-legend">Output</legend>
+          <div class="wfield">
+            <label for="builder-model">Target model</label>
+            <select id="builder-model">
+              <option value="Midjourney">Midjourney</option>
+              <option value="Stable Diffusion">Stable Diffusion</option>
+              <option value="DALL-E">DALL&middot;E</option>
+              <option value="Gemini">Gemini</option>
+            </select>
+          </div>
+          <div class="wfield">
+            <label for="builder-ratio">Aspect ratio</label>
+            <select id="builder-ratio"></select>
+          </div>
+        </fieldset>
+
+      </div>
+    </aside>
+
+    <!-- CENTRE: what you actually write ----------------------------- -->
+    <section class="ws-panel ws-editor" aria-labelledby="editorHeading">
+      <div class="ws-panel-bar">
+        <h2 class="ws-panel-title" id="editorHeading">Editor</h2>
+        <span class="ws-hint">Enter does nothing &mdash; the prompt updates as you type</span>
+      </div>
+      <div class="ws-panel-body">
+        <div class="wfield wfield-lead">
+          <label for="builder-subject">Subject <span class="builder-req">required</span></label>
+          <input type="text" id="builder-subject" placeholder="a lighthouse on a rocky cliff during a storm" autocomplete="off">
+          <p class="builder-hint">The what. Be specific &mdash; &ldquo;a lighthouse on a rocky cliff&rdquo; beats &ldquo;a building&rdquo;.</p>
         </div>
 
-        <div class="builder-field">
-          <label for="builder-ratio">Aspect ratio</label>
-          <select id="builder-ratio"></select>
-        </div>
-
-        <div class="builder-field builder-field-wide">
+        <div class="wfield">
           <label for="builder-extra">Extra details <span class="builder-opt">optional</span></label>
           <input type="text" id="builder-extra" placeholder="seabirds circling, foam spray, distant ship" autocomplete="off">
           <p class="builder-hint">Anything else you want in frame, comma separated.</p>
         </div>
-      </form>
 
-      <div class="builder-output-panel">
-        <div class="prompt-block">
-          <div class="prompt-block-bar">
-            <span class="demo-dot"></span>
-            <span>your-prompt.txt</span>
-            <span class="builder-count" id="builderCount">0 words</span>
-          </div>
-          <p class="prompt-text builder-output" id="builderOutput"></p>
+        <div class="wassembly">
+          <p class="wassembly-label">In the prompt</p>
+          <div class="wassembly-chips" id="builderChips"></div>
         </div>
-        <div class="builder-actions">
-          <button class="btn btn-primary btn-copy btn-sm" id="builderCopyBtn"></button>
-          <button class="btn btn-ghost btn-sm" id="builderRandomBtn">Surprise me</button>
-          <button class="btn btn-ghost btn-sm" id="builderResetBtn">Reset</button>
-        </div>
-        <p class="builder-note">The builder runs entirely in your browser — nothing is sent anywhere.</p>
       </div>
-    </div>
-  </div>
+    </section>
+
+    <!-- RIGHT: the result ------------------------------------------- -->
+    <section class="ws-panel ws-preview" aria-labelledby="previewHeading">
+      <div class="ws-panel-bar">
+        <h2 class="ws-panel-title" id="previewHeading">Preview</h2>
+        <span class="builder-count" id="builderCount">0 words</span>
+      </div>
+      <div class="ws-panel-body">
+        <p class="prompt-text builder-output" id="builderOutput"></p>
+      </div>
+      <div class="ws-panel-foot">
+        <button class="btn btn-primary btn-copy btn-sm" id="builderCopyBtn" type="button"></button>
+        <button class="btn btn-ghost btn-sm" id="builderRandomBtn" type="button">Surprise me</button>
+        <button class="btn btn-ghost btn-sm" id="builderResetBtn" type="button">Reset</button>
+      </div>
+      <p class="builder-note">Runs entirely in your browser &mdash; nothing is sent anywhere.</p>
+    </section>
+
+  </form>
 </main>
 
 <!-- @partial cmdk -->
