@@ -100,50 +100,162 @@ TRENDING_OUT = "prompts-trending.js"
 
 
 def write_trending():
-    """Emit just the trending prompts as their own tiny module.
+    """Emit the homepage's data module.
 
     index.html deliberately does not load prompts-image.js — it is 112KB and
-    the homepage reads none of it. The marquee needs seven of those entries,
-    so rather than undoing that decision, the subset is generated here and the
-    homepage loads ~4KB instead. Keeps trending:true in the data as the single
-    source of truth, with no slug list in the view.
+    the homepage displays a couple of dozen of those entries, not 273. So the
+    subset it actually shows is generated here instead, together with real
+    category counts and real totals.
+
+    Everything below is SELECTED from the data, never written by hand: the
+    picks are drawn by walking the categories in rotation, so the homepage
+    never shows two neighbouring tiles from the same category and the
+    selection changes on its own as the library grows. Only prompts with a
+    render on disk are eligible for the image slots; the rest get the
+    document treatment in the view.
     """
     src = os.path.join(BASE, "prompts-image.js")
     if not os.path.exists(src):
         return 0
 
-    dump = subprocess.run(
-        ["node", "-e",
-         "global.window={};require('./prompts-image.js');"
-         "const t=(global.window.imagePrompts||[]).filter(p=>p.trending===true)"
-         ".map(p=>({style:p.style,cat:p.cat,slug:p.slug,input:p.input,prompt:p.prompt}));"
-         "process.stdout.write(JSON.stringify(t));"],
+    script = """
+const fs=require('fs');
+global.window={};require('./prompts-image.js');
+const img=global.window.imagePrompts||[];
+global.window={};
+let txt={};
+try{ require('./prompts-text.js'); txt=global.window.textPromptsData||{}; }catch(e){}
+
+const have = fs.existsSync('images')
+  ? new Set(fs.readdirSync('images').filter(f=>f.endsWith('.jpg')).map(f=>f.slice(0,-4)))
+  : new Set();
+
+const slim = p => ({ style:p.style, cat:p.cat, slug:p.slug, input:p.input,
+                     size:p.size||'', prompt:p.prompt, thumb:have.has(p.slug) });
+
+/* ---- category summary ------------------------------------------------ */
+const byCat={};
+img.forEach(p=>{ (byCat[p.cat]=byCat[p.cat]||[]).push(p); });
+
+const imageCats = Object.entries(byCat).map(([name,list])=>{
+  const cover = list.find(p=>have.has(p.slug));
+  return { name, count:list.length, kind:'image',
+           href:'images.html?cat='+encodeURIComponent(name),
+           cover: cover ? cover.slug : null, sample: list[0].style };
+}).sort((a,b)=>b.count-a.count);
+
+const TEXT_META = {
+  ppt:   { label:'Slides & decks',  href:'ppt.html'   },
+  essay: { label:'Essays',          href:'essay.html' },
+  report:{ label:'Reports',         href:'report.html'},
+  email: { label:'Emails',          href:'email.html' }
+};
+const textCats = Object.entries(txt).map(([key,list])=>({
+  name: (TEXT_META[key]||{}).label || key,
+  count: list.length, kind:'text',
+  href: (TEXT_META[key]||{}).href || (key+'.html'),
+  cover: null,
+  sample: [...new Set(list.map(p=>p.tag).filter(Boolean))].slice(0,3).join(' \u00b7 ')
+})).sort((a,b)=>b.count-a.count);
+
+/* ---- the rotation ----------------------------------------------------
+   One pass takes the first renderable prompt of every category, the next
+   takes the second, and so on. Slicing this list gives the hero, the wall
+   and the picks a spread across the whole library rather than a run of
+   near-identical styles from whichever category happens to be biggest. */
+const byCatThumb={};
+img.filter(p=>have.has(p.slug)).forEach(p=>{ (byCatThumb[p.cat]=byCatThumb[p.cat]||[]).push(p); });
+const catNames=Object.keys(byCatThumb);
+const rota=[];
+for(let i=0;;i++){
+  let any=false;
+  for(const c of catNames){ const l=byCatThumb[c]; if(i<l.length){ rota.push(l[i]); any=true; } }
+  if(!any) break;
+}
+
+/* Five for the featured composition -- one dominant, two secondary, two
+   supporting -- and three more for the picks. Taken from the rotation, so
+   no two neighbours come from the same category. */
+const feature   = rota.slice(0,5).map(slim);
+const pickImgs  = rota.slice(5,8).map(slim);
+
+/* ---- trending --------------------------------------------------------- */
+const trending = img.filter(p=>p.trending===true).map(slim);
+
+/* ---- text picks -------------------------------------------------------
+   One from each writing category. A text prompt has no title in the data,
+   only a filename and a tag, so the view leads with the tag and the prompt
+   itself rather than inventing a name for it. */
+const textPicks = Object.entries(txt).map(([key,list])=>{
+  const p=list[0]; if(!p) return null;
+  return { cat:(TEXT_META[key]||{}).label||key, href:(TEXT_META[key]||{}).href||(key+'.html'),
+           key, filename:p.filename, tag:p.tag||'', prompt:p.prompt };
+}).filter(Boolean);
+
+const totals = {
+  prompts: img.length + Object.values(txt).reduce((a,b)=>a+b.length,0),
+  images: img.length,
+  text: Object.values(txt).reduce((a,b)=>a+b.length,0),
+  categories: imageCats.length + textCats.length,
+  thumbnails: have.size
+};
+
+process.stdout.write(JSON.stringify({
+  trending, imageCats, textCats, totals, feature, pickImgs, textPicks
+}));
+"""
+    dump = subprocess.run(["node", "-e", script],
         cwd=BASE, capture_output=True, text=True, encoding="utf-8",
     )
     if dump.returncode != 0:
-        print("  ! could not read prompts-image.js; skipping trending subset")
+        print("  ! could not read prompt data; skipping homepage module")
+        print("   ", (dump.stderr or "").strip()[:200])
         return 0
 
-    items = json.loads(dump.stdout or "[]")
+    data = json.loads(dump.stdout or "{}")
+
     lines = [
         "/* ==================================================================",
         "   prompts-trending.js — GENERATED, do not edit by hand.",
         "",
-        "   The entries flagged trending:true in prompts-image.js, extracted so",
-        "   the homepage marquee does not have to pull in the full 112KB image",
-        "   dataset it otherwise has no use for.",
+        "   The homepage's data module. index.html does not load",
+        "   prompts-image.js: it is 112KB, and the page shows about two dozen",
+        "   of those 273 entries. This carries exactly the subset it renders,",
+        "   plus category counts and totals, all counted from the real data.",
         "",
         "   Regenerate with:  python3 build_pages.py",
         "   ================================================================== */",
-        "window.trendingPrompts = [",
     ]
-    for it in items:
-        lines.append("  " + json.dumps(it, ensure_ascii=False) + ",")
-    lines.append("];")
+
+    def emit(name, rows, note=None):
+        if note:
+            lines.append("")
+            lines.append(note)
+        lines.append("window.%s = [" % name)
+        for r in rows:
+            lines.append("  " + json.dumps(r, ensure_ascii=False) + ",")
+        lines.append("];")
+
+    lines.append("")
+    lines.append("/* Every figure below is counted, not estimated. */")
+    lines.append("window.libraryStats = " + json.dumps(data.get("totals", {}), ensure_ascii=False) + ";")
+
+    emit("libraryCategories", data.get("imageCats", []) + data.get("textCats", []),
+         "/* Ordered by size. `cover` is a prompt in that category that has a\n"
+         "   render on disk, so the hover reveal shows real output. */")
+    emit("featurePrompts", data.get("feature", []),
+         "/* The featured composition: [0] is the dominant tile, [1] and [2]\n"
+         "   the secondary pair, [3] and [4] the supporting row. */")
+    emit("trendingPrompts", data.get("trending", []),
+         "/* Flagged trending:true in prompts-image.js. */")
+    emit("pickPrompts", data.get("pickImgs", []),
+         "/* Editor's picks — image half. */")
+    emit("textPicks", data.get("textPicks", []),
+         "/* Editor's picks — writing half, one per category. */")
 
     with open(os.path.join(BASE, TRENDING_OUT), "w", encoding="utf-8", newline="\n") as f:
         f.write("\n".join(lines) + "\n")
-    return len(items)
+    return len(data.get("trending", []))
 
 
 def load_partials():

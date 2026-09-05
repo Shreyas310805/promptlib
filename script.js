@@ -14,21 +14,6 @@ const imagePrompts = Array.isArray(window.imagePrompts) ? window.imagePrompts : 
    'this page does not have it', which the inits below check for. */
 const textPromptsData = window.textPromptsData || null;
 
-/* Hero demo (index.html only) — cycles automatically, mixing image and text
-   results so the hero shows both halves of the site. */
-const demoPairs = [
-  { type:"image", filename:"image_04.txt", model:"Midjourney", style:"Neon Noir", hue:4,
-    prompt:"cyberpunk alley, neon rain reflections, cinematic wide shot, teal and magenta lighting --ar 16:9 --v 6" },
-  { type:"text", filename:"email_02.txt", model:"Claude",
-    prompt:"Write a confident cold email to a hiring manager about a Frontend role, under 120 words, no generic flattery.",
-    result:"Subject: A tool I built that might help your onboarding flow\n\nHi Priya — I recently cut my team's deploy time in half with a small internal tool. I think something similar could streamline onboarding for new engineers on your team. Worth a quick 15-minute call this week?" },
-  { type:"image", filename:"image_11.txt", model:"Midjourney", style:"Watercolor Whimsy", hue:0,
-    prompt:"misty pine forest at dawn, volumetric light rays through fog, muted teal and amber palette --ar 16:9" },
-  { type:"text", filename:"ppt_03.txt", model:"GPT",
-    prompt:"Give me a 3-slide pitch outline for a campus food delivery startup: problem, solution, ask.",
-    result:"1. Problem — students skip meals during exam week; existing delivery apps are too slow for campus routes.\n2. Solution — a 10-minute delivery network run by students, for students.\n3. Ask — seed funding to launch on 3 campuses this semester." }
-];
-
 /* ==================================================================
    ICONS — inline SVG strings, reused wherever needed. No emoji on this site.
    ================================================================== */
@@ -57,7 +42,6 @@ const categoryVisuals = {
    HELPERS
    ================================================================== */
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /* Correct for BOTH element text and quoted attribute values, so one function
    covers every interpolation site. The previous escapeAttr() handled only & and
@@ -121,8 +105,9 @@ function observeReveals(){
   /* No IntersectionObserver means nothing would ever add .in-view, and the
      elements are already hidden by .js .reveal — so reveal them outright
      rather than leaving the page blank. */
+  const SEL = ".reveal:not(.in-view), [data-reveal]:not(.in-view), [data-reveal-items]:not(.in-view)";
   if(!("IntersectionObserver" in window)){
-    document.querySelectorAll(".reveal:not(.in-view)").forEach((el) => el.classList.add("in-view"));
+    document.querySelectorAll(SEL).forEach((el) => el.classList.add("in-view"));
     return;
   }
   if(!revealObserver){
@@ -133,9 +118,9 @@ function observeReveals(){
           revealObserver.unobserve(entry.target);
         }
       });
-    }, { threshold:0.15 });
+    }, { threshold:0.01, rootMargin:"0px 0px -12% 0px" });
   }
-  document.querySelectorAll(".reveal:not(.in-view)").forEach((el) => revealObserver.observe(el));
+  document.querySelectorAll(SEL).forEach((el) => revealObserver.observe(el));
 }
 
 /* Screen-reader announcements. One shared polite live region, created lazily so
@@ -425,129 +410,6 @@ function initSettings(){
 }
 
 /* ==================================================================
-   CENTRE-FOCUS SCROLLERS (index.html)
-
-   Writes --focus on each child: 1 when its centre sits on the container's
-   centre, falling to 0 a container-width away. CSS turns that into scale,
-   saturation and opacity.
-
-   Everything defaults to --focus:1 in the stylesheet, so if this never runs
-   — no JS, an error earlier in the file, a browser that does not fire scroll
-   — every card sits at full size and full colour. The effect can only ever
-   recede things, never hide them.
-   ================================================================== */
-function initCentreFocus(){
-  const tracks = document.querySelectorAll("[data-focus-track]");
-  if(!tracks.length) return;
-
-  const paint = (track) => {
-    const box = track.getBoundingClientRect();
-    const mid = box.left + box.width / 2;
-    /* Falloff over half the container: a card one half-width from centre is
-       fully receded. Narrower than the container would make the middle card
-       pop; wider would flatten the effect entirely. */
-    const reach = Math.max(box.width / 2, 1);
-
-    for(const card of track.children){
-      const r = card.getBoundingClientRect();
-      const dist = Math.abs((r.left + r.width / 2) - mid);
-      const focus = Math.max(0, Math.min(1, 1 - dist / reach));
-      card.style.setProperty("--focus", focus.toFixed(3));
-    }
-  };
-
-  tracks.forEach((track) => {
-    /* Reduced motion: pin everything on, so nothing scales or desaturates. */
-    if(prefersReducedMotion || document.documentElement.classList.contains("reduce-motion")){
-      for(const card of track.children) card.style.setProperty("--focus", "1");
-      return;
-    }
-
-    let ticking = false;
-    const onScroll = () => {
-      if(ticking) return;
-      ticking = true;
-      requestAnimationFrame(() => { paint(track); ticking = false; });
-    };
-
-    track.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll, { passive: true });
-    paint(track);
-
-    /* scrollLeft 0 now centres the FIRST card, because the track carries end
-       padding of half its width minus half a card. */
-    track.scrollLeft = 0;
-  });
-}
-
-/* ==================================================================
-   PROMPT SHOWCASE (index.html)
-
-   Pulls real prompts from whichever datasets the page has. index.html loads
-   neither by design, so this falls back to a small hand-picked set rather
-   than pulling 96KB back onto the homepage to fill a carousel.
-   ================================================================== */
-/* Alternating text and image, so the row reads as a sample of the whole
-   library rather than of one half of it. Image entries carry a slug, which is
-   the thumbnail filename in images/. */
-const SHOWCASE_FALLBACK = [
-  { kind:"text", tag:"Essay", meta:"essay", text:"Sharpen this thesis into a single arguable sentence that names the claim, the ground it stands on, and what it is arguing against: [paste your thesis]" },
-  { kind:"image", tag:"Image", meta:"Traditional Media", slug:"watercolor-painting", text:"Transform the uploaded photo into a soft watercolour painting with bleeding edges, visible paper texture and translucent washes. Keep the subject's pose, proportions and facial features clearly recognisable." },
-  { kind:"text", tag:"Report", meta:"report", text:"Turn these findings into [number] recommendations, each with an owner, a timeframe and the cost of doing nothing, ordered by impact: [paste findings]" },
-  { kind:"image", tag:"Image", meta:"Art Movements", slug:"cubism", text:"Reimagine the uploaded image as a Cubist painting, the subject fractured into overlapping geometric planes seen from several angles at once. Keep the pose and composition intact while adopting the movement's visual language." },
-  { kind:"text", tag:"Slides", meta:"ppt", text:"Turn the following rough notes into [number] slide-ready bullet points of at most 8 words each, grouped under clear section headers, in a [tone] register: [paste notes]" },
-  { kind:"image", tag:"Image", meta:"Photography & Camera", slug:"film-noir", text:"Restyle this image as a film noir frame with hard directional key light, deep black shadows and venetian-blind patterning. Keep the subject and composition exactly as they are — change only the photographic treatment." },
-  { kind:"text", tag:"Email", meta:"email", text:"Rewrite this angry draft as a firm, professional message that keeps every factual point but removes the heat, under [word count] words: [paste draft]" }
-];
-
-function initShowcase(){
-  const track = document.getElementById("showcaseTrack");
-  if(!track) return;
-
-  const items = SHOWCASE_FALLBACK.map((item) => {
-    /* Prefer a live prompt when the page happens to have the data. */
-    if(item.kind === "image" && imagePrompts.length){
-      const p = imagePrompts.find((x) => x.slug === item.slug);
-      if(p) return { ...item, meta:p.cat, text:p.prompt };
-    }
-    if(item.kind === "text" && textPromptsData && textPromptsData[item.meta] && textPromptsData[item.meta].length){
-      const p = textPromptsData[item.meta][0];
-      return { ...item, meta:p.tag || item.meta, text:p.prompt };
-    }
-    return item;
-  });
-
-  track.innerHTML = items.map((item) => {
-    if(item.kind === "image"){
-      return `
-    <li class="showcase-card showcase-card--image">
-      <img class="showcase-thumb" src="images/${encodeURIComponent(item.slug)}.jpg" alt="" loading="lazy">
-      <span class="showcase-tag">${escapeHTML(item.tag)}</span>
-      <p class="showcase-text">${highlightVars(item.text)}</p>
-      <span class="showcase-foot">
-        <span>${escapeHTML(item.meta)}</span>
-        <button type="button" class="showcase-copy btn-copy" data-raw="${escapeHTML(item.text)}">${ICONS.copy}<span>Copy</span></button>
-      </span>
-    </li>`;
-    }
-    return `
-    <li class="showcase-card">
-      <span class="showcase-tag">${escapeHTML(item.tag)}</span>
-      <p class="showcase-text">${highlightVars(item.text)}</p>
-      <span class="showcase-foot"><span>${escapeHTML(item.meta)}</span><span>${item.text.length} chars</span></span>
-    </li>`;
-  }).join("");
-
-  /* Delegated, so the copy buttons survive any future re-render of the row. */
-  track.addEventListener("click", (e) => {
-    const btn = e.target.closest(".showcase-copy");
-    if(btn) copyText(btn.dataset.raw, btn);
-  });
-
-  track.setAttribute("data-focus-track", "");
-}
-
-/* ==================================================================
    COMMAND PALETTE  (Cmd/Ctrl-K, or "/")
 
    Indexes whatever the current page happens to have loaded — the image set on
@@ -577,16 +439,32 @@ function buildCmdkIndex(){
   ].forEach(([title, href]) => out.push({ kind:"page", title, sub:href, href }));
 
   /* Categories are derived, so a new one in build_prompts.py is searchable
-     with no edit here. */
-  new Set(imagePrompts.map((p) => p.cat)).forEach((cat) => {
-    out.push({ kind:"category", title:cat, sub:"Image category", href:`images.html?cat=${encodeURIComponent(cat)}` });
-  });
+     with no edit here. images.html has the full set in imagePrompts; the
+     homepage has only the generated summary, and using it means search there
+     covers all 14 categories instead of the seven trending prompts. */
+  if(imagePrompts.length){
+    new Set(imagePrompts.map((p) => p.cat)).forEach((cat) => {
+      out.push({ kind:"category", title:cat, sub:"Image category", href:`images.html?cat=${encodeURIComponent(cat)}` });
+    });
+  } else {
+    homeCategories.forEach((c) => {
+      out.push({ kind:"category", title:c.name, sub:`${c.count} ${c.kind === "image" ? "image styles" : "templates"}`, href:c.href });
+    });
+  }
 
   imagePrompts.forEach((p) => out.push({ kind:"prompt", title:p.style, sub:p.cat, prompt:p.prompt }));
 
-  (Array.isArray(window.trendingPrompts) ? window.trendingPrompts : []).forEach((p) => {
-    if(out.some((x) => x.kind === "prompt" && x.title === p.style)) return;
-    out.push({ kind:"prompt", title:p.style, sub:p.cat, prompt:p.prompt });
+  /* Whatever the homepage happens to be showing is searchable from it. On
+     images.html these are already in imagePrompts and get skipped. */
+  ["featurePrompts", "trendingPrompts", "pickPrompts"].forEach((key) => {
+    (Array.isArray(window[key]) ? window[key] : []).forEach((p) => {
+      if(out.some((x) => x.kind === "prompt" && x.title === p.style)) return;
+      out.push({ kind:"prompt", title:p.style, sub:p.cat, prompt:p.prompt });
+    });
+  });
+  (Array.isArray(window.textPicks) ? window.textPicks : []).forEach((t) => {
+    if(out.some((x) => x.kind === "prompt" && x.title === t.filename)) return;
+    out.push({ kind:"prompt", title:t.filename, sub:`${t.cat} · ${t.tag || ""}`.trim(), prompt:t.prompt });
   });
 
   if(textPromptsData){
@@ -764,82 +642,278 @@ function initCmdk(){
 }
 
 /* ==================================================================
-   TRENDING MARQUEE (index.html)
+   HOMEPAGE  (index.html)
 
-   Reads trending:true off the data rather than carrying a list of slugs in
-   the view, so marking another prompt trending in build_prompts.py puts it
-   in the strip with no edit here.
+   Rendered from prompts-trending.js, a ~12KB generated module carrying the
+   exact subset the page shows plus counted totals. index.html never loads
+   the 112KB image dataset.
+
+   Nothing here is invented: titles, categories, counts and renders all come
+   from the data. A prompt with an image on disk gets the image treatment;
+   one without gets the document treatment rather than a placeholder.
+
+   Every renderer returns early when its container is missing, so this file
+   keeps working on the seven pages that have none of this markup.
    ================================================================== */
-function initMarquee(){
-  const track = document.getElementById("trendingTrack");
-  if(!track) return;
+const homeCategories = Array.isArray(window.libraryCategories) ? window.libraryCategories : [];
+const homeStats = window.libraryStats || null;
+const homeList = (name) => (Array.isArray(window[name]) ? window[name] : []);
 
-  /* The homepage loads a generated subset; images.html has the full dataset.
-     Either source works, so the strip is not tied to one page. */
-  const featured = Array.isArray(window.trendingPrompts) && window.trendingPrompts.length
-    ? window.trendingPrompts
-    : imagePrompts.filter((p) => p.trending === true);
-  if(!featured.length){
-    const section = document.querySelector(".marquee-section");
-    if(section) section.hidden = true;
-    return;
-  }
+const SAVE_ICON = `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 3.8h11a1 1 0 0 1 1 1v15.4l-6.5-4-6.5 4V4.8a1 1 0 0 1 1-1z"/></svg>`;
 
-  const tile = (p, i) => `
-    <button type="button" class="marquee-tile" data-raw="${escapeHTML(p.prompt)}" aria-label="Copy the ${escapeHTML(p.style)} prompt">
-      <span class="marquee-thumb swatch-${i % 6}"><span class="swatch-texture"></span></span>
-      <span class="marquee-body">
-        <span class="marquee-input">${escapeHTML(p.input || "1 photo")}</span>
-        <span class="marquee-name">${escapeHTML(p.style)}</span>
-        <span class="marquee-text">${escapeHTML(p.prompt)}</span>
-      </span>
-    </button>`;
+/* Deep link into the gallery: category filter plus the style as the query,
+   which lands on that one prompt. Both params are already read by
+   readStateFromUrl(), so this needs nothing new on images.html. */
+function promptHref(p){
+  return `images.html?cat=${encodeURIComponent(p.cat)}&q=${encodeURIComponent(p.style)}`;
+}
+function thumbHTML(p, cls, sizes, eager){
+  const load = eager ? 'loading="eager" fetchpriority="high"' : 'loading="lazy"';
+  return `<img class="${cls}" src="images/${escapeHTML(p.slug)}.jpg" alt="Example output for the ${escapeHTML(p.style)} prompt" ${load} decoding="async" sizes="${sizes}" width="900" height="700">`;
+}
 
-  /* Rendered TWICE. The keyframe travels exactly -50% -> 0, so the moment it
-     wraps, the second copy is sitting where the first one started and the
-     seam is invisible. Any other distance shows a jump. */
-  const set = featured.map(tile).join("");
-  track.innerHTML = set + set;
+/* Compact round controls for the image tiles. The full-width Copy/Save
+   buttons would fight the photograph they sit on. */
+function iconActionsHTML(p){
+  const id = `img:${p.slug}`;
+  const on = isSaved(id);
+  return `
+    <button type="button" class="icon-btn btn-copy" data-raw="${escapeHTML(p.prompt)}" aria-label="Copy the ${escapeHTML(p.style)} prompt">${ICONS.copy}</button>
+    <button type="button" class="icon-btn btn-save" data-save-id="${escapeHTML(id)}" data-save-name="${escapeHTML(p.style)}" data-raw="${escapeHTML(p.prompt)}" aria-pressed="${on}" aria-label="${on ? "Remove from" : "Add to"} saved prompts">${SAVE_ICON}</button>`;
+}
 
-  /* The duplicate set is decorative repetition — hide it from assistive tech
-     and the tab order so the seven prompts are not announced fourteen times. */
-  const tiles = [...track.children];
-  tiles.slice(featured.length).forEach((el) => {
-    el.setAttribute("aria-hidden", "true");
-    el.tabIndex = -1;
-  });
-
-  track.addEventListener("click", (e) => {
-    const btn = e.target.closest(".marquee-tile");
-    if(!btn) return;
-    copyMarqueePrompt(btn);
+/* One delegated copy handler per container, matching how the gallery and the
+   category pages already do it. */
+function bindCopy(root){
+  if(!root || root.dataset.copyBound) return;
+  root.dataset.copyBound = "1";
+  root.addEventListener("click", (e) => {
+    const btn = e.target.closest(".btn-copy");
+    if(btn && root.contains(btn)) copyText(btn.dataset.raw || "", btn);
   });
 }
 
-/* Deliberately NOT copyText(): flashCopyResult swaps the element's innerHTML
-   for its "Copied!" markup, which on a tile would destroy the thumbnail, the
-   badge and the preview. Only the name label's textContent changes here. */
-function copyMarqueePrompt(btn){
-  const label = btn.querySelector(".marquee-name");
-  const prompt = btn.dataset.raw || "";
-  if(!label || btn.dataset.copyBusy) return;
+/* ---- hero ---------------------------------------------------------- */
+function renderHeroQuick(){
+  const host = document.getElementById("heroQuick");
+  if(!host || !homeCategories.length) return;
+  host.innerHTML = homeCategories.slice(0, 5)
+    .map((c) => `<a href="${escapeHTML(c.href)}">${escapeHTML(c.name)}</a>`).join("");
+}
 
-  const done = (ok) => {
-    btn.dataset.copyBusy = "1";
-    const original = label.textContent;
-    label.textContent = ok ? "Copied" : "Copy failed";
-    announce(ok ? "Prompt copied to clipboard" : "Copy failed — open the prompt to copy it manually");
-    setTimeout(() => {
-      label.textContent = original;
-      delete btn.dataset.copyBusy;
-    }, 1600);
-  };
+/* The shortcut shown is the one the visitor's platform actually uses. */
+function renderSearchKbd(){
+  const kbd = document.getElementById("heroSearchKbd");
+  if(!kbd) return;
+  const mac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || "");
+  kbd.textContent = mac ? "\u2318K" : "Ctrl K";
+}
 
-  if(navigator.clipboard && window.isSecureContext){
-    navigator.clipboard.writeText(prompt).then(() => done(true), () => done(legacyCopy(prompt)));
+function renderHeroStats(){
+  const host = document.getElementById("heroStats");
+  if(!host || !homeStats) return;
+
+  /* Counted in build_pages.py from the data files and the images/ directory.
+     The final figure is written into the markup, not a zero, so a failure in
+     initCountUp leaves the real number rather than a permanent 0. */
+  const rows = [
+    ["Prompts", homeStats.prompts],
+    ["Image styles", homeStats.images],
+    ["Writing templates", homeStats.text],
+    ["Categories", homeStats.categories],
+    ["Example renders", homeStats.thumbnails]
+  ].filter(([, n]) => typeof n === "number");
+
+  host.innerHTML = rows.map(([label, n]) => `
+    <div class="meta-item">
+      <dt class="meta-label">${escapeHTML(label)}</dt>
+      <dd class="meta-value" data-count-to="${n}">${n.toLocaleString()}</dd>
+    </div>`).join("");
+}
+
+/* ---- featured composition -------------------------------------------
+   Five tiles in fixed roles: [0] dominant, [1][2] secondary, [3][4]
+   supporting. The role decides the grid area, and the grid decides the
+   size -- no tile carries a position of its own. */
+function renderFeature(){
+  const host = document.getElementById("featureGrid");
+  const items = homeList("featurePrompts").filter((p) => p.thumb).slice(0, 5);
+  if(!host || items.length < 3) return;
+
+  const ROLE = ["fcard--lead", "fcard--sec", "fcard--sec", "fcard--sup", "fcard--sup"];
+  const SIZES = [
+    "(max-width:900px) 100vw, 58vw",
+    "(max-width:900px) 50vw, 40vw",
+    "(max-width:900px) 50vw, 40vw",
+    "(max-width:900px) 50vw, 32vw",
+    "(max-width:900px) 50vw, 24vw"
+  ];
+
+  host.innerHTML = items.map((p, i) => `
+    <figure class="fcard ${ROLE[i]}">
+      <span class="fcard-frame">
+        ${thumbHTML(p, "fcard-img", SIZES[i], i === 0)}
+        <span class="fcard-scrim" aria-hidden="true"></span>
+        <figcaption class="fcard-meta">
+          <span>
+            <span class="fcard-cat">${escapeHTML(p.cat)}</span>
+            <span class="fcard-name"><a href="${promptHref(p)}">${escapeHTML(p.style)}</a></span>
+          </span>
+          <span class="fcard-act">${iconActionsHTML(p)}</span>
+        </figcaption>
+      </span>
+    </figure>`).join("");
+
+  bindCopy(host);
+  bindSaveButtons(host);
+}
+
+/* ---- category index -------------------------------------------------- */
+function renderCategoryIndex(){
+  const list = document.getElementById("categoryIndex");
+  const canvas = document.getElementById("indexCanvas");
+  if(!list || !homeCategories.length) return;
+
+  /* One image per category that has a render. The writing categories have
+     none, so hovering those clears the canvas rather than showing something
+     borrowed from a different category. */
+  if(canvas){
+    canvas.innerHTML = homeCategories.filter((c) => c.cover).map((c) =>
+      `<img class="index-shot" data-for="${escapeHTML(c.name)}" src="images/${escapeHTML(c.cover)}.jpg" alt="" loading="lazy" decoding="async">`
+    ).join("");
+  }
+
+  list.innerHTML = homeCategories.map((c, i) => `
+    <li class="index-row">
+      <a class="index-link" href="${escapeHTML(c.href)}" data-cat="${escapeHTML(c.name)}">
+        <span class="index-num">${String(i + 1).padStart(2, "0")}</span>
+        <span class="index-name">${escapeHTML(c.name)}</span>
+        <span class="index-count">${c.count} ${c.kind === "image" ? "styles" : "templates"}</span>
+        <svg class="index-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg>
+      </a>
+    </li>`).join("");
+
+  if(!canvas) return;
+  const shots = canvas.querySelectorAll(".index-shot");
+  const show = (name) => shots.forEach((img) => img.classList.toggle("is-live", img.dataset.for === name));
+  const clear = () => shots.forEach((img) => img.classList.remove("is-live"));
+
+  /* Pointer AND focus, so the reveal is not a mouse-only feature. */
+  list.addEventListener("pointerover", (e) => {
+    const link = e.target.closest(".index-link");
+    if(link) show(link.dataset.cat);
+  });
+  list.addEventListener("pointerleave", clear);
+  list.addEventListener("focusin", (e) => {
+    const link = e.target.closest(".index-link");
+    if(link) show(link.dataset.cat);
+  });
+  list.addEventListener("focusout", clear);
+}
+
+/* ---- trending -------------------------------------------------------- */
+function docHTML(p, i, opts){
+  const small = opts && opts.small;
+  const id = `img:${p.slug}`;
+  return `
+    <article class="doc${small ? " doc--sm" : ""}">
+      ${small ? "" : `<span class="doc-ghost" aria-hidden="true">${String(i + 1).padStart(2, "0")}</span>`}
+      <header class="doc-head">
+        <span class="doc-cat">${escapeHTML(p.cat)}</span>
+        <span class="doc-badge">${escapeHTML(p.input || "no photo")}</span>
+      </header>
+      <h3 class="doc-title">${escapeHTML(p.style)}</h3>
+      ${small ? "" : `<div class="doc-rule" aria-hidden="true"></div>`}
+      <p class="doc-body">${escapeHTML(p.prompt)}</p>
+      <footer class="doc-foot">
+        <button type="button" class="btn ${small ? "btn-ghost" : "btn-primary"} btn-sm btn-copy" data-raw="${escapeHTML(p.prompt)}">${copyButtonHTML("Copy prompt")}</button>
+        ${small ? "" : saveButtonHTML(id, p.style, p.prompt)}
+      </footer>
+    </article>`;
+}
+
+function renderTrending(){
+  const host = document.getElementById("trendingFeed");
+  const items = homeList("trendingPrompts");
+  if(!host) return;
+
+  if(!items.length){
+    host.innerHTML = `<p class="feed-empty">Trending prompts are unavailable right now. <a href="images.html">Browse the full library</a> instead.</p>`;
     return;
   }
-  done(legacyCopy(prompt));
+
+  /* One lead plus three supporting. Four cells fill the grid exactly. */
+  const [lead, ...rest] = items;
+  host.innerHTML = docHTML(lead, 0)
+    + rest.slice(0, 3).map((p, i) => docHTML(p, i + 1, { small:true })).join("");
+
+  bindCopy(host);
+  bindSaveButtons(host);
+}
+
+/* ---- editor's picks --------------------------------------------------
+   One large image card, then a stack of smaller ones beside it. */
+function pickImageHTML(p){
+  return `
+    <figure class="pick">
+      <span class="pick-frame">${thumbHTML(p, "pick-img", "(max-width:900px) 100vw, 52vw")}</span>
+      <figcaption class="pick-body">
+        <span>
+          <span class="pick-cat">${escapeHTML(p.cat)}</span>
+          <span class="pick-name"><a href="${promptHref(p)}">${escapeHTML(p.style)}</a></span>
+          <span class="pick-meta">${escapeHTML(p.input || "no photo")}</span>
+        </span>
+        <span class="pick-act">${iconActionsHTML(p)}</span>
+      </figcaption>
+    </figure>`;
+}
+
+/* A writing prompt carries no title in the data, only a filename and a tag,
+   so the card leads with the tag and the prompt itself rather than inventing
+   a name for it. */
+function pickTextHTML(t, i){
+  const id = `${t.key}:${t.filename}`;
+  return `
+    <article class="doc doc--sm">
+      <header class="doc-head">
+        <span class="doc-cat">${escapeHTML(t.cat)}</span>
+        <span class="doc-badge">${String(i + 1).padStart(2, "0")}</span>
+      </header>
+      <h3 class="doc-title">${escapeHTML(t.tag || t.cat)}</h3>
+      <p class="doc-body">${highlightVars(t.prompt)}</p>
+      <footer class="doc-foot">
+        <button type="button" class="btn btn-ghost btn-sm btn-copy" data-raw="${escapeHTML(t.prompt)}">${copyButtonHTML("Copy")}</button>
+        ${saveButtonHTML(id, t.filename, t.prompt)}
+      </footer>
+    </article>`;
+}
+
+function renderPicks(){
+  const host = document.getElementById("editorsPicks");
+  const imgs = homeList("pickPrompts").filter((p) => p.thumb);
+  const texts = homeList("textPicks");
+  if(!host || (!imgs.length && !texts.length)) return;
+
+  const cells = [];
+  if(imgs[0]) cells.push(pickImageHTML(imgs[0]));
+  texts.slice(0, 3).forEach((t, i) => cells.push(pickTextHTML(t, i)));
+
+  host.innerHTML = cells.join("");
+  bindCopy(host);
+  bindSaveButtons(host);
+}
+
+function initHome(){
+  renderSearchKbd();
+  renderHeroQuick();
+  renderHeroStats();
+  renderFeature();
+  renderCategoryIndex();
+  renderTrending();
+  renderPicks();
+  /* The sections were rendered after boot, so the observer has to be told
+     about the markup that just appeared. */
+  observeReveals();
 }
 
 /* ==================================================================
@@ -1161,7 +1235,8 @@ function initPageTransitions(){
 /* ==================================================================
    IMAGE GALLERY + MODAL (images.html only)
    ================================================================== */
-let galleryState = { cat: "All", query: "" };
+let galleryState = { cat: "All", input: "All", query: "" };
+const GALLERY_SAVE_ICON = `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 3.8h11a1 1 0 0 1 1 1v15.4l-6.5-4-6.5 4V4.8a1 1 0 0 1 1-1z"/></svg>`;
 
 /* ---- URL state -------------------------------------------------------
    Filters live in the query string, so a filtered view can be linked, shared
@@ -1176,6 +1251,7 @@ function syncUrl(push){
   const search = document.getElementById("gallerySearch");
   const params = new URLSearchParams();
   if(galleryState.cat !== "All") params.set("cat", galleryState.cat);
+  if(galleryState.input !== "All") params.set("input", galleryState.input);
   const raw = search ? search.value.trim() : "";
   if(raw) params.set("q", raw);
 
@@ -1198,6 +1274,9 @@ function readStateFromUrl(){
      empty grid the visitor cannot explain. */
   galleryState.cat = (cat === "All" || imagePrompts.some((p) => p.cat === cat)) ? cat : "All";
 
+  const input = params.get("input") || "All";
+  galleryState.input = (input === "All" || imagePrompts.some((p) => p.input === input)) ? input : "All";
+
   const raw = params.get("q") || "";
   const search = document.getElementById("gallerySearch");
   if(search) search.value = raw;
@@ -1207,6 +1286,14 @@ function readStateFromUrl(){
 /* Push the state we just read back onto the controls, for first load and for
    Back/Forward, where the chips and the search box are otherwise stale. */
 function syncControlsToState(){
+  const inputRow = document.getElementById("galleryInputs");
+  if(inputRow){
+    inputRow.querySelectorAll(".chip").forEach((c) => {
+      const on = c.dataset.input === galleryState.input;
+      c.classList.toggle("active", on);
+      c.setAttribute("aria-pressed", String(on));
+    });
+  }
   const chipRow = document.getElementById("galleryChips");
   if(chipRow){
     chipRow.querySelectorAll(".chip").forEach((c) => {
@@ -1267,21 +1354,37 @@ function initGallery(){
     `<button type="button" class="chip${c === "All" ? " active" : ""}" data-cat="${escapeHTML(c)}" aria-pressed="${c === "All"}">${escapeHTML(c)}</button>`
   ).join("");
 
-  chipRow.querySelectorAll(".chip").forEach((chip) => {
-    chip.addEventListener("click", () => {
+  /* Second axis: what the prompt needs from you. Derived from p.input, so it
+     lists exactly the values present in the data. */
+  const inputRow = document.getElementById("galleryInputs");
+  if(inputRow){
+    const inputs = ["All", ...new Set(imagePrompts.map((p) => p.input).filter(Boolean))];
+    inputRow.innerHTML = inputs.map((v) =>
+      `<button type="button" class="chip chip-sm${v === "All" ? " active" : ""}" data-input="${escapeHTML(v)}" aria-pressed="${v === "All"}">${escapeHTML(v === "All" ? "Any input" : v)}</button>`
+    ).join("");
+  }
+
+  /* One handler for both rows: a chip sets whichever axis it carries. */
+  const onChip = (row, key) => {
+    if(!row) return;
+    row.addEventListener("click", (e) => {
+      const chip = e.target.closest(".chip");
+      if(!chip || !row.contains(chip)) return;
       /* aria-pressed tracks .active so the selected filter is announced, not
          just coloured — the class alone tells assistive tech nothing. */
-      chipRow.querySelectorAll(".chip").forEach((c) => {
+      row.querySelectorAll(".chip").forEach((c) => {
         c.classList.remove("active");
         c.setAttribute("aria-pressed", "false");
       });
       chip.classList.add("active");
       chip.setAttribute("aria-pressed", "true");
-      galleryState.cat = chip.dataset.cat;
+      galleryState[key] = chip.dataset[key];
       syncUrl(true);
       renderGallery();
     });
-  });
+  };
+  onChip(chipRow, "cat");
+  onChip(inputRow, "input");
 
   /* Coalesce keystrokes. Each render rebuilds all 266 cards and re-runs the
      IntersectionObserver over them, so firing per character made fast typing
@@ -1337,6 +1440,7 @@ function initGallery(){
 function filteredPrompts(){
   return imagePrompts.filter((p) => {
     if(galleryState.cat !== "All" && p.cat !== galleryState.cat) return false;
+    if(galleryState.input !== "All" && (p.input || "") !== galleryState.input) return false;
     if(!galleryState.query) return true;
     return (p.style + " " + p.cat + " " + p.prompt).toLowerCase().includes(galleryState.query);
   });
@@ -1370,20 +1474,40 @@ function renderGallery(){
      it for free, and it is exposed to assistive tech as an actionable control.
      Children are spans because <button> only admits phrasing content. The img
      is alt="" because the style name sits right beside it in the label. */
-  grid.innerHTML = list.map((p, i) => `
-    <button type="button" class="gallery-card reveal swatch-${p.i % 6} ${escapeHTML(p.size || "")}" style="animation-delay:${(i % 3) * 60}ms" data-id="${p.i}" aria-label="${escapeHTML(p.style)}, ${escapeHTML(p.cat)}. View prompt.">
+  grid.innerHTML = list.map((p, i) => {
+    const id = `img:${p.slug}`;
+    const on = isSaved(id);
+    return `
+    <figure class="gcard reveal swatch-${p.i % 6}" style="animation-delay:${(i % 4) * 50}ms">
       <span class="swatch-texture"></span>
-      ${hasThumb(p.slug) ? `<img class="real-photo" src="images/${encodeURIComponent(p.slug)}.jpg" alt="" loading="lazy">` : ""}
-      <span class="swatch-content">
-        <span class="badge">${escapeHTML(p.cat)}</span>
-        <span class="swatch-name">${escapeHTML(p.style)}</span>
-        <span class="card-reveal">${escapeHTML(p.prompt.slice(0, 130))}&hellip;</span>
-      </span>
-    </button>`).join("");
+      ${hasThumb(p.slug) ? `<img class="gcard-img" src="images/${encodeURIComponent(p.slug)}.jpg" alt="" loading="lazy" decoding="async">` : ""}
+      <button type="button" class="gcard-open" data-id="${p.i}" aria-label="${escapeHTML(p.style)}, ${escapeHTML(p.cat)}. Open prompt."></button>
+      <span class="gcard-scrim" aria-hidden="true"></span>
+      <figcaption class="gcard-meta">
+        <span class="gcard-text">
+          <span class="gcard-cat">${escapeHTML(p.cat)}</span>
+          <span class="gcard-name">${escapeHTML(p.style)}</span>
+        </span>
+        <span class="gcard-act">
+          <button type="button" class="icon-btn btn-copy" data-raw="${escapeHTML(p.prompt)}" aria-label="Copy the ${escapeHTML(p.style)} prompt">${ICONS.copy}</button>
+          <button type="button" class="icon-btn btn-save" data-save-id="${escapeHTML(id)}" data-save-name="${escapeHTML(p.style)}" data-raw="${escapeHTML(p.prompt)}" aria-pressed="${on}" aria-label="${on ? "Remove from" : "Add to"} saved prompts">${GALLERY_SAVE_ICON}</button>
+        </span>
+      </figcaption>
+    </figure>`;
+  }).join("");
 
-  grid.querySelectorAll(".gallery-card").forEach((card) => {
-    card.addEventListener("click", () => openModal(Number(card.dataset.id)));
-  });
+  /* Delegated: 266 cards would otherwise mean 800 listeners re-attached on
+     every debounced keystroke. */
+  if(!grid.dataset.cardBound){
+    grid.dataset.cardBound = "1";
+    grid.addEventListener("click", (e) => {
+      const open = e.target.closest(".gcard-open");
+      if(open){ openModal(Number(open.dataset.id)); return; }
+      const copy = e.target.closest(".btn-copy");
+      if(copy) copyText(copy.dataset.raw || "", copy);
+    });
+    bindSaveButtons(grid);
+  }
   observeReveals();
 }
 
@@ -1428,6 +1552,8 @@ function openModal(id){
   modalSwatch.innerHTML = `<div class="swatch-texture"></div>${thumb}<span class="modal-swatch-name">${escapeHTML(p.style)}</span>`;
   document.getElementById("modalStyleName").textContent = p.style;
   document.getElementById("modalModel").textContent = p.cat;
+  const inputEl = document.getElementById("modalInput");
+  if(inputEl) inputEl.textContent = p.input || "no photo";
   document.getElementById("modalPromptText").innerHTML = highlightVars(p.prompt);
   document.getElementById("modalCopyBtn").dataset.raw = p.prompt;
 
@@ -1438,7 +1564,7 @@ function openModal(id){
     bindSaveButtons(sendRow);
   }
 
-  modalReturnFocus = document.querySelector(`.gallery-card[data-id="${id}"]`) || document.activeElement;
+  modalReturnFocus = document.querySelector(`.gcard-open[data-id="${id}"]`) || document.activeElement;
 
   document.getElementById("modalBackdrop").classList.add("open");
   document.body.style.overflow = "hidden";
@@ -1560,20 +1686,22 @@ function initCategoryPage(){
       return;
     }
 
+    /* Set as documents, not as cards with a picture on top. A writing prompt
+       has no image and no title in the data -- only a filename and a tag --
+       so the tag leads, the running number gives the list a spine, and the
+       prompt text itself is the body copy. Nothing invented. */
     list.innerHTML = items.map((p, i) => `
-    <div class="prompt-card reveal" style="animation-delay:${(i % 2) * 70}ms">
-      <div class="prompt-thumb ${visual.swatch}">
-        <div class="swatch-texture"></div>
-        <span class="prompt-thumb-icon">${ICONS[visual.icon]}</span>
-        <span class="prompt-thumb-label">${escapeHTML(p.tag || visual.label)}</span>
-      </div>
-      <div class="prompt-block-bar"><span class="demo-dot"></span><span>${escapeHTML(p.filename)}</span></div>
-      <p class="prompt-text">${highlightVars(p.prompt)}</p>
-      <div class="prompt-actions">
-        <button type="button" class="btn btn-ghost btn-copy btn-sm" data-raw="${escapeHTML(p.prompt)}">${copyButtonHTML("Copy prompt")}</button>
+    <article class="tdoc reveal" style="animation-delay:${(i % 3) * 60}ms">
+      <header class="tdoc-head">
+        <span class="tdoc-tag">${escapeHTML(p.tag || visual.label)}</span>
+        <span class="tdoc-num">${String(i + 1).padStart(3, "0")}</span>
+      </header>
+      <p class="tdoc-body">${highlightVars(p.prompt)}</p>
+      <footer class="tdoc-foot">
+        <button type="button" class="btn btn-primary btn-copy btn-sm" data-raw="${escapeHTML(p.prompt)}">${copyButtonHTML("Copy prompt")}</button>
         <div class="send-row">${saveButtonHTML(category + ":" + p.filename, p.filename, p.prompt)}${sendRowHTML(p.prompt)}</div>
-      </div>
-    </div>
+      </footer>
+    </article>
   `).join("");
 
     list.querySelectorAll(".btn-copy").forEach((btn) => {
@@ -1585,53 +1713,6 @@ function initCategoryPage(){
   }
 
   render();
-}
-
-/* ==================================================================
-   HERO DEMO CYCLE (index.html only, loops forever)
-   ================================================================== */
-async function runDemoCycle(){
-  const textEl = document.getElementById("demoPromptText");
-  if(!textEl) return;
-  const resultEl = document.getElementById("demoResult");
-  const filenameEl = document.getElementById("demoFilename");
-  const badgeEl = document.getElementById("demoBadge");
-  let demoIndex = 0;
-
-  while(true){
-    const pair = demoPairs[demoIndex % demoPairs.length];
-    filenameEl.textContent = pair.filename;
-    badgeEl.textContent = pair.model;
-    textEl.textContent = "";
-    resultEl.classList.remove("show");
-    resultEl.innerHTML = "";
-
-    if(prefersReducedMotion){
-      textEl.textContent = pair.prompt;
-    } else {
-      for(let i = 0; i < pair.prompt.length; i++){
-        textEl.textContent += pair.prompt[i];
-        await sleep(26);
-      }
-    }
-    await sleep(450);
-
-    if(pair.type === "image"){
-      /* The gradient swatch stands in for the render. This used to pull a photo
-         from loremflickr.com, which put a third-party request on the homepage,
-         broke the promise that the site works from disk with no network, and
-         showed an unrelated stock photo rather than anything the prompt made. */
-      resultEl.innerHTML = `<div class="demo-swatch swatch-${pair.hue}"><div class="swatch-texture"></div><span class="swatch-name">${escapeHTML(pair.style)}</span></div>`;
-    } else {
-      resultEl.innerHTML = `<pre class="demo-result-text">${escapeHTML(pair.result)}</pre>`;
-    }
-    requestAnimationFrame(() => resultEl.classList.add("show"));
-
-    await sleep(prefersReducedMotion ? 900 : 3400);
-    resultEl.classList.remove("show");
-    await sleep(450);
-    demoIndex++;
-  }
 }
 
 /* See builder-data.js — only builder.html loads it. */
@@ -1669,8 +1750,45 @@ function initBuilder(){
   const ratioSelect = document.getElementById("builder-ratio");
   ratioSelect.innerHTML = builderRatios.map((r) => `<option value="${escapeHTML(r)}">${escapeHTML(r)}</option>`).join("");
 
-  form.addEventListener("input", buildPrompt);
-  form.addEventListener("change", buildPrompt);
+  /* The centre panel lists what is currently switched on, and clicking a
+     chip switches that component back off. It reads the same selects the
+     prompt is built from, so it cannot drift out of sync with the output. */
+  const chipHost = document.getElementById("builderChips");
+  const CHIP_FIELDS = [
+    ["style", "Style"], ["lighting", "Lighting"], ["composition", "Composition"],
+    ["mood", "Mood"], ["palette", "Palette"], ["finish", "Finish"]
+  ];
+  function renderChips(){
+    if(!chipHost) return;
+    const on = CHIP_FIELDS
+      .map(([f, label]) => [f, label, (document.getElementById(`builder-${f}`) || {}).value])
+      .filter(([, , v]) => v);
+    if(!on.length){
+      chipHost.innerHTML = `<p class="wassembly-empty">Nothing picked yet. Choose components on the left and they appear here.</p>`;
+      return;
+    }
+    chipHost.innerHTML = on.map(([f, label, v]) =>
+      `<button type="button" class="wchip" data-field="${f}" aria-label="Remove ${escapeHTML(label)}: ${escapeHTML(v)}">
+         <span class="wchip-key">${escapeHTML(label)}</span>
+         <span class="wchip-val">${escapeHTML(v)}</span>
+         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+       </button>`).join("");
+  }
+  if(chipHost){
+    chipHost.addEventListener("click", (e) => {
+      const chip = e.target.closest(".wchip");
+      if(!chip) return;
+      const select = document.getElementById(`builder-${chip.dataset.field}`);
+      if(!select) return;
+      select.value = "";
+      buildPrompt();
+      renderChips();
+    });
+  }
+
+  const update = () => { buildPrompt(); renderChips(); };
+  form.addEventListener("input", update);
+  form.addEventListener("change", update);
 
   /* Real <form> so Reset can use native reset(), but there is nothing to submit
      to — swallow Enter rather than letting it reload the page. */
@@ -1681,14 +1799,14 @@ function initBuilder(){
       const opts = builderOptions[field];
       document.getElementById(`builder-${field}`).value = opts[Math.floor(Math.random() * opts.length)];
     });
-    buildPrompt();
+    update();
   });
 
   /* Native reset() restores every control to its first/blank option, which for
      the six style selects is the "— none —" entry rendered above. */
   document.getElementById("builderResetBtn").addEventListener("click", () => {
     form.reset();
-    buildPrompt();
+    update();
   });
 
   const copyBtn = document.getElementById("builderCopyBtn");
@@ -1698,7 +1816,7 @@ function initBuilder(){
     if(text) copyText(text, this);
   });
 
-  buildPrompt();
+  update();
 }
 
 /* Assembles the prompt from whatever is filled in. Empty fields are skipped,
@@ -1772,12 +1890,9 @@ boot("mobileNav", initMobileNav);
 boot("pageTransitions", initPageTransitions);
 boot("gallery", initGallery);
 boot("cmdk", initCmdk);
-boot("marquee", initMarquee);
+boot("home", initHome);
 boot("countUp", initCountUp);
-boot("showcase", initShowcase);
-boot("centreFocus", initCentreFocus);
 boot("pane", initPane);
 boot("categoryPage", initCategoryPage);
 boot("builder", initBuilder);
 boot("reveals", observeReveals);
-boot("demoCycle", runDemoCycle);

@@ -61,121 +61,157 @@ try {
 <!-- @end nav -->
 
 <main>
-  <section class="hero">
-    <div class="hero-grid">
-    <div class="hero-inner">
-      <p class="eyebrow"><span class="eyebrow-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6.5l5.5 5.5L8 17.5"/><path d="M14.5 17.5H19"/></svg></span>the ai prompt library</p>
-      <h1 class="hero-title">Stop guessing. Start with a prompt that <span class="text-gradient">already works</span>.</h1>
-      <p class="hero-sub">Every prompt here has been run against the real model first. Click any result to see exactly what produced it — then copy it and go.</p>
-      <button type="button" class="hero-search" data-cmdk-open>
-        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg>
-        <span class="hero-search-text">Search prompts, categories, use cases&hellip;</span>
-        <kbd class="hero-search-kbd">/</kbd>
+
+<!-- =================================================================
+     HERO
+     Controlled, not enormous. Statement, search, entry points and the
+     library's real size, then straight into the work. The featured
+     composition below starts inside the first screen.
+     ================================================================= -->
+<section class="hero" aria-labelledby="heroHeading">
+  <div class="shell" data-reveal>
+    <p class="eyebrow"><span class="eyebrow-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6.5l5.5 5.5L8 17.5"/><path d="M14.5 17.5H19"/></svg></span>the ai prompt library</p>
+
+    <h1 class="hero-h" id="heroHeading">Prompts worth keeping.</h1>
+
+    <p class="hero-lede">Every prompt here was run against the real model before it earned a place. Image work, essays, decks, reports, email &mdash; searched, copied, used.</p>
+
+    <button type="button" class="hero-search" data-cmdk-open>
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg>
+      <span class="hero-search-text">Search prompts, categories, use cases&hellip;</span>
+      <kbd class="hero-search-kbd" id="heroSearchKbd">/</kbd>
+    </button>
+
+    <p class="hero-jump"><span class="hero-jump-label">Popular</span><span class="hero-jump-links" id="heroQuick"></span></p>
+
+    <dl class="meta-strip" id="heroStats"></dl>
+  </div>
+</section>
+
+
+<!-- =================================================================
+     FEATURED
+     Five prompts on one explicit twelve-column grid. One dominant tile at
+     roughly twice the visual weight, a secondary pair stacked beside it,
+     two supporting tiles beneath. Asymmetric, but every edge lines up with
+     a column line -- nothing is nudged by hand.
+     ================================================================= -->
+<section class="feature-sec tone" aria-labelledby="featHeading">
+  <div class="shell" data-reveal>
+    <header class="sec-head">
+      <p class="sec-index" aria-hidden="true">01</p>
+      <div class="sec-head-body">
+        <h2 class="sec-h" id="featHeading">Look first.</h2>
+        <p class="sec-note">Renders produced by the prompts themselves &mdash; not stock illustration of what the library might do.</p>
+      </div>
+      <a class="sec-link" href="images.html">All image prompts <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg></a>
+    </header>
+    <div class="feature-grid" id="featureGrid" data-reveal-items></div>
+  </div>
+</section>
+
+
+<!-- =================================================================
+     CATEGORIES
+     No cards. Numbered rows at display scale; the cover for the row under
+     the cursor fades in behind the list.
+     ================================================================= -->
+<section class="index-sec" aria-labelledby="indexHeading">
+  <div class="shell" data-reveal>
+    <header class="sec-head">
+      <p class="sec-index" aria-hidden="true">02</p>
+      <div class="sec-head-body">
+        <h2 class="sec-h" id="indexHeading">The library.</h2>
+        <p class="sec-note">Explore prompts built for real work, by category.</p>
+      </div>
+    </header>
+    <div class="index-wrap">
+      <div class="index-canvas" id="indexCanvas" aria-hidden="true"></div>
+      <ol class="index-list" id="categoryIndex"></ol>
+    </div>
+  </div>
+</section>
+
+
+<!-- =================================================================
+     TRENDING
+     One featured prompt with real weight plus three supporting, on a fixed
+     grid. These seven have no render on disk, so they are set as documents
+     rather than given a placeholder image.
+     ================================================================= -->
+<section class="trend-sec tone" aria-labelledby="trendHeading">
+  <div class="shell" data-reveal>
+    <header class="sec-head">
+      <p class="sec-index" aria-hidden="true">03</p>
+      <div class="sec-head-body">
+        <h2 class="sec-h" id="trendHeading">Trending now.</h2>
+        <p class="sec-note">Prompts people are actually using this week.</p>
+      </div>
+      <a class="sec-link" href="images.html?cat=Featured%20Concepts">See all featured <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg></a>
+    </header>
+    <div class="trend" id="trendingFeed"></div>
+  </div>
+</section>
+
+
+<!-- =================================================================
+     EDITOR'S PICKS
+     A different composition again: one large editorial prompt on the left,
+     smaller ones stacked on the right.
+     ================================================================= -->
+<section class="picks-sec" aria-labelledby="picksHeading">
+  <div class="shell" data-reveal>
+    <header class="sec-head">
+      <p class="sec-index" aria-hidden="true">04</p>
+      <div class="sec-head-body">
+        <h2 class="sec-h" id="picksHeading">Editor&rsquo;s picks.</h2>
+        <p class="sec-note">One from each side of the library &mdash; something to look at, something to write with.</p>
+      </div>
+    </header>
+    <div class="picks" id="editorsPicks"></div>
+  </div>
+</section>
+
+
+<!-- =================================================================
+     USE CASES
+     ================================================================= -->
+<section class="uses-sec tone" aria-labelledby="usesHeading">
+  <div class="shell" data-reveal>
+    <header class="sec-head">
+      <p class="sec-index" aria-hidden="true">05</p>
+      <div class="sec-head-body">
+        <h2 class="sec-h" id="usesHeading">Find exactly what you need.</h2>
+      </div>
+    </header>
+    <ul class="use-list">
+      <li class="use"><a href="essay.html"><span class="use-verb">Write an essay</span><span class="use-detail">Thesis, structure, counter-arguments, and a revision pass that does not just reword.</span><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg></a></li>
+      <li class="use"><a href="report.html"><span class="use-verb">Build a report</span><span class="use-detail">Scope it, summarise findings, turn analysis into recommendations someone can act on.</span><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg></a></li>
+      <li class="use"><a href="ppt.html"><span class="use-verb">Create a presentation</span><span class="use-detail">Narrative arc, slide-ready bullets, speaker notes timed to the slot you were given.</span><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg></a></li>
+      <li class="use"><a href="email.html"><span class="use-verb">Write an email</span><span class="use-detail">Cold outreach, a status update, or the difficult one you have rewritten four times.</span><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg></a></li>
+      <li class="use"><a href="images.html"><span class="use-verb">Generate an image</span><span class="use-detail">Transformations that keep your subject recognisable instead of inventing a new one.</span><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg></a></li>
+      <li class="use"><a href="builder.html"><span class="use-verb">Build a prompt from scratch</span><span class="use-detail">Pick a subject, a look and a model, and assemble the prompt as you go.</span><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg></a></li>
+    </ul>
+  </div>
+</section>
+
+
+<!-- =================================================================
+     CLOSE
+     ================================================================= -->
+<section class="close-sec" aria-labelledby="closeHeading">
+  <div class="shell close-inner" data-reveal>
+    <h2 class="close-h" id="closeHeading">Stop starting from scratch.</h2>
+    <div class="close-actions">
+      <button type="button" class="btn btn-primary" data-cmdk-open>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg>
+        <span>Search the library</span>
       </button>
-
-      <div class="hero-cta-row">
-        <a href="images.html" class="btn btn-primary">Browse images</a>
-        <a href="text.html" class="btn btn-ghost">Browse text prompts</a>
-      </div>
+      <a class="btn btn-ghost" href="images.html">Browse all prompts</a>
     </div>
+  </div>
+</section>
 
-    <div class="demo-stack">
-    <div class="demo-behind" aria-hidden="true">
-      <span class="demo-behind-thumb swatch-2"></span>
-      <span class="demo-behind-bar">
-        <span class="demo-dot"></span>
-        <span class="demo-behind-name">watercolor-painting.jpg</span>
-      </span>
-    </div>
-    <div class="demo-card" aria-hidden="true">
-      <div class="demo-card-bar">
-        <span class="demo-dot"></span>
-        <span class="demo-filename" id="demoFilename">prompt.txt</span>
-        <span class="badge badge-model" id="demoBadge">Midjourney</span>
-      </div>
-      <div class="demo-body">
-        <p class="demo-prompt-line"><span class="demo-prompt-prefix">&gt;</span><span id="demoPromptText"></span><span class="cursor-blink">_</span></p>
-        <div class="demo-result" id="demoResult"></div>
-      </div>
-    </div>
-    </div>
-    </div>
-
-
-
-    <section class="marquee-section" aria-labelledby="trendingHeading">
-      <div class="marquee-head">
-        <h2 class="section-title" id="trendingHeading">Trending concepts</h2>
-        <p class="section-sub">Featured prompts people are running right now. Click any tile to copy it.</p>
-      </div>
-      <div class="marquee" id="trendingMarquee">
-        <div class="marquee-track" id="trendingTrack"></div>
-      </div>
-    </section>
-
-    <section class="stats" aria-labelledby="statsHeading">
-      <h2 class="sr-only" id="statsHeading">What is in the library</h2>
-      <dl class="stat-row" id="statRow" data-focus-track>
-        <div class="stat reveal">
-          <dt class="stat-label">Image prompts</dt>
-          <dd class="stat-value" data-count-to="273">0</dd>
-        </div>
-        <div class="stat reveal">
-          <dt class="stat-label">Text templates</dt>
-          <dd class="stat-value" data-count-to="456">0</dd>
-        </div>
-        <div class="stat reveal">
-          <dt class="stat-label">Categories</dt>
-          <dd class="stat-value" data-count-to="22">0</dd>
-        </div>
-        <div class="stat reveal">
-          <dt class="stat-label">Cost to use</dt>
-          <dd class="stat-value" data-count-to="0" data-count-prefix="$">0</dd>
-        </div>
-        <div class="stat reveal">
-          <dt class="stat-label">Sign-ups required</dt>
-          <dd class="stat-value" data-count-to="0">0</dd>
-        </div>
-      </dl>
-    </section>
-
-
-    <section class="showcase" aria-labelledby="showcaseHeading">
-      <div class="showcase-head">
-        <h2 class="section-title" id="showcaseHeading">A few, to see the shape of them</h2>
-        <p class="section-sub">Scroll sideways. Every prompt on the site is written like these.</p>
-      </div>
-      <ul class="showcase-track" id="showcaseTrack" tabindex="0" role="region" aria-label="Example prompts, scroll horizontally"></ul>
-    </section>
-
-    <section class="uses" aria-labelledby="usesHeading">
-      <h2 class="section-title" id="usesHeading">Written for the work you actually do</h2>
-      <ul class="use-list">
-        <li class="use reveal"><a href="essay.html"><span class="use-verb">Draft and edit</span> an essay — thesis, structure, counter-arguments, a revision pass that does not just reword.</a></li>
-        <li class="use reveal"><a href="report.html"><span class="use-verb">Build a report</span> — scope it, summarise findings, turn analysis into recommendations someone can act on.</a></li>
-        <li class="use reveal"><a href="ppt.html"><span class="use-verb">Shape a deck</span> — narrative arc, slide-ready bullets, speaker notes timed to the slot you were given.</a></li>
-        <li class="use reveal"><a href="email.html"><span class="use-verb">Send the email</span> — cold outreach, a status update, or the difficult one you have rewritten four times.</a></li>
-        <li class="use reveal"><a href="images.html"><span class="use-verb">Restyle a photo</span> — 266 transformations that keep your subject recognisable instead of inventing a new one.</a></li>
-      </ul>
-    </section>
-
-    <div class="nav-cards">
-      <a href="images.html" class="nav-card reveal">
-        <svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 16l-5.5-5.5a1 1 0 0 0-1.4 0L6 19"/></svg>
-        <span class="nav-card-arrow"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg></span>
-        <h3>Image prompts</h3>
-        <p>Style, lighting, and composition prompts for Midjourney, DALL·E, and Stable Diffusion.</p>
-        <span class="card-reveal"><p>Every one written for a photo you upload, and detailed enough to say what to preserve — face, pose, composition — so the subject stays recognisable.</p></span>
-      </a>
-      <a href="text.html" class="nav-card reveal">
-        <svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h9l5 5v15a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M14 2v5h5M8 13h8M8 17h5"/></svg>
-        <span class="nav-card-arrow"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg></span>
-        <h3>Text prompts</h3>
-        <p>Fill-in-the-blank templates for PPTs, essays, reports, and emails.</p>
-        <span class="card-reveal"><p>114 in each category, filterable by what you are actually doing: planning, drafting, revising, or the difficult email you have rewritten four times.</p></span>
-      </a>
-    </div>
-  </section>
 </main>
 
 <!-- @partial cmdk -->
