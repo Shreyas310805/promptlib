@@ -1034,6 +1034,150 @@ function initAtmosphere(){
 }
 
 /* ==================================================================
+   SECTION TABS  (index.html)
+
+   The nav links double as tabs for the home page's four sections. As you
+   scroll, the active tab follows whichever section is crossing the
+   middle of the viewport, and the same pill initNavIndicator already
+   owns slides across and takes on that section's colour.
+
+   Detection is ONE IntersectionObserver with a rootMargin that collapses
+   the root to a zero-height band at the exact middle of the viewport.
+   Exactly one section can contain that line at a time, so there is no
+   tie to break and no flicker at the boundaries, and it fires going up
+   as readily as going down. No scroll handler is involved.
+
+   Clicking a tab is the one case the observer gets wrong: a smooth
+   scroll from the hero to the builder crosses images and text on the
+   way, and the pill would chase it through both. So a click pauses
+   detection, puts the pill straight on the clicked tab, and resumes when
+   the scroll actually ends -- scrollend where it exists, a timer where
+   it does not.
+   ================================================================== */
+function initSectionTabs(){
+  const nav = document.querySelector(".nav");
+  const row = document.getElementById("navLinks");
+  if(!nav || !row) return;
+
+  /* Only a page that actually has the sections. Everywhere else the nav
+     stays a set of page links and setActiveNav has already marked one. */
+  const links = Array.from(row.querySelectorAll(".nav-link[data-section]"))
+    .filter((l) => document.getElementById(l.dataset.section));
+  if(links.length < 2) return;
+
+  const sections = links.map((l) => document.getElementById(l.dataset.section));
+  const label = document.getElementById("navCurrent");
+  const reduced = () => prefersReducedMotion || document.documentElement.classList.contains("reduce-motion");
+
+  /* In-page navigation, so the links become anchors. Done here rather
+     than in the markup: with JavaScript off these stay real page links
+     and still go somewhere useful. */
+  links.forEach((l) => { l.setAttribute("href", "#" + l.dataset.section); });
+
+  let current = null;
+  let paused = false;
+  let resumeTimer = 0;
+
+  const setActive = (id) => {
+    if(id === current) return;
+    current = id;
+
+    links.forEach((l) => {
+      const on = l.dataset.section === id;
+      l.classList.toggle("active", on);
+      if(on) l.setAttribute("aria-current", "true");
+      else l.removeAttribute("aria-current");
+    });
+
+    /* The pill and the glow behind the nav take the section's own
+       accent, read off the section rather than from a second copy of the
+       colour map here. */
+    const section = document.getElementById(id);
+    if(section){
+      const accent = getComputedStyle(section).getPropertyValue("--accent").trim();
+      if(accent) nav.style.setProperty("--accent", accent);
+    }
+    nav.dataset.section = id;
+
+    /* Denser chrome once the hero is behind you. */
+    nav.classList.toggle("is-scrolled", id !== links[0].dataset.section);
+
+    if(label) label.textContent = (links.find((l) => l.dataset.section === id) || {}).textContent || "";
+    if(navSettle) navSettle();
+
+    /* replaceState, so following the page does not fill the back button
+       with four entries per visit, and setting a hash this way never
+       jumps the scroll position. */
+    const url = id === links[0].dataset.section
+      ? location.pathname + location.search
+      : "#" + id;
+    try { history.replaceState(null, "", url); } catch(err){ /* file:// */ }
+  };
+
+  /* Zero-height band across the middle of the viewport. */
+  const spy = new IntersectionObserver((entries) => {
+    if(paused) return;
+    for(const entry of entries){
+      if(entry.isIntersecting){ setActive(entry.target.id); break; }
+    }
+  }, { rootMargin: "-50% 0px -50% 0px", threshold: 0 });
+  sections.forEach((s) => spy.observe(s));
+
+  const resumeWhenSettled = () => {
+    clearTimeout(resumeTimer);
+    const done = () => { paused = false; };
+    if("onscrollend" in window){
+      window.addEventListener("scrollend", done, { once: true });
+      /* A smooth scroll that is interrupted may never fire scrollend. */
+      resumeTimer = setTimeout(done, 1400);
+    } else {
+      resumeTimer = setTimeout(done, 800);
+    }
+  };
+
+  row.addEventListener("click", (e) => {
+    const link = e.target.closest(".nav-link[data-section]");
+    if(!link) return;
+    const target = document.getElementById(link.dataset.section);
+    if(!target) return;
+    e.preventDefault();
+
+    paused = true;
+    setActive(link.dataset.section);
+    target.scrollIntoView({ behavior: reduced() ? "auto" : "smooth", block: "start" });
+    resumeWhenSettled();
+
+    /* Close the mobile sheet, if that is how we got here. */
+    const links_ = document.getElementById("navLinks");
+    const toggle = document.getElementById("navToggle");
+    if(links_ && links_.classList.contains("open")){
+      links_.classList.remove("open");
+      if(toggle){ toggle.classList.remove("open"); toggle.setAttribute("aria-expanded", "false"); }
+    }
+  });
+
+  /* The in-page scroll cue and any other same-page anchor get the same
+     treatment, or clicking it would leave the pill behind. */
+  document.querySelectorAll('a[href^="#"]:not(.nav-link)').forEach((a) => {
+    const id = a.getAttribute("href").slice(1);
+    if(!document.getElementById(id)) return;
+    a.addEventListener("click", (e) => {
+      e.preventDefault();
+      paused = true;
+      setActive(id);
+      document.getElementById(id).scrollIntoView({ behavior: reduced() ? "auto" : "smooth", block: "start" });
+      resumeWhenSettled();
+    });
+  });
+
+  /* Arriving at index.html#text: the browser has already jumped, so just
+     adopt whatever the observer reports on its first callback. Until then
+     mark the first tab so the pill has somewhere to sit. */
+  const fromHash = links.find((l) => "#" + l.dataset.section === location.hash);
+  setActive(fromHash ? fromHash.dataset.section : links[0].dataset.section);
+}
+
+/* ==================================================================
    HOMEPAGE  (index.html)
 
    Three previews under the hero, each rendered from prompts-trending.js
@@ -1323,6 +1467,8 @@ function setActiveNav(){
     const target = link.dataset.page;
     const isActive = target === file || (target === "text.html" && textGroup.includes(file));
     link.classList.toggle("active", isActive);
+    if(isActive) link.setAttribute("aria-current", "page");
+    else link.removeAttribute("aria-current");
   });
 }
 
@@ -1333,6 +1479,10 @@ function setActiveNav(){
    The active link is already styled by weight and colour, so if this never
    runs — JS off, or a viewport where the indicator is display:none — the nav
    still reads correctly. */
+/* Set by initNavIndicator so initSectionTabs can move the same pill
+   instead of building a second one. */
+let navSettle = null;
+
 function initNavIndicator(){
   const row = document.getElementById("navLinks");
   const bar = document.getElementById("navIndicator");
@@ -1350,6 +1500,7 @@ function initNavIndicator(){
   };
 
   const settle = () => moveTo(active());
+  navSettle = settle;
 
   /* Fonts land after first paint and change link widths, so measure again
      once they are ready rather than freezing a stale position. */
@@ -2153,6 +2304,7 @@ boot("atmosphere", initAtmosphere);
 boot("setActiveNav", setActiveNav);
 boot("navIndicator", initNavIndicator);
 boot("navScrollState", initNavScrollState);
+boot("sectionTabs", initSectionTabs);
 boot("mobileNav", initMobileNav);
 boot("pageTransitions", initPageTransitions);
 boot("gallery", initGallery);
