@@ -201,7 +201,7 @@ function copyText(text, btn){
    that throws on access (private mode, storage blocked) rather than taking
    the page down with it.
    ================================================================== */
-const STORE_KEYS = { saved:"promptlib-saved", shuffle:"promptlib-shuffle", motion:"promptlib-motion" };
+const STORE_KEYS = { saved:"promptlib-saved", shuffle:"promptlib-shuffle", motion:"promptlib-motion", vars:"promptlib-vars", view:"promptlib-view" };
 
 function readStore(key, fallback){
   try {
@@ -642,6 +642,352 @@ function initCmdk(){
 }
 
 /* ==================================================================
+   VIEW MODES + SPATIAL TRANSITIONS
+
+   Three ways to read the same 273 prompts, because scanning for a look,
+   comparing wording, and actually reading one are different jobs:
+
+     GRID   the renders, at their own proportions. Scanning.
+     LIST   one row each, image beside the opening of the prompt. Comparing.
+     FOCUS  one column, large. Reading.
+
+   The switch is CSS only -- same DOM, same nodes, different rules -- so
+   changing mode never re-renders 273 cards or drops scroll position.
+
+   Both the mode change and opening a prompt run through the View
+   Transitions API when the browser has it, which is what makes a card
+   EXPAND into the detail view instead of a dialog appearing over it. The
+   shared name is put on one element at a time; leave it on all 273 and the
+   API has 273 candidates and refuses to animate. Browsers without the API
+   fall through to exactly the behaviour that was here before.
+   ================================================================== */
+/* A transition is a nicety; the state change is not. So the callback runs
+   either way, and three things are handled that the bare API does not:
+
+   - A second transition started while one is running throws
+     InvalidStateError. The running one is skipped first, which resolves it
+     cleanly and lets the new one take over.
+   - startViewTransition hands back .ready / .finished / .updateCallbackDone
+     promises. Any of them can reject -- an aborted transition, a hidden
+     document -- and an unattached rejection surfaces as an uncaught error in
+     the console. All three get a catch.
+   - The DOM update itself is never allowed to be skipped: if the API throws
+     synchronously, fn() still runs. */
+let activeTransition = null;
+function withTransition(fn){
+  if(prefersReducedMotion || !document.startViewTransition){ fn(); return; }
+  if(activeTransition){
+    try { activeTransition.skipTransition(); } catch(err){ /* already done */ }
+  }
+  let vt;
+  try {
+    vt = document.startViewTransition(fn);
+  } catch(err){
+    fn();
+    return;
+  }
+  activeTransition = vt;
+  const swallow = () => {};
+  vt.ready.catch(swallow);
+  vt.updateCallbackDone.catch(swallow);
+  vt.finished.catch(swallow).finally(() => {
+    if(activeTransition === vt) activeTransition = null;
+  });
+}
+
+function applyGalleryView(view){
+  const grid = document.getElementById("galleryGrid");
+  const sw = document.getElementById("viewSwitch");
+  if(!grid) return;
+  grid.dataset.view = view;
+  if(sw){
+    sw.querySelectorAll(".viewswitch-btn").forEach((b) => {
+      const on = b.dataset.view === view;
+      b.classList.toggle("active", on);
+      b.setAttribute("aria-checked", String(on));
+    });
+    /* The thumb is positioned by index, so it slides between cells rather
+       than each button carrying its own background. */
+    const i = ["grid", "list", "focus"].indexOf(view);
+    sw.style.setProperty("--i", i < 0 ? 0 : i);
+  }
+}
+
+function initViewSwitch(){
+  const sw = document.getElementById("viewSwitch");
+  if(!sw) return;
+
+  const stored = readStore(STORE_KEYS.view, "grid");
+  galleryState.view = ["grid", "list", "focus"].includes(stored) ? stored : "grid";
+  applyGalleryView(galleryState.view);
+
+  sw.addEventListener("click", (e) => {
+    const btn = e.target.closest(".viewswitch-btn");
+    if(!btn || btn.dataset.view === galleryState.view) return;
+    galleryState.view = btn.dataset.view;
+    writeStore(STORE_KEYS.view, galleryState.view);
+    withTransition(() => applyGalleryView(galleryState.view));
+    announce(`${galleryState.view} view`);
+  });
+
+  /* Arrow keys inside a radiogroup, as the pattern requires. */
+  sw.addEventListener("keydown", (e) => {
+    if(!/^Arrow(Left|Right|Up|Down)$/.test(e.key)) return;
+    e.preventDefault();
+    const order = ["grid", "list", "focus"];
+    const dir = /Left|Up/.test(e.key) ? -1 : 1;
+    const next = order[(order.indexOf(galleryState.view) + dir + order.length) % order.length];
+    galleryState.view = next;
+    writeStore(STORE_KEYS.view, next);
+    withTransition(() => applyGalleryView(next));
+    sw.querySelector(`.viewswitch-btn[data-view="${next}"]`).focus();
+  });
+}
+
+/* The card the modal grew out of, so its name can be taken back off. */
+let sharedCard = null;
+function claimSharedName(card){
+  releaseSharedName();
+  if(!card || prefersReducedMotion || !document.startViewTransition) return;
+  const img = card.querySelector(".gcard-img");
+  if(!img) return;
+  img.style.viewTransitionName = "prompt-shared";
+  sharedCard = img;
+}
+function releaseSharedName(){
+  if(sharedCard){ sharedCard.style.viewTransitionName = ""; sharedCard = null; }
+}
+
+/* ==================================================================
+   VARIABLE TOKENS
+
+   Every one of the 456 writing templates is a fill-in-the-blank: 473
+   distinct [bracketed] slots across the set. Until now they were printed as
+   coloured text and you filled them in after pasting, somewhere else.
+
+   Here they become the interaction. A token is a real button; clicking it
+   opens an input in place; the value is written back into the prompt, into
+   every occurrence of that same variable at once, and the Copy button now
+   carries the FILLED text. Values persist per template, so coming back to a
+   prompt you have used before finds it the way you left it.
+
+   Everything degrades cleanly: with the store unavailable nothing is
+   remembered but everything still fills, and with JS off the prompt renders
+   as the plain bracketed template it has always been.
+   ================================================================== */
+const VAR_RE = /\[([^\]\n]{1,60})\]/g;
+
+function varStore(){
+  return readStore(STORE_KEYS.vars, {}) || {};
+}
+function varsFor(id){
+  const all = varStore();
+  return (all && typeof all === "object" && all[id]) || {};
+}
+function setVar(id, name, value){
+  const all = varStore();
+  const own = Object.assign({}, all[id]);
+  if(value) own[name] = value; else delete own[name];
+  if(Object.keys(own).length) all[id] = own; else delete all[id];
+  writeStore(STORE_KEYS.vars, all);
+}
+
+/* The prompt with every known value substituted. This is what Copy sends and
+   what the send-to-assistant buttons carry. */
+function resolvePrompt(text, values){
+  return text.replace(VAR_RE, (whole, name) => values[name] || whole);
+}
+
+function varNames(text){
+  return [...new Set([...text.matchAll(VAR_RE)].map((m) => m[1]))];
+}
+
+/* Renders the prompt with each slot as a token. Same escaping discipline as
+   everywhere else: the prompt is escaped, then the tokens are built from the
+   already-escaped name. */
+function tokenisePrompt(text, values){
+  let out = "";
+  let last = 0;
+  VAR_RE.lastIndex = 0;
+  let m;
+  while((m = VAR_RE.exec(text)) !== null){
+    out += escapeHTML(text.slice(last, m.index));
+    const name = m[1];
+    const val = values[name];
+    out += `<button type="button" class="vtok${val ? " is-filled" : ""}" data-var="${escapeHTML(name)}"` +
+           ` aria-label="${val ? `${escapeHTML(name)}: ${escapeHTML(val)}. Edit.` : `Fill in ${escapeHTML(name)}`}">` +
+           `${escapeHTML(val || name)}</button>`;
+    last = m.index + m[0].length;
+  }
+  out += escapeHTML(text.slice(last));
+  return out;
+}
+
+/* "5 slots" until you start, then "2 of 5 filled" — the count only becomes
+   a progress readout once there is progress to report. */
+function varStatusText(names, values){
+  if(!names.length) return "";
+  const filled = names.filter((n) => values[n]).length;
+  if(!filled) return `${names.length} slot${names.length === 1 ? "" : "s"} to fill`;
+  return `${filled} of ${names.length} filled`;
+}
+
+/* Repaints one card from the store: tokens, status, and the raw text every
+   action button carries. One function, so the copy payload can never drift
+   from what is on screen. */
+function refreshPromptCard(card){
+  const raw = card.dataset.template || "";
+  const id = card.dataset.promptId || "";
+  const values = varsFor(id);
+  const body = card.querySelector(".tdoc-body");
+  const status = card.querySelector(".tdoc-vars");
+  if(body) body.innerHTML = tokenisePrompt(raw, values);
+
+  const names = varNames(raw);
+  if(status){
+    status.textContent = varStatusText(names, values);
+    status.classList.toggle("is-active", names.some((n) => values[n]));
+  }
+
+  const resolved = resolvePrompt(raw, values);
+  card.querySelectorAll("[data-raw]").forEach((el) => { el.dataset.raw = resolved; });
+  card.classList.toggle("has-values", names.some((n) => values[n]));
+}
+
+/* Swaps a token for an input sized to its own content, so the line does not
+   reflow while you type. Commit on Enter or blur, abandon on Escape. */
+function editToken(tok, card){
+  if(tok.classList.contains("is-editing")) return;
+  const name = tok.dataset.var;
+  const id = card.dataset.promptId || "";
+  const current = varsFor(id)[name] || "";
+
+  const input = document.createElement("input");
+  input.type = "text";
+  input.className = "vtok-input";
+  input.value = current;
+  input.placeholder = name;
+  input.setAttribute("aria-label", `Value for ${name}`);
+  input.size = Math.max(name.length, current.length, 4) + 1;
+
+  tok.replaceWith(input);
+  input.focus();
+  input.select();
+
+  const grow = () => { input.size = Math.max(4, input.value.length + 1); };
+  input.addEventListener("input", grow);
+
+  let done = false;
+  const finish = (commit) => {
+    if(done) return;
+    done = true;
+    if(commit) setVar(id, name, input.value.trim());
+    refreshPromptCard(card);
+    /* Focus lands back on the token that replaced the input, so keyboard
+       users are never dropped at the top of the document. */
+    const next = card.querySelector(`.vtok[data-var="${CSS.escape(name)}"]`);
+    if(next) next.focus();
+  };
+
+  input.addEventListener("keydown", (e) => {
+    if(e.key === "Enter"){ e.preventDefault(); finish(true); }
+    else if(e.key === "Escape"){ e.preventDefault(); finish(false); }
+  });
+  input.addEventListener("blur", () => finish(true));
+}
+
+/* One delegated listener for a page of 114 cards. */
+function bindVariableTokens(root){
+  if(!root || root.dataset.varsBound) return;
+  root.dataset.varsBound = "1";
+  root.addEventListener("click", (e) => {
+    const tok = e.target.closest(".vtok");
+    if(!tok || !root.contains(tok)) return;
+    const card = tok.closest("[data-template]");
+    if(card) editToken(tok, card);
+  });
+  root.addEventListener("click", (e) => {
+    const clear = e.target.closest(".tdoc-clear");
+    if(!clear || !root.contains(clear)) return;
+    const card = clear.closest("[data-template]");
+    if(!card) return;
+    const all = varStore();
+    delete all[card.dataset.promptId];
+    writeStore(STORE_KEYS.vars, all);
+    refreshPromptCard(card);
+    announce("Cleared the values on this prompt");
+  });
+}
+
+/* ==================================================================
+   ATMOSPHERE
+
+   One rAF loop for the whole environment. It writes two custom properties
+   on the atmosphere element and nothing else:
+
+     --px / --py   pointer position, 0..1, eased toward the real cursor so
+                   the light glides instead of tracking
+     --depth       scroll progress, 0..1, deepening the vignette and firming
+                   up the column rules as you go down the page
+
+   CSS turns those into gradient positions and opacities. No layout is read
+   inside the loop except one cheap scroll value, no element is animated on
+   a timer, and the loop parks itself the moment nothing is changing -- so on
+   a still page this costs nothing at all.
+   ================================================================== */
+function initAtmosphere(){
+  const atmos = document.getElementById("atmos");
+  if(!atmos || prefersReducedMotion) return;
+
+  /* Target vs current: the gap between them is what makes the light drift
+     rather than snap, and it is also the loop's stopping condition. */
+  let tx = 0.5, ty = 0.4, cx = 0.5, cy = 0.4, depth = 0, cd = 0;
+  let running = false;
+
+  const readScroll = () => {
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    depth = max > 0 ? Math.min(1, window.scrollY / max) : 0;
+  };
+
+  const frame = () => {
+    /* Exponential ease. 0.06 is slow enough to read as atmosphere and fast
+       enough not to feel laggy. */
+    cx += (tx - cx) * 0.06;
+    cy += (ty - cy) * 0.06;
+    cd += (depth - cd) * 0.08;
+
+    atmos.style.setProperty("--px", cx.toFixed(4));
+    atmos.style.setProperty("--py", cy.toFixed(4));
+    atmos.style.setProperty("--depth", cd.toFixed(4));
+
+    /* Park when everything has settled. Restarted by the next input. */
+    if(Math.abs(tx - cx) + Math.abs(ty - cy) + Math.abs(depth - cd) < 0.001){
+      running = false;
+      return;
+    }
+    requestAnimationFrame(frame);
+  };
+
+  const wake = () => {
+    if(running) return;
+    running = true;
+    requestAnimationFrame(frame);
+  };
+
+  window.addEventListener("pointermove", (e) => {
+    tx = e.clientX / window.innerWidth;
+    ty = e.clientY / window.innerHeight;
+    wake();
+  }, { passive:true });
+
+  window.addEventListener("scroll", () => { readScroll(); wake(); }, { passive:true });
+  window.addEventListener("resize", () => { readScroll(); wake(); }, { passive:true });
+
+  readScroll();
+  wake();
+}
+
+/* ==================================================================
    HOMEPAGE  (index.html)
 
    Rendered from prompts-trending.js, a ~12KB generated module carrying the
@@ -699,6 +1045,19 @@ function renderHeroQuick(){
   if(!host || !homeCategories.length) return;
   host.innerHTML = homeCategories.slice(0, 5)
     .map((c) => `<a href="${escapeHTML(c.href)}">${escapeHTML(c.name)}</a>`).join("");
+
+  /* The workspace bar carries the full set, since by the time it is visible
+     the hero's shortlist has scrolled away. */
+  const bar = document.getElementById("workbarLinks");
+  if(bar){
+    bar.innerHTML = homeCategories
+      .map((c) => `<a href="${escapeHTML(c.href)}">${escapeHTML(c.name)}</a>`).join("");
+  }
+  const kbd = document.getElementById("workbarKbd");
+  if(kbd){
+    const mac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || "");
+    kbd.textContent = mac ? "\u2318K" : "Ctrl K";
+  }
 }
 
 /* The shortcut shown is the one the visitor's platform actually uses. */
@@ -1235,7 +1594,7 @@ function initPageTransitions(){
 /* ==================================================================
    IMAGE GALLERY + MODAL (images.html only)
    ================================================================== */
-let galleryState = { cat: "All", input: "All", query: "" };
+let galleryState = { cat: "All", input: "All", query: "", view: "grid" };
 const GALLERY_SAVE_ICON = `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 3.8h11a1 1 0 0 1 1 1v15.4l-6.5-4-6.5 4V4.8a1 1 0 0 1 1-1z"/></svg>`;
 
 /* ---- URL state -------------------------------------------------------
@@ -1469,7 +1828,14 @@ function renderGallery(){
   const hasThumb = (slug) => known === null || known.has(slug);
 
   /* p.i (stamped in initGallery) is the index into imagePrompts, carried on the
-     card so the modal can find the original entry while a filter is active. */
+     card so the modal can find the original entry while a filter is active.
+
+     width/height come off p.size, the one shape hint the data carries. They
+     are not the real dimensions and are not meant to be: they give the
+     browser a box to reserve before the file decodes, which is the whole
+     difference between a column that settles and 273 cards that were 2px
+     tall until their image arrived. height:auto in the CSS means the real
+     ratio still wins once it is known. */
   /* A real <button>, not a div+click: keyboard reachable, Enter/Space activate
      it for free, and it is exposed to assistive tech as an actionable control.
      Children are spans because <button> only admits phrasing content. The img
@@ -1480,13 +1846,14 @@ function renderGallery(){
     return `
     <figure class="gcard reveal swatch-${p.i % 6}" style="animation-delay:${(i % 4) * 50}ms">
       <span class="swatch-texture"></span>
-      ${hasThumb(p.slug) ? `<img class="gcard-img" src="images/${encodeURIComponent(p.slug)}.jpg" alt="" loading="lazy" decoding="async">` : ""}
+      ${hasThumb(p.slug) ? `<img class="gcard-img" src="images/${encodeURIComponent(p.slug)}.jpg" alt="" loading="lazy" decoding="async" width="600" height="${p.size === "tall" ? 800 : p.size === "short" ? 450 : 600}">` : ""}
       <button type="button" class="gcard-open" data-id="${p.i}" aria-label="${escapeHTML(p.style)}, ${escapeHTML(p.cat)}. Open prompt."></button>
       <span class="gcard-scrim" aria-hidden="true"></span>
       <figcaption class="gcard-meta">
         <span class="gcard-text">
           <span class="gcard-cat">${escapeHTML(p.cat)}</span>
           <span class="gcard-name">${escapeHTML(p.style)}</span>
+          <span class="gcard-excerpt">${escapeHTML(p.prompt)}</span>
         </span>
         <span class="gcard-act">
           <button type="button" class="icon-btn btn-copy" data-raw="${escapeHTML(p.prompt)}" aria-label="Copy the ${escapeHTML(p.style)} prompt">${ICONS.copy}</button>
@@ -1502,7 +1869,13 @@ function renderGallery(){
     grid.dataset.cardBound = "1";
     grid.addEventListener("click", (e) => {
       const open = e.target.closest(".gcard-open");
-      if(open){ openModal(Number(open.dataset.id)); return; }
+      if(open){
+        /* The card's render carries the shared name for the length of the
+           transition, so it visibly grows into the dialog's image. */
+        claimSharedName(open.closest(".gcard"));
+        withTransition(() => openModal(Number(open.dataset.id)));
+        return;
+      }
       const copy = e.target.closest(".btn-copy");
       if(copy) copyText(copy.dataset.raw || "", copy);
     });
@@ -1575,6 +1948,9 @@ function openModal(id){
 }
 
 function closeModal(){
+  /* Nothing to hand back to once the dialog is gone. */
+  const finish = () => releaseSharedName();
+  setTimeout(finish, 0);
   const backdrop = document.getElementById("modalBackdrop");
   if(!backdrop || !backdrop.classList.contains("open")) return;
 
@@ -1690,19 +2066,30 @@ function initCategoryPage(){
        has no image and no title in the data -- only a filename and a tag --
        so the tag leads, the running number gives the list a spine, and the
        prompt text itself is the body copy. Nothing invented. */
-    list.innerHTML = items.map((p, i) => `
-    <article class="tdoc reveal" style="animation-delay:${(i % 3) * 60}ms">
+    list.innerHTML = items.map((p, i) => {
+      const id = category + ":" + p.filename;
+      const values = varsFor(id);
+      const names = varNames(p.prompt);
+      const resolved = resolvePrompt(p.prompt, values);
+      const touched = names.some((n) => values[n]);
+      return `
+    <article class="tdoc reveal${touched ? " has-values" : ""}" data-prompt-id="${escapeHTML(id)}" data-template="${escapeHTML(p.prompt)}" style="animation-delay:${(i % 3) * 60}ms">
       <header class="tdoc-head">
         <span class="tdoc-tag">${escapeHTML(p.tag || visual.label)}</span>
         <span class="tdoc-num">${String(i + 1).padStart(3, "0")}</span>
       </header>
-      <p class="tdoc-body">${highlightVars(p.prompt)}</p>
+      <p class="tdoc-body">${tokenisePrompt(p.prompt, values)}</p>
+      <div class="tdoc-status">
+        <span class="tdoc-vars${touched ? " is-active" : ""}">${escapeHTML(varStatusText(names, values))}</span>
+        <button type="button" class="tdoc-clear" aria-label="Clear the values on this prompt">Reset</button>
+      </div>
       <footer class="tdoc-foot">
-        <button type="button" class="btn btn-primary btn-copy btn-sm" data-raw="${escapeHTML(p.prompt)}">${copyButtonHTML("Copy prompt")}</button>
-        <div class="send-row">${saveButtonHTML(category + ":" + p.filename, p.filename, p.prompt)}${sendRowHTML(p.prompt)}</div>
+        <button type="button" class="btn btn-primary btn-copy btn-sm" data-raw="${escapeHTML(resolved)}">${copyButtonHTML("Copy prompt")}</button>
+        <div class="send-row">${saveButtonHTML(id, p.filename, resolved)}${sendRowHTML(resolved)}</div>
       </footer>
-    </article>
-  `).join("");
+    </article>`;
+    }).join("");
+    bindVariableTokens(list);
 
     list.querySelectorAll(".btn-copy").forEach((btn) => {
       btn.addEventListener("click", function(){ copyText(this.dataset.raw, this); });
@@ -1882,6 +2269,7 @@ function boot(name, fn){
   }
 }
 
+boot("atmosphere", initAtmosphere);
 boot("setActiveNav", setActiveNav);
 boot("navIndicator", initNavIndicator);
 boot("navScrollState", initNavScrollState);
@@ -1889,6 +2277,7 @@ boot("themeToggle", initThemeToggle);
 boot("mobileNav", initMobileNav);
 boot("pageTransitions", initPageTransitions);
 boot("gallery", initGallery);
+boot("viewSwitch", initViewSwitch);
 boot("cmdk", initCmdk);
 boot("home", initHome);
 boot("countUp", initCountUp);

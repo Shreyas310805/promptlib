@@ -25,6 +25,13 @@
   --surface:#131316;      /* cards, panels — one step up from the page   */
   --surface-2:#1c1c20;    /* elevated: hover, popovers, the palette      */
   --ground-fade:rgba(10,10,11,.74);  /* scrim over revealed imagery      */
+
+  /* Atmosphere. Two cool lights a few degrees apart, a rule that is barely
+     a rule, and a vignette that closes the frame. */
+  --aurora-a:rgba(88,124,255,.055);
+  --aurora-b:rgba(120,205,220,.035);
+  --rule:rgba(244,241,234,.028);
+  --vignette:rgba(0,0,0,.55);
   /* Sections separate by a change in tone, not by a hairline across the
      page. One step, used alternately. */
   --bg-alt:#0e0e10;
@@ -191,6 +198,13 @@
      slate, so the two themes read as one system seen under two lights. */
   --bg-void:#f6f4ef;
   --ground-fade:rgba(246,244,239,.76);
+
+  /* Light is a warm room, not an inverted dark one: the lights go warm, the
+     vignette barely exists, and the rules go to ink at low alpha. */
+  --aurora-a:rgba(255,214,150,.16);
+  --aurora-b:rgba(150,190,255,.10);
+  --rule:rgba(26,25,23,.036);
+  --vignette:rgba(120,110,95,.10);
   --bg-alt:#efece6;
   --surface:#ffffff;
   --surface-2:#eae7e0;
@@ -248,9 +262,17 @@ body{
   font-family:var(--font-display);
   line-height:1.55;
   -webkit-font-smoothing:antialiased;
-  overflow-x:hidden;
   position:relative;
 }
+/* overflow-x lives on the ROOT, not on body.
+
+   Setting it on body made body the scroll container, which broke two things
+   at once: document.scrollingElement.scrollTop stopped moving the page, and
+   `animation-timeline: scroll(root block)` resolved against a scroller that
+   never advances -- so the hero recede and the workspace bar sat frozen at
+   0% no matter how far you scrolled. On the root it clips the same way and
+   the document scrolls normally. */
+html{ overflow-x:hidden; }
 /* The page fade is CSS-ONLY. Nothing about whether the page is VISIBLE may
    depend on JavaScript running.
 
@@ -268,20 +290,77 @@ body{ animation:page-in var(--dur-page) var(--ease-out) both; }
 body.leaving{ animation:page-out 260ms var(--ease-out) both; }
 @keyframes page-out{ from{ opacity:1 } to{ opacity:0 } }
 
-/* ---- backdrop -------------------------------------------------------
-   There isn't one, deliberately. The ground is a flat deep charcoal and the
-   imagery supplies every bit of colour on the page.
+/* ---- atmosphere ------------------------------------------------------
+   A living environment rather than a wallpaper. Four layers, all fixed, all
+   pointer-events:none, none of them animated on a timer:
 
-   This removes three wide radial blooms and a fine dot lattice. They existed
-   to give backdrop-filter something to bend, but glass is now limited to the
-   nav, the command palette and the floating controls — all of which sit over
-   real content, so the blur has plenty to work with and the ground can be
-   quiet. */
+     1. AURORA   two very wide, very low-opacity light fields. They drift only
+                 in response to the pointer, and only by a few percent.
+     2. RULES    faint vertical lines on the column grid the layouts use, so
+                 the page sits on visible structure instead of on nothing.
+     3. GRAIN    a tiny SVG turbulence tile at 3% opacity. Kills the banding
+                 that wide low-contrast gradients always produce on 8-bit
+                 panels, and gives the ground a material quality.
+     4. VIGNETTE a soft darkening at the edges that deepens as you scroll.
+
+   Everything is driven by two custom properties written from ONE rAF loop in
+   script.js: --px/--py (pointer, 0..1) and --depth (scroll, 0..1). No layer
+   has its own timer, nothing recalculates layout, and with JS off or reduced
+   motion on, the declared defaults are a perfectly good static ground. */
+.atmos{
+  position:fixed; inset:0; z-index:0; pointer-events:none;
+  --px:.5; --py:.4; --depth:0;
+  contain:strict;
+}
+.atmos-aurora{
+  position:absolute; inset:-25%;
+  background:
+    radial-gradient(38% 44% at calc(22% + var(--px) * 12%) calc(18% + var(--py) * 10%),
+                    var(--aurora-a) 0%, transparent 62%),
+    radial-gradient(34% 40% at calc(80% - var(--px) * 10%) calc(70% - var(--py) * 8%),
+                    var(--aurora-b) 0%, transparent 58%);
+  /* One long transition, so the fields glide rather than track the cursor. */
+  transition:background-position 1.2s var(--ease-out);
+  will-change:background;
+}
+/* The same twelve columns the layouts are built on, drawn at almost nothing.
+   This is the piece that makes the geometry feel deliberate. */
+.atmos-rules{
+  position:absolute; inset:0;
+  max-width:var(--container); margin:0 auto;
+  padding-inline:var(--gutter);
+  background-image:repeating-linear-gradient(90deg,
+    var(--rule) 0 1px, transparent 1px calc(100% / 12));
+  background-clip:content-box;
+  opacity:calc(.5 + var(--depth) * .5);
+  transition:opacity 900ms var(--ease-out);
+}
+@media (max-width:900px){ .atmos-rules{ display:none; } }
+.atmos-grain{
+  position:absolute; inset:0;
+  opacity:.032;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.atmos-vignette{
+  position:absolute; inset:0;
+  background:radial-gradient(120% 90% at 50% 40%, transparent 42%, var(--vignette) 100%);
+  opacity:calc(.35 + var(--depth) * .65);
+  transition:opacity 900ms var(--ease-out);
+}
+
+/* The atmosphere is environmental, so it holds still when motion is off. */
+@media (prefers-reduced-motion:reduce){
+  .atmos{ --px:.5; --py:.4; --depth:.35; }
+  .atmos-aurora{ transition:none; }
+}
+:root.reduce-motion .atmos{ --px:.5; --py:.4; --depth:.35; }
+
 
 img{ display:block; max-width:100%; }
 a{ color:inherit; }
 button{ font-family:inherit; }
 main{ position:relative; z-index:1; }
+.workspace{ position:relative; z-index:1; }
 .footer{ position:relative; z-index:1; }
 
 /* ============================================
@@ -669,6 +748,97 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
   font-family:var(--font-label); text-transform:uppercase;
   letter-spacing:var(--track-caps); font-size:var(--text-2xs); color:var(--text-muted);
 }
+
+
+/* ---- entering the product --------------------------------------------
+   The one large transformation on the site, and the only place scroll drives
+   anything: as you leave the hero it recedes -- back, dimmer, slightly out
+   of focus -- while the workspace bar takes its place under the nav. From
+   that point down, the page reads as an application rather than as a page
+   with sections.
+
+   Built on scroll-driven animations, so it runs on the compositor with no
+   scroll listener, no layout reads and no JavaScript at all. Browsers
+   without the feature simply never enter the @supports block: the hero
+   stays put and the bar is always visible, which is a perfectly good page.
+   Reduced motion is excluded for the same reason. */
+@supports (animation-timeline:scroll()){
+  @media (prefers-reduced-motion:no-preference){
+    .hero-stage{
+      animation:hero-recede linear both;
+      animation-timeline:scroll(root block);
+      animation-range:0 78vh;
+      transform-origin:50% 0;
+    }
+    @keyframes hero-recede{
+      /* Holds for the first third, so a small scroll does not dim the page
+         you just arrived on. */
+      0%,   30%{ opacity:1; transform:none; filter:blur(0); }
+      100%{ opacity:.14; transform:translate3d(0,-5vh,0) scale(.97); filter:blur(3px); }
+    }
+
+    .workbar{
+      animation:workbar-in linear both;
+      animation-timeline:scroll(root block);
+      animation-range:38vh 76vh;
+    }
+    @keyframes workbar-in{
+      from{ opacity:0; transform:translate3d(0,-10px,0); }
+      to{ opacity:1; transform:none; }
+    }
+  }
+}
+
+.workbar{
+  position:sticky; top:var(--nav-h); z-index:40;
+  padding:var(--space-3) 0;
+  background:var(--nav-bg);
+  backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
+  border-block:1px solid var(--border-subtle);
+}
+.workbar-inner{ display:flex; align-items:center; gap:var(--space-4); }
+.workbar-search{
+  display:inline-flex; align-items:center; gap:var(--space-3);
+  flex:0 0 auto; min-width:min(280px,42vw);
+  padding:9px 10px 9px 14px; border-radius:var(--radius-pill);
+  background:var(--surface); border:1px solid var(--border-subtle);
+  font:inherit; font-size:var(--text-sm); color:var(--text-muted);
+  text-align:left; cursor:pointer;
+  transition:border-color var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out);
+}
+.workbar-search:hover{ border-color:var(--border-strong); color:var(--text-primary); }
+.workbar-search:focus-visible{ outline:2px solid var(--focus-ring); outline-offset:2px; }
+.workbar-search span{ flex:1; }
+.workbar-search .icon{ width:15px; height:15px; }
+.workbar-kbd{
+  font-family:var(--font-mono); font-size:var(--text-2xs); line-height:1;
+  padding:4px 7px; border-radius:var(--radius-sm);
+  border:1px solid var(--border-subtle); background:var(--surface-2); color:var(--text-muted);
+}
+/* Scrolls sideways rather than wrapping: the bar must stay one line tall or
+   it stops being chrome and starts being a section. */
+.workbar-links{
+  display:flex; gap:var(--space-2); min-width:0;
+  overflow-x:auto; scrollbar-width:none;
+  -webkit-mask-image:linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 24px), transparent 100%);
+  mask-image:linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 24px), transparent 100%);
+}
+.workbar-links::-webkit-scrollbar{ display:none; }
+.workbar-links a{
+  flex:0 0 auto;
+  font-size:var(--text-sm); color:var(--text-muted); text-decoration:none;
+  padding:7px 13px; border-radius:var(--radius-pill);
+  border:1px solid transparent; white-space:nowrap;
+  transition:color var(--dur-micro) var(--ease-out), border-color var(--dur-micro) var(--ease-out), background var(--dur-micro) var(--ease-out);
+}
+.workbar-links a:hover{ color:var(--text-primary); border-color:var(--border-subtle); background:var(--surface); }
+@media (max-width:640px){
+  .workbar-search span{ display:none; }
+  .workbar-search{ min-width:0; padding:9px 12px; }
+  .workbar-kbd{ display:none; }
+}
+
+.hero-actions{ display:flex; gap:var(--space-3); flex-wrap:wrap; margin-top:var(--space-6); }
 
 
 /* ============================================
@@ -1564,6 +1734,120 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
 .modal-swatch .swatch-texture{ background-size:32px 32px; }
 
 
+/* ---- view switch ------------------------------------------------------
+   A segmented control with one moving thumb, positioned by index. The thumb
+   is the only thing that animates, and it animates on transform, so moving
+   between three cells never touches layout. */
+.gallery-row{ display:flex; align-items:center; justify-content:space-between; gap:var(--space-4); flex-wrap:wrap; }
+.viewswitch{
+  --i:0;
+  position:relative; display:inline-flex; flex-shrink:0;
+  padding:4px; border-radius:var(--radius-pill);
+  border:1px solid var(--border-subtle); background:var(--surface);
+}
+.viewswitch-thumb{
+  position:absolute; top:4px; left:4px;
+  width:36px; height:32px; border-radius:var(--radius-pill);
+  background:var(--surface-2); border:1px solid var(--border-subtle);
+  transform:translate3d(calc(var(--i) * 38px),0,0);
+  transition:transform var(--dur-hover) var(--ease-out);
+}
+.viewswitch-btn{
+  position:relative; z-index:1;
+  display:inline-flex; align-items:center; justify-content:center;
+  width:36px; height:32px; margin-right:2px;
+  background:none; border:0; cursor:pointer;
+  color:var(--text-muted);
+  transition:color var(--dur-micro) var(--ease-out);
+}
+.viewswitch-btn:last-child{ margin-right:0; }
+.viewswitch-btn:hover{ color:var(--text-primary); }
+.viewswitch-btn.active{ color:var(--text-primary); }
+.viewswitch-btn .icon{ width:16px; height:16px; }
+.viewswitch-btn:focus-visible{ outline:2px solid var(--focus-ring); outline-offset:2px; border-radius:var(--radius-pill); }
+
+/* ---- LIST -------------------------------------------------------------
+   One row each: a fixed-ratio thumbnail beside the opening of the prompt.
+   For comparing wording, which the grid cannot do at all. */
+.gallery-grid[data-view="list"]{ column-width:auto; column-count:1; }
+.gallery-grid[data-view="list"] .gcard{
+  display:grid; grid-template-columns:132px minmax(0,1fr);
+  align-items:stretch; min-height:0;
+}
+@media (max-width:640px){
+  .gallery-grid[data-view="list"] .gcard{ grid-template-columns:92px minmax(0,1fr); }
+}
+.gallery-grid[data-view="list"] .gcard-img{ height:100%; aspect-ratio:1/1; object-fit:cover; }
+.gallery-grid[data-view="list"] .gcard-scrim{ display:none; }
+.gallery-grid[data-view="list"] .gcard-meta{
+  position:static; opacity:1; transform:none;
+  flex-direction:row; align-items:center;
+  padding:var(--space-4) var(--space-5);
+}
+.gallery-grid[data-view="list"] .gcard-cat,
+.gallery-grid[data-view="list"] .gcard-name{ color:inherit; }
+.gallery-grid[data-view="list"] .gcard-cat{ color:var(--text-muted); }
+.gallery-grid[data-view="list"] .gcard-name{ color:var(--text-primary); }
+/* The excerpt exists only in this mode: it is the reason to be in it. */
+.gallery-grid[data-view="list"] .gcard-excerpt{
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+  margin-top:var(--space-2);
+  font-family:var(--font-mono); font-size:var(--text-xs);
+  line-height:1.7; color:var(--text-muted);
+}
+.gcard-excerpt{ display:none; }
+.gallery-grid[data-view="list"] .swatch-texture{ display:none; }
+
+/* ---- FOCUS ------------------------------------------------------------
+   One column at reading width, image large, prompt in full. */
+.gallery-grid[data-view="focus"]{ column-width:auto; column-count:1; max-width:780px; margin-inline:auto; }
+.gallery-grid[data-view="focus"] .gcard{ margin-bottom:clamp(28px,3vw,48px); }
+.gallery-grid[data-view="focus"] .gcard-img{ aspect-ratio:3/2; object-fit:cover; }
+.gallery-grid[data-view="focus"] .gcard-scrim{ display:none; }
+.gallery-grid[data-view="focus"] .gcard-meta{
+  position:static; opacity:1; transform:none;
+  padding:var(--space-5) var(--space-6) var(--space-6);
+}
+.gallery-grid[data-view="focus"] .gcard-cat{ color:var(--text-muted); }
+.gallery-grid[data-view="focus"] .gcard-name{ color:var(--text-primary); font-size:var(--text-lg); }
+.gallery-grid[data-view="focus"] .gcard-excerpt{
+  display:block; margin-top:var(--space-3);
+  font-family:var(--font-mono); font-size:var(--text-sm);
+  line-height:1.9; color:var(--text-muted);
+}
+
+
+/* ---- spatial transitions ---------------------------------------------
+   The View Transitions API animates a snapshot of the old page into a
+   snapshot of the new one. Two things are choreographed:
+
+   1. The default crossfade is replaced with a shorter one on the shared
+      curve, so a view change feels like the rest of the product.
+   2. .gcard-img carries view-transition-name:prompt-shared for exactly the
+      length of a card opening, so the browser matches it to the dialog's
+      image and GROWS one into the other. The name is applied to one node at
+      a time in script.js -- a duplicate name cancels the animation.
+
+   Browsers without the API never see any of this and keep the plain
+   behaviour. */
+::view-transition-old(root),
+::view-transition-new(root){
+  animation-duration:var(--dur-hover);
+  animation-timing-function:var(--ease-out);
+}
+::view-transition-group(prompt-shared){
+  animation-duration:var(--dur-page);
+  animation-timing-function:var(--ease-out);
+}
+.modal-swatch .real-photo{ view-transition-name:prompt-shared; }
+
+@media (prefers-reduced-motion:reduce){
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*){ animation:none !important; }
+}
+
+
 /* ============================================
    MODAL  (images.html)
 
@@ -1672,14 +1956,81 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
 .tdoc-body{
   flex:1;
   font-family:var(--font-mono); font-size:var(--text-sm);
-  line-height:1.85; color:var(--text-primary);
+  line-height:2; color:var(--text-primary);
 }
-/* Fill-in-the-blanks are the whole point of these templates, so they are
-   marked rather than left to be spotted. */
-.tdoc-body .var{
-  color:var(--syntax-var); background:var(--syntax-var-bg);
-  padding:1px 5px; border-radius:var(--radius-sm);
+
+/* ---- variable tokens --------------------------------------------------
+   The fill-in-the-blank slots are the point of these templates, so they are
+   controls, not decoration. Sized and spaced to sit ON the text baseline
+   without disturbing the line rhythm — hence the negative margin and the
+   matched line-height. */
+.vtok{
+  display:inline; font:inherit; line-height:inherit;
+  padding:2px 7px; margin:0 1px;
+  border-radius:var(--radius-sm);
+  border:1px dashed var(--border-strong);
+  background:transparent; color:var(--syntax-var);
+  cursor:text; text-align:left;
+  transition:background var(--dur-micro) var(--ease-out),
+             border-color var(--dur-micro) var(--ease-out),
+             color var(--dur-micro) var(--ease-out);
 }
+.vtok::before{ content:"["; opacity:.5; }
+.vtok::after{ content:"]"; opacity:.5; }
+.vtok:hover{ border-color:var(--accent); background:var(--syntax-var-bg); }
+.vtok:focus-visible{ outline:2px solid var(--focus-ring); outline-offset:2px; }
+
+/* Filled: a solid value, not a placeholder. The brackets go, because it is
+   no longer a slot. */
+.vtok.is-filled{
+  border-style:solid; border-color:var(--accent-soft);
+  background:var(--syntax-var-bg); color:var(--text-primary);
+}
+.vtok.is-filled::before,
+.vtok.is-filled::after{ content:none; }
+
+.vtok-input{
+  display:inline; font:inherit; line-height:inherit;
+  padding:2px 7px; margin:0 1px;
+  min-width:4ch; max-width:100%;
+  border-radius:var(--radius-sm);
+  border:1px solid var(--accent);
+  background:var(--bg-void); color:var(--text-primary);
+  box-shadow:0 0 0 3px var(--accent-soft);
+}
+.vtok-input:focus{ outline:none; }
+
+/* Progressive disclosure: the row is invisible until you hover the card or
+   put something in it. A page of 114 cards should not shout 114 counters. */
+.tdoc-status{
+  display:flex; align-items:center; justify-content:space-between; gap:var(--space-3);
+  min-height:20px;
+  opacity:0;
+  transition:opacity var(--dur-hover) var(--ease-out);
+}
+.tdoc:hover .tdoc-status,
+.tdoc:focus-within .tdoc-status,
+.tdoc.has-values .tdoc-status{ opacity:1; }
+.tdoc-vars{
+  font-family:var(--font-label); text-transform:uppercase;
+  letter-spacing:var(--track-caps); font-size:var(--text-2xs);
+  color:var(--text-muted);
+  transition:color var(--dur-micro) var(--ease-out);
+}
+.tdoc-vars.is-active{ color:var(--accent-ink); }
+.tdoc-clear{
+  font-family:var(--font-label); text-transform:uppercase;
+  letter-spacing:var(--track-caps); font-size:var(--text-2xs);
+  background:none; border:0; padding:0; cursor:pointer;
+  color:var(--text-muted);
+  opacity:0; pointer-events:none;
+  transition:opacity var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out);
+}
+.tdoc.has-values .tdoc-clear{ opacity:1; pointer-events:auto; }
+.tdoc-clear:hover{ color:var(--danger-ink); }
+
+/* A card you have filled in is a card you are working on. */
+.tdoc.has-values{ border-color:var(--accent-soft); }
 .tdoc-foot{
   display:flex; flex-direction:column; gap:var(--space-2);
   padding-top:var(--space-4); border-top:1px solid var(--border-subtle);

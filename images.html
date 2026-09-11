@@ -28,6 +28,16 @@ try {
 </head>
 <body>
 
+<!-- @partial atmos -->
+<div class="atmos" id="atmos" aria-hidden="true">
+  <div class="atmos-aurora"></div>
+  <div class="atmos-rules"></div>
+  <div class="atmos-grain"></div>
+  <div class="atmos-vignette"></div>
+</div>
+<!-- @end atmos -->
+
+
 <!-- @partial nav -->
 <nav class="nav">
   <div class="nav-inner">
@@ -72,7 +82,21 @@ try {
         <span class="gallery-count" id="galleryCount" role="status" aria-live="polite"></span>
       </div>
       <div class="chip-row" id="galleryChips" role="group" aria-label="Filter prompts by category"></div>
-      <div class="chip-row chip-row-sub" id="galleryInputs" role="group" aria-label="Filter prompts by what they need from you"></div>
+      <div class="gallery-row">
+        <div class="chip-row chip-row-sub" id="galleryInputs" role="group" aria-label="Filter prompts by what they need from you"></div>
+        <div class="viewswitch" id="viewSwitch" role="radiogroup" aria-label="Layout">
+          <span class="viewswitch-thumb" aria-hidden="true"></span>
+          <button type="button" class="viewswitch-btn" data-view="grid" role="radio" aria-checked="true" aria-label="Grid">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.4"/><rect x="14" y="3" width="7" height="6" rx="1.4"/><rect x="3" y="16" width="7" height="5" rx="1.4"/><rect x="14" y="13" width="7" height="8" rx="1.4"/></svg>
+          </button>
+          <button type="button" class="viewswitch-btn" data-view="list" role="radio" aria-checked="false" aria-label="List">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+          </button>
+          <button type="button" class="viewswitch-btn" data-view="focus" role="radio" aria-checked="false" aria-label="Focus">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2"/></svg>
+          </button>
+        </div>
+      </div>
     </div>
 
     <div class="gallery-grid" id="galleryGrid"></div>
