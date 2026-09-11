@@ -50,16 +50,18 @@ BLOCK_RE = re.compile(
 )
 
 
-COUNT_RE = re.compile(r'(data-count-to=")(\d+)(")')
+COUNT_RE = re.compile(r'(<span data-count="(?P<key>[a-z]+)">)([\d,]+)(</span>)')
 
 
 def live_counts():
-    """Read the real figures out of the generated data files.
+    """Read the real figures out of the data files.
 
-    The homepage prints these as headline numbers, and nothing else on that
-    page loads the datasets (they were dropped from index.html to save 96KB),
-    so without this they would silently drift the first time a prompt is
-    added or a category renamed.
+    The homepage prints these in its opening line, and nothing on that page
+    loads the datasets (they were dropped from index.html to save 200KB), so
+    without this they would silently drift the first time a prompt is added.
+
+    They are written into the MARKUP, not filled in by script, so the numbers
+    are right with JavaScript off.
     """
     def read(name):
         path = os.path.join(BASE, name)
@@ -67,31 +69,18 @@ def live_counts():
 
     img = read("prompts-image.js")
     txt = read("prompts-text.js")
-
-    image_prompts = img.count('"slug":')
-    text_templates = txt.count('"filename":')
-    image_cats = len(set(re.findall(r'"cat": "([^"]+)"', img)))
-
-    # Per category, not globally: 'Structure' is a tag under both ppt and
-    # report, and they are separate filters on separate pages. A global set
-    # would merge them and undercount what a visitor can actually filter by.
-    text_tags = 0
-    for block in re.findall(r"^  (\w+): \[(.*?)^  \]", txt, re.S | re.M):
-        text_tags += len(set(re.findall(r'"tag": "([^"]+)"', block[1])))
-
-    return [image_prompts, text_templates, image_cats + text_tags]
+    return {
+        "images": img.count('"slug":'),
+        "text": txt.count('"filename":'),
+    }
 
 
 def sync_counts(text, counts):
-    """Rewrite data-count-to values in document order, leaving any extras
-    (the $0 cost figure) untouched."""
-    it = iter(counts)
+    """Rewrite <span data-count="images">273</span> from the real data."""
 
     def swap(m):
-        try:
-            return m.group(1) + str(next(it)) + m.group(3)
-        except StopIteration:
-            return m.group(0)
+        n = counts.get(m.group("key"))
+        return m.group(0) if n is None else m.group(1) + f"{n:,}" + m.group(4)
 
     return COUNT_RE.sub(swap, text)
 
@@ -173,11 +162,11 @@ for(let i=0;;i++){
   if(!any) break;
 }
 
-/* Five for the featured composition -- one dominant, two secondary, two
-   supporting -- and three more for the picks. Taken from the rotation, so
-   no two neighbours come from the same category. */
-const feature   = rota.slice(0,5).map(slim);
-const pickImgs  = rota.slice(5,8).map(slim);
+/* Ten examples for the home page's image preview, taken from the
+   rotation so no two neighbours come from the same category. Every one
+   has a render on disk -- the preview is the shop window, so it is not
+   the place for the seven with no example image yet. */
+const examples = rota.slice(0,10).map(slim);
 
 /* ---- trending --------------------------------------------------------- */
 const trending = img.filter(p=>p.trending===true).map(slim);
@@ -201,7 +190,7 @@ const totals = {
 };
 
 process.stdout.write(JSON.stringify({
-  trending, imageCats, textCats, totals, feature, pickImgs, textPicks
+  trending, imageCats, textCats, totals, examples, textPicks
 }));
 """
     dump = subprocess.run(["node", "-e", script],
@@ -243,13 +232,11 @@ process.stdout.write(JSON.stringify({
     emit("libraryCategories", data.get("imageCats", []) + data.get("textCats", []),
          "/* Ordered by size. `cover` is a prompt in that category that has a\n"
          "   render on disk, so the hover reveal shows real output. */")
-    emit("featurePrompts", data.get("feature", []),
-         "/* The featured composition: [0] is the dominant tile, [1] and [2]\n"
-         "   the secondary pair, [3] and [4] the supporting row. */")
+    emit("homeExamples", data.get("examples", []),
+         "/* The home page's image preview. Ten renders, one per category\n"
+         "   in rotation. */")
     emit("trendingPrompts", data.get("trending", []),
          "/* Flagged trending:true in prompts-image.js. */")
-    emit("pickPrompts", data.get("pickImgs", []),
-         "/* Editor's picks — image half. */")
     emit("textPicks", data.get("textPicks", []),
          "/* Editor's picks — writing half, one per category. */")
 

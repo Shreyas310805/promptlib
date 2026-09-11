@@ -440,7 +440,7 @@ function buildCmdkIndex(){
 
   /* Whatever the homepage happens to be showing is searchable from it. On
      images.html these are already in imagePrompts and get skipped. */
-  ["featurePrompts", "trendingPrompts", "pickPrompts"].forEach((key) => {
+  ["homeExamples", "trendingPrompts"].forEach((key) => {
     (Array.isArray(window[key]) ? window[key] : []).forEach((p) => {
       if(out.some((x) => x.kind === "prompt" && x.title === p.style)) return;
       out.push({ kind:"prompt", title:p.style, sub:p.cat, prompt:p.prompt });
@@ -1036,16 +1036,14 @@ function initAtmosphere(){
 /* ==================================================================
    HOMEPAGE  (index.html)
 
-   Rendered from prompts-trending.js, a ~12KB generated module carrying the
-   exact subset the page shows plus counted totals. index.html never loads
-   the 112KB image dataset.
+   Three previews under the hero, each rendered from prompts-trending.js
+   -- a ~12KB generated module carrying exactly the subset this page
+   shows plus counted totals. index.html never loads the 112KB image
+   dataset or the 96KB text one.
 
-   Nothing here is invented: titles, categories, counts and renders all come
-   from the data. A prompt with an image on disk gets the image treatment;
-   one without gets the document treatment rather than a placeholder.
-
-   Every renderer returns early when its container is missing, so this file
-   keeps working on the seven pages that have none of this markup.
+   Nothing here is invented. Titles, categories and counts all come out
+   of the data; the ten image examples are the ten that have a render on
+   disk, chosen one per category in rotation.
    ================================================================== */
 const homeCategories = Array.isArray(window.libraryCategories) ? window.libraryCategories : [];
 const homeStats = window.libraryStats || null;
@@ -1053,323 +1051,168 @@ const homeList = (name) => (Array.isArray(window[name]) ? window[name] : []);
 
 const SAVE_ICON = `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 3.8h11a1 1 0 0 1 1 1v15.4l-6.5-4-6.5 4V4.8a1 1 0 0 1 1-1z"/></svg>`;
 
-/* Deep link into the gallery: category filter plus the style as the query,
-   which lands on that one prompt. Both params are already read by
-   readStateFromUrl(), so this needs nothing new on images.html. */
-function promptHref(p){
+/* ---- the hero scene --------------------------------------------------
+   Sun pushed right with the copy on a darkened left edge; on a phone
+   there is no room for that, so the whole thing turns through 90 degrees
+   -- art low, copy high, veil from the top -- and the star field and
+   bloom come down because the text is most of the screen there. */
+function initHero(){
+  const host = document.getElementById("top");
+  if(!host || typeof mountOrbital !== "function") return;
+
+  const narrow = window.matchMedia("(max-width: 767px)");
+  const settings = () => narrow.matches
+    ? { focus:[0.5, 0.86], scrim:"top",  scrimStrength:0.94, viewRadius:2.1, lead:0.05, glow:0.5, starCount:600 }
+    : { focus:[0.74, 0.42], scrim:"left", scrimStrength:0.92, viewRadius:3.1, lead:0.12, glow:1,   starCount:1500 };
+
+  const scene = mountOrbital(host, settings());
+  narrow.addEventListener("change", () => scene.update(settings()));
+}
+
+/* ---- image preview ---------------------------------------------------- */
+function exampleHref(p){
   return `images.html?cat=${encodeURIComponent(p.cat)}&q=${encodeURIComponent(p.style)}`;
 }
-function thumbHTML(p, cls, sizes, eager){
-  const load = eager ? 'loading="eager" fetchpriority="high"' : 'loading="lazy"';
-  return `<img class="${cls}" src="images/${escapeHTML(p.slug)}.jpg" alt="Example output for the ${escapeHTML(p.style)} prompt" ${load} decoding="async" sizes="${sizes}" width="900" height="700">`;
-}
 
-/* Compact round controls for the image tiles. The full-width Copy/Save
-   buttons would fight the photograph they sit on. */
-function iconActionsHTML(p){
-  const id = `img:${p.slug}`;
-  const on = isSaved(id);
-  return `
-    <button type="button" class="icon-btn btn-copy" data-raw="${escapeHTML(p.prompt)}" aria-label="Copy the ${escapeHTML(p.style)} prompt">${ICONS.copy}</button>
-    <button type="button" class="icon-btn btn-save" data-save-id="${escapeHTML(id)}" data-save-name="${escapeHTML(p.style)}" data-raw="${escapeHTML(p.prompt)}" aria-pressed="${on}" aria-label="${on ? "Remove from" : "Add to"} saved prompts">${SAVE_ICON}</button>`;
-}
-
-/* One delegated copy handler per container, matching how the gallery and the
-   category pages already do it. */
-function bindCopy(root){
-  if(!root || root.dataset.copyBound) return;
-  root.dataset.copyBound = "1";
-  root.addEventListener("click", (e) => {
-    const btn = e.target.closest(".btn-copy");
-    if(btn && root.contains(btn)) copyText(btn.dataset.raw || "", btn);
-  });
-}
-
-/* ---- hero ---------------------------------------------------------- */
-function renderHeroQuick(){
-  const host = document.getElementById("heroQuick");
-  if(!host || !homeCategories.length) return;
-  host.innerHTML = homeCategories.slice(0, 5)
-    .map((c) => `<a href="${escapeHTML(c.href)}">${escapeHTML(c.name)}</a>`).join("");
-
-  /* The workspace bar carries the full set, since by the time it is visible
-     the hero's shortlist has scrolled away. */
-  const bar = document.getElementById("workbarLinks");
-  if(bar){
-    bar.innerHTML = homeCategories
-      .map((c) => `<a href="${escapeHTML(c.href)}">${escapeHTML(c.name)}</a>`).join("");
-  }
-  const kbd = document.getElementById("workbarKbd");
-  if(kbd){
-    const mac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || "");
-    kbd.textContent = mac ? "\u2318K" : "Ctrl K";
-  }
-}
-
-/* The shortcut shown is the one the visitor's platform actually uses. */
-function renderSearchKbd(){
-  const kbd = document.getElementById("heroSearchKbd");
-  if(!kbd) return;
-  const mac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || "");
-  kbd.textContent = mac ? "\u2318K" : "Ctrl K";
-}
-
-function renderHeroStats(){
-  const host = document.getElementById("heroStats");
-  if(!host || !homeStats) return;
-
-  /* Counted in build_pages.py from the data files and the images/ directory.
-     The final figure is written into the markup, not a zero, so a failure in
-     initCountUp leaves the real number rather than a permanent 0. */
-  const rows = [
-    ["Prompts", homeStats.prompts],
-    ["Image styles", homeStats.images],
-    ["Writing templates", homeStats.text],
-    ["Categories", homeStats.categories],
-    ["Example renders", homeStats.thumbnails]
-  ].filter(([, n]) => typeof n === "number");
-
-  host.innerHTML = rows.map(([label, n]) => `
-    <div class="meta-item">
-      <dt class="meta-label">${escapeHTML(label)}</dt>
-      <dd class="meta-value" data-count-to="${n}">${n.toLocaleString()}</dd>
-    </div>`).join("");
-}
-
-/* ---- featured composition -------------------------------------------
-   Five tiles in fixed roles: [0] dominant, [1][2] secondary, [3][4]
-   supporting. The role decides the grid area, and the grid decides the
-   size -- no tile carries a position of its own. */
-function renderFeature(){
-  const host = document.getElementById("featureGrid");
-  const items = homeList("featurePrompts").filter((p) => p.thumb).slice(0, 5);
-  if(!host || items.length < 3) return;
-
-  const ROLE = ["fcard--lead", "fcard--sec", "fcard--sec", "fcard--sup", "fcard--sup"];
-  const SIZES = [
-    "(max-width:900px) 100vw, 58vw",
-    "(max-width:900px) 50vw, 40vw",
-    "(max-width:900px) 50vw, 40vw",
-    "(max-width:900px) 50vw, 32vw",
-    "(max-width:900px) 50vw, 24vw"
-  ];
-
-  host.innerHTML = items.map((p, i) => `
-    <figure class="fcard ${ROLE[i]}">
-      <span class="fcard-frame">
-        ${thumbHTML(p, "fcard-img", SIZES[i], i === 0)}
-        <span class="fcard-scrim" aria-hidden="true"></span>
-        <figcaption class="fcard-meta">
-          <span>
-            <span class="fcard-cat">${escapeHTML(p.cat)}</span>
-            <span class="fcard-name"><a href="${promptHref(p)}">${escapeHTML(p.style)}</a></span>
-          </span>
-          <span class="fcard-act">${iconActionsHTML(p)}</span>
-        </figcaption>
-      </span>
-    </figure>`).join("");
-
-  bindCopy(host);
-  bindSaveButtons(host);
-}
-
-/* ---- category index -------------------------------------------------- */
-function renderCategoryIndex(){
-  const list = document.getElementById("categoryIndex");
-  const canvas = document.getElementById("indexCanvas");
-  if(!list || !homeCategories.length) return;
-
-  /* One image per category that has a render. The writing categories have
-     none, so hovering those clears the canvas rather than showing something
-     borrowed from a different category. */
-  if(canvas){
-    canvas.innerHTML = homeCategories.filter((c) => c.cover).map((c) =>
-      `<img class="index-shot" data-for="${escapeHTML(c.name)}" src="images/${escapeHTML(c.cover)}.jpg" alt="" loading="lazy" decoding="async">`
-    ).join("");
-  }
-
-  list.innerHTML = homeCategories.map((c, i) => `
-    <li class="index-row">
-      <a class="index-link" href="${escapeHTML(c.href)}" data-cat="${escapeHTML(c.name)}">
-        <span class="index-num">${String(i + 1).padStart(2, "0")}</span>
-        <span class="index-name">${escapeHTML(c.name)}</span>
-        <span class="index-count">${c.count} ${c.kind === "image" ? "styles" : "templates"}</span>
-        <svg class="index-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg>
-      </a>
-    </li>`).join("");
-
-  if(!canvas) return;
-  const shots = canvas.querySelectorAll(".index-shot");
-  const show = (name) => shots.forEach((img) => img.classList.toggle("is-live", img.dataset.for === name));
-  const clear = () => shots.forEach((img) => img.classList.remove("is-live"));
-
-  /* Pointer AND focus, so the reveal is not a mouse-only feature. */
-  list.addEventListener("pointerover", (e) => {
-    const link = e.target.closest(".index-link");
-    if(link) show(link.dataset.cat);
-  });
-  list.addEventListener("pointerleave", clear);
-  list.addEventListener("focusin", (e) => {
-    const link = e.target.closest(".index-link");
-    if(link) show(link.dataset.cat);
-  });
-  list.addEventListener("focusout", clear);
-}
-
-/* ---- trending -------------------------------------------------------- */
-function docHTML(p, i, opts){
-  const small = opts && opts.small;
-  const id = `img:${p.slug}`;
-  return `
-    <article class="doc${small ? " doc--sm" : ""}">
-      ${small ? "" : `<span class="doc-ghost" aria-hidden="true">${String(i + 1).padStart(2, "0")}</span>`}
-      <header class="doc-head">
-        <span class="doc-cat">${escapeHTML(p.cat)}</span>
-        <span class="doc-badge">${escapeHTML(p.input || "no photo")}</span>
-      </header>
-      <h3 class="doc-title">${escapeHTML(p.style)}</h3>
-      ${small ? "" : `<div class="doc-rule" aria-hidden="true"></div>`}
-      <p class="doc-body">${escapeHTML(p.prompt)}</p>
-      <footer class="doc-foot">
-        <button type="button" class="btn ${small ? "btn-ghost" : "btn-primary"} btn-sm btn-copy" data-raw="${escapeHTML(p.prompt)}">${copyButtonHTML("Copy prompt")}</button>
-        ${small ? "" : saveButtonHTML(id, p.style, p.prompt)}
-      </footer>
-    </article>`;
-}
-
-function renderTrending(){
-  const host = document.getElementById("trendingFeed");
-  const items = homeList("trendingPrompts");
+function renderExamples(filter){
+  const host = document.getElementById("homeExamples");
+  const empty = document.getElementById("homeEmpty");
   if(!host) return;
 
-  if(!items.length){
-    host.innerHTML = `<p class="feed-empty">Trending prompts are unavailable right now. <a href="images.html">Browse the full library</a> instead.</p>`;
-    return;
-  }
+  const all = homeList("homeExamples");
+  const items = filter && filter !== "All" ? all.filter((p) => p.cat === filter) : all;
 
-  /* One lead plus three supporting. Four cells fill the grid exactly. */
-  const [lead, ...rest] = items;
-  host.innerHTML = docHTML(lead, 0)
-    + rest.slice(0, 3).map((p, i) => docHTML(p, i + 1, { small:true })).join("");
-
-  bindCopy(host);
-  bindSaveButtons(host);
-}
-
-/* ---- editor's picks --------------------------------------------------
-   One large image card, then a stack of smaller ones beside it. */
-function pickImageHTML(p){
-  return `
-    <figure class="pick">
-      <span class="pick-frame">${thumbHTML(p, "pick-img", "(max-width:900px) 100vw, 52vw")}</span>
-      <figcaption class="pick-body">
-        <span>
-          <span class="pick-cat">${escapeHTML(p.cat)}</span>
-          <span class="pick-name"><a href="${promptHref(p)}">${escapeHTML(p.style)}</a></span>
-          <span class="pick-meta">${escapeHTML(p.input || "no photo")}</span>
-        </span>
-        <span class="pick-act">${iconActionsHTML(p)}</span>
+  if(empty) empty.hidden = items.length > 0;
+  host.innerHTML = items.map((p) => `
+    <figure class="example glass-card">
+      <span class="example-frame">
+        <img class="example-img" src="images/${escapeHTML(p.slug)}.jpg"
+             alt="Example output for the ${escapeHTML(p.style)} prompt"
+             loading="lazy" decoding="async" width="600" height="600">
+        <span class="example-veil" aria-hidden="true"></span>
+        <span class="example-cue glass">View prompt</span>
+      </span>
+      <figcaption class="example-meta">
+        <span class="example-name">${escapeHTML(p.style)}</span>
+        <span class="example-cat">${escapeHTML(p.cat)}</span>
       </figcaption>
-    </figure>`;
+      <button type="button" class="example-open" data-open-slug="${escapeHTML(p.slug)}"
+              aria-label="${escapeHTML(p.style)}, ${escapeHTML(p.cat)}. Open prompt."></button>
+    </figure>`).join("");
 }
 
-/* A writing prompt carries no title in the data, only a filename and a tag,
-   so the card leads with the tag and the prompt itself rather than inventing
-   a name for it. */
-function pickTextHTML(t, i){
-  const id = `${t.key}:${t.filename}`;
-  return `
-    <article class="doc doc--sm">
-      <header class="doc-head">
-        <span class="doc-cat">${escapeHTML(t.cat)}</span>
-        <span class="doc-badge">${String(i + 1).padStart(2, "0")}</span>
-      </header>
-      <h3 class="doc-title">${escapeHTML(t.tag || t.cat)}</h3>
-      <p class="doc-body">${highlightVars(t.prompt)}</p>
-      <footer class="doc-foot">
-        <button type="button" class="btn btn-ghost btn-sm btn-copy" data-raw="${escapeHTML(t.prompt)}">${copyButtonHTML("Copy")}</button>
-        ${saveButtonHTML(id, t.filename, t.prompt)}
-      </footer>
-    </article>`;
+function renderChips(){
+  const row = document.getElementById("homeChips");
+  if(!row) return;
+  const cats = ["All", ...new Set(homeList("homeExamples").map((p) => p.cat))];
+  row.innerHTML = cats.map((c, i) =>
+    `<button type="button" class="chip glass-card${i === 0 ? " active" : ""}" data-cat="${escapeHTML(c)}" aria-pressed="${i === 0}">${escapeHTML(c)}</button>`
+  ).join("");
+
+  row.addEventListener("click", (e) => {
+    const chip = e.target.closest(".chip");
+    if(!chip) return;
+    row.querySelectorAll(".chip").forEach((c) => {
+      const on = c === chip;
+      c.classList.toggle("active", on);
+      c.setAttribute("aria-pressed", String(on));
+    });
+    renderExamples(chip.dataset.cat);
+  });
 }
 
-function renderPicks(){
-  const host = document.getElementById("editorsPicks");
-  const imgs = homeList("pickPrompts").filter((p) => p.thumb);
-  const texts = homeList("textPicks");
-  if(!host || (!imgs.length && !texts.length)) return;
+/* ---- writing preview --------------------------------------------------
+   Four tiles, and not four clones: the two with the most templates get a
+   sample line and a wider cell, so the group has a reading order. */
+const TILE_ICON = {
+  "Slides & decks": '<svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="1.6"/><path d="M8 20h8M12 16v4"/></svg>',
+  "Essays":         '<svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
+  "Reports":        '<svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2h9l5 5v15a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M14 2v5h5M9 13h6M9 17h4"/></svg>',
+  "Emails":         '<svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>'
+};
 
-  const cells = [];
-  if(imgs[0]) cells.push(pickImageHTML(imgs[0]));
-  texts.slice(0, 3).forEach((t, i) => cells.push(pickTextHTML(t, i)));
+function renderTiles(){
+  const host = document.getElementById("homeTiles");
+  if(!host) return;
+  const cats = homeCategories.filter((c) => c.kind === "text");
+  if(!cats.length) return;
 
-  host.innerHTML = cells.join("");
-  bindCopy(host);
-  bindSaveButtons(host);
+  const picks = homeList("textPicks");
+  host.innerHTML = cats.map((c, i) => {
+    const pick = picks.find((t) => t.cat === c.name);
+    const lead = i < 2;
+    return `
+      <a class="tile glass-card${lead ? " tile-lead" : ""}" href="${escapeHTML(c.href)}">
+        <span class="tile-icon" aria-hidden="true">${TILE_ICON[c.name] || ""}</span>
+        <span class="tile-name">${escapeHTML(c.name)}</span>
+        <span class="tile-count">${c.count} templates</span>
+        ${lead && pick ? `<span class="tile-sample">${escapeHTML(pick.prompt.slice(0, 110))}&hellip;</span>` : ""}
+      </a>`;
+  }).join("");
+}
+
+/* ---- counted figures in the hero line ---------------------------------
+   The numbers are written into the markup by build_pages.py, so they are
+   right with JavaScript off. This only corrects them if the generated
+   data is newer than the page. */
+function syncHeroCounts(){
+  if(!homeStats) return;
+  document.querySelectorAll("[data-count]").forEach((el) => {
+    const n = homeStats[el.dataset.count];
+    if(typeof n === "number") el.textContent = n.toLocaleString();
+  });
+}
+
+/* ---- the shared reveal dialog ----------------------------------------- */
+function initHomeDialog(){
+  const grid = document.getElementById("homeExamples");
+  if(!grid) return;
+
+  const bySlug = (slug) => homeList("homeExamples").find((p) => p.slug === slug);
+
+  grid.addEventListener("click", (e) => {
+    const open = e.target.closest(".example-open");
+    if(!open) return;
+    const p = bySlug(open.dataset.openSlug);
+    if(p) withTransition(() => openPromptModal(p));
+  });
+
+  /* The dialog's own controls are wired once, the same way images.html
+     does it. */
+  const closeBtn = document.getElementById("modalClose");
+  const backdrop = document.getElementById("modalBackdrop");
+  const copyBtn = document.getElementById("modalCopyBtn");
+  if(closeBtn){
+    closeBtn.innerHTML = ICONS.close;
+    closeBtn.addEventListener("click", closeModal);
+  }
+  if(backdrop) backdrop.addEventListener("click", (e) => { if(e.target === backdrop) closeModal(); });
+  if(copyBtn){
+    copyBtn.innerHTML = copyButtonHTML("Copy prompt");
+    copyBtn.addEventListener("click", function(){ copyText(this.dataset.raw, this); });
+  }
 }
 
 function initHome(){
-  renderSearchKbd();
-  renderHeroQuick();
-  renderHeroStats();
-  renderFeature();
-  renderCategoryIndex();
-  renderTrending();
-  renderPicks();
+  if(!document.getElementById("homeExamples") && !document.getElementById("top")) return;
+  initHero();
+  syncHeroCounts();
+  renderChips();
+  renderExamples("All");
+  renderTiles();
+  initHomeDialog();
+
+  const clear = document.querySelector("[data-clear-chips]");
+  if(clear){
+    clear.addEventListener("click", () => {
+      const first = document.querySelector("#homeChips .chip");
+      if(first) first.click();
+    });
+  }
+
   /* The sections were rendered after boot, so the observer has to be told
      about the markup that just appeared. */
   observeReveals();
-}
-
-/* ==================================================================
-   COUNT-UP STATS (index.html)
-
-   Runs when the figure scrolls into view, once. Eases out so it decelerates
-   into the final number instead of arriving at a constant rate, and writes
-   through requestAnimationFrame rather than setInterval so it stays on the
-   compositor's clock.
-   ================================================================== */
-function initCountUp(){
-  const figures = document.querySelectorAll("[data-count-to]");
-  if(!figures.length) return;
-
-  const render = (el, value) => {
-    const prefix = el.dataset.countPrefix || "";
-    el.textContent = prefix + value.toLocaleString();
-  };
-
-  /* Reduced motion: no tally, just the number. */
-  if(prefersReducedMotion || !("IntersectionObserver" in window)){
-    figures.forEach((el) => render(el, Number(el.dataset.countTo)));
-    return;
-  }
-
-  const run = (el) => {
-    const target = Number(el.dataset.countTo) || 0;
-    if(target === 0){ render(el, 0); return; }
-
-    const duration = 1100;
-    let start = null;
-    const step = (now) => {
-      if(start === null) start = now;
-      const t = Math.min((now - start) / duration, 1);
-      /* easeOutExpo — fast off the mark, long settle. */
-      const eased = t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
-      render(el, Math.round(target * eased));
-      if(t < 1) requestAnimationFrame(step);
-    };
-    requestAnimationFrame(step);
-  };
-
-  const io = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      if(!entry.isIntersecting) return;
-      io.unobserve(entry.target);
-      run(entry.target);
-    });
-  }, { threshold: 0.4 });
-
-  figures.forEach((el) => io.observe(el));
 }
 
 /* ==================================================================
@@ -1847,7 +1690,7 @@ function renderGallery(){
     <figure class="gcard reveal swatch-${p.i % 6}" style="animation-delay:${(i % 4) * 50}ms">
       <span class="swatch-texture"></span>
       ${hasThumb(p.slug) ? `<img class="gcard-img" src="images/${encodeURIComponent(p.slug)}.jpg" alt="" loading="lazy" decoding="async" width="600" height="${p.size === "tall" ? 800 : p.size === "short" ? 450 : 600}">` : ""}
-      <button type="button" class="gcard-open" data-id="${p.i}" aria-label="${escapeHTML(p.style)}, ${escapeHTML(p.cat)}. Open prompt."></button>
+      <button type="button" class="gcard-open" data-id="${p.i}" data-slug="${escapeHTML(p.slug)}" aria-label="${escapeHTML(p.style)}, ${escapeHTML(p.cat)}. Open prompt."></button>
       <span class="gcard-scrim" aria-hidden="true"></span>
       <figcaption class="gcard-meta">
         <span class="gcard-text">
@@ -1914,14 +1757,34 @@ function onModalKeydown(e){
   }
 }
 
-function openModal(id){
-  const p = imagePrompts[id];
-  const modalSwatch = document.getElementById("modalSwatch");
-  modalSwatch.className = `modal-swatch swatch-${id % 6}`;
-  /* alt="" — the name is in the heading and in .modal-swatch-name already. */
+/* A stable colour per prompt, from the slug rather than from a list
+   position, so the same prompt gets the same swatch on every page. */
+function slugTint(slug){
+  let h = 0;
+  for(let i = 0; i < slug.length; i++) h = (h * 31 + slug.charCodeAt(i)) >>> 0;
+  return h % 6;
+}
+
+/* Does this prompt have a render on disk? images.html ships a manifest;
+   the generated home data carries a per-prompt flag. Seven of the 273
+   have no example image, and they must show a clean text-only dialog
+   rather than a broken frame. */
+function hasRender(p){
+  if(typeof p.thumb === "boolean") return p.thumb;
   const manifest = window.imageManifest;
-  const hasThumb = !Array.isArray(manifest) || manifest.includes(p.slug);
-  const thumb = hasThumb ? `<img class="real-photo" src="images/${encodeURIComponent(p.slug)}.jpg" alt="">` : "";
+  return !Array.isArray(manifest) || manifest.includes(p.slug);
+}
+
+function openModal(id){ openPromptModal(imagePrompts[id]); }
+
+function openPromptModal(p){
+  if(!p) return;
+  const modalSwatch = document.getElementById("modalSwatch");
+  if(!modalSwatch) return;
+  const withRender = hasRender(p);
+  modalSwatch.className = `modal-swatch swatch-${slugTint(p.slug)}${withRender ? "" : " is-textonly"}`;
+  /* alt="" — the name is in the heading and in .modal-swatch-name already. */
+  const thumb = withRender ? `<img class="real-photo" src="images/${encodeURIComponent(p.slug)}.jpg" alt="">` : "";
   modalSwatch.innerHTML = `<div class="swatch-texture"></div>${thumb}<span class="modal-swatch-name">${escapeHTML(p.style)}</span>`;
   document.getElementById("modalStyleName").textContent = p.style;
   document.getElementById("modalModel").textContent = p.cat;
@@ -1937,7 +1800,9 @@ function openModal(id){
     bindSaveButtons(sendRow);
   }
 
-  modalReturnFocus = document.querySelector(`.gcard-open[data-id="${id}"]`) || document.activeElement;
+  modalReturnFocus = document.querySelector(`[data-open-slug="${CSS.escape(p.slug)}"]`)
+    || document.querySelector(`.gcard-open[data-slug="${CSS.escape(p.slug)}"]`)
+    || document.activeElement;
 
   document.getElementById("modalBackdrop").classList.add("open");
   document.body.style.overflow = "hidden";
@@ -2130,12 +1995,15 @@ function initBuilder(){
 
   fields.forEach((field) => {
     const select = document.getElementById(`builder-${field}`);
+    if(!select) return;
     select.innerHTML = `<option value="">— none —</option>` +
       builderOptions[field].map((opt) => `<option value="${escapeHTML(opt)}">${escapeHTML(opt)}</option>`).join("");
   });
 
   const ratioSelect = document.getElementById("builder-ratio");
-  ratioSelect.innerHTML = builderRatios.map((r) => `<option value="${escapeHTML(r)}">${escapeHTML(r)}</option>`).join("");
+  if(ratioSelect){
+    ratioSelect.innerHTML = builderRatios.map((r) => `<option value="${escapeHTML(r)}">${escapeHTML(r)}</option>`).join("");
+  }
 
   /* The centre panel lists what is currently switched on, and clicking a
      chip switches that component back off. It reads the same selects the
@@ -2181,22 +2049,27 @@ function initBuilder(){
      to — swallow Enter rather than letting it reload the page. */
   form.addEventListener("submit", (e) => e.preventDefault());
 
-  document.getElementById("builderRandomBtn").addEventListener("click", () => {
+  const randomBtn = document.getElementById("builderRandomBtn");
+  if(randomBtn) randomBtn.addEventListener("click", () => {
     fields.forEach((field) => {
+      const select = document.getElementById(`builder-${field}`);
+      if(!select) return;
       const opts = builderOptions[field];
-      document.getElementById(`builder-${field}`).value = opts[Math.floor(Math.random() * opts.length)];
+      select.value = opts[Math.floor(Math.random() * opts.length)];
     });
     update();
   });
 
   /* Native reset() restores every control to its first/blank option, which for
      the six style selects is the "— none —" entry rendered above. */
-  document.getElementById("builderResetBtn").addEventListener("click", () => {
+  const resetBtn = document.getElementById("builderResetBtn");
+  if(resetBtn) resetBtn.addEventListener("click", () => {
     form.reset();
     update();
   });
 
   const copyBtn = document.getElementById("builderCopyBtn");
+  if(!copyBtn) return update();
   copyBtn.innerHTML = copyButtonHTML("Copy prompt");
   copyBtn.addEventListener("click", function(){
     const text = document.getElementById("builderOutput").dataset.raw || "";
@@ -2209,7 +2082,13 @@ function initBuilder(){
 /* Assembles the prompt from whatever is filled in. Empty fields are skipped,
    so a subject alone still produces something valid. */
 function buildPrompt(){
-  const val = (id) => (document.getElementById(id).value || "").trim();
+  /* Returns "" for a field this page does not have. The home page shows a
+     subset of the controls, and the assembled prompt simply omits what is
+     not on screen. */
+  const val = (id) => {
+    const el = document.getElementById(id);
+    return el ? (el.value || "").trim() : "";
+  };
 
   const subject = val("builder-subject");
   const model = val("builder-model");
@@ -2280,7 +2159,6 @@ boot("gallery", initGallery);
 boot("viewSwitch", initViewSwitch);
 boot("cmdk", initCmdk);
 boot("home", initHome);
-boot("countUp", initCountUp);
 boot("pane", initPane);
 boot("categoryPage", initCategoryPage);
 boot("builder", initBuilder);

@@ -189,6 +189,9 @@ document.documentElement.classList.add("js");
   <p class="footer-line footer-credit">Thumbnails via <a href="https://www.pexels.com" target="_blank" rel="noopener">Pexels</a>.</p>
 </footer>
 
+<!-- @partial modal -->
+<!-- The reveal dialog. Shared by index.html and images.html; filled by
+     openPromptModal() from whichever prompt object the page has. -->
 <div class="modal-backdrop" id="modalBackdrop">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalStyleName">
     <button class="modal-close" id="modalClose" aria-label="Close"></button>
@@ -211,6 +214,7 @@ document.documentElement.classList.add("js");
     </div>
   </div>
 </div>
+<!-- @end modal -->
 
 <script src="images/manifest.js"></script>
 <script src="prompts-image.js"></script>

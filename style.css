@@ -720,7 +720,6 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
   .nav-card:hover,
   .stat:hover,
   .saved-item:hover,
-  .fcard:hover .fcard-img,
   .gcard:hover .gcard-img{ transform:none; }
 }
 
@@ -743,559 +742,325 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
 /* ============================================
    HOMEPAGE  (index.html)
 
-   Immersive discovery, art-directed rather than arranged. The rules:
+   A scroll journey: a full-screen orbital hero, then three previews --
+   images, writing, builder -- each leading to its own page.
 
-   1. ASYMMETRY WITH ALIGNMENT. Every section sits on the same twelve-column
-      field and every tile edge lands on a column line. Sizes differ; nothing
-      is nudged by hand, nothing overlaps by accident.
-
-   2. ONE DOMINANT ELEMENT PER SECTION. The featured composition has a lead
-      tile at roughly twice the weight of its pair; trending has one lead
-      document; picks has one large card. The eye is told where to start.
-
-   3. SECTIONS SEPARATE BY TONE AND SPACE, not by a rule across the page.
-      Alternate sections carry .tone, which fades a slightly lifted ground
-      in and out so the seam is a gradient rather than a border.
-
-   4. ONE MOTION SYSTEM. Sections enter as a composition -- heading, then
-      note, then visuals -- via [data-reveal]. Hovers are 260ms on a single
-      shared curve. Nothing moves without being asked.
+   Two things carry it. One, every section sets --accent on itself, so
+   its chips, buttons and focus rings pick up that section's colour with
+   no per-section component rules. Two, the hero hands off by receding
+   rather than by ending, so arriving at the images section reads as
+   entering the product rather than as scrolling to a block.
    ============================================ */
 .shell{ max-width:var(--container); margin:0 auto; padding-inline:var(--gutter); }
 
-/* ---- section heads ---------------------------------------------------
-   Index number in the margin at label scale, statement at display scale.
-   Same shape on every section, so the page has a beat. */
-.sec-head{
-  display:grid; gap:var(--space-4) clamp(24px,4vw,64px);
-  grid-template-columns:minmax(0,1fr);
-  align-items:end; margin-bottom:clamp(28px,3.4vw,52px);
+/* ---- the scroll journey ----------------------------------------------
+   Proximity, never mandatory: the sections below the hero are taller
+   than the viewport, and mandatory snap on a tall section traps the
+   page. Proximity only settles a scroll that already came to rest near
+   a boundary, which is exactly the hero-to-images handoff. */
+html{
+  scroll-snap-type:y proximity;
+  scroll-padding-top:var(--nav-h);
 }
-@media (min-width:840px){
-  .sec-head{ grid-template-columns:auto minmax(0,1fr) auto; }
+.hero,
+.band{ scroll-snap-align:start; }
+@media (prefers-reduced-motion: reduce){
+  html{ scroll-snap-type:none; }
 }
-.sec-index{
-  font-variant-numeric:tabular-nums;
-  font-family:var(--font-display); font-size:var(--text-xs);
-  letter-spacing:var(--track-caps); color:var(--text-muted);
-  padding-bottom:.55em;
-}
-.sec-h{
-  font-size:clamp(30px,3.6vw,50px); font-weight:500;
-  line-height:1.04; letter-spacing:-0.028em;
-  color:var(--text-primary); text-wrap:balance;
-}
-.sec-note{
-  max-width:48ch; margin-top:var(--space-3);
-  color:var(--text-muted); font-size:var(--text-base); line-height:var(--leading-body);
-}
-.sec-link{
-  display:inline-flex; align-items:center; gap:var(--space-2);
-  font-size:var(--text-sm); color:var(--text-muted); text-decoration:none;
-  white-space:nowrap; padding-bottom:.5em;
-  transition:color var(--dur-micro) var(--ease-out), gap var(--dur-micro) var(--ease-out);
-}
-.sec-link:hover{ color:var(--text-primary); gap:var(--space-3); }
-.sec-link .icon{ width:15px; height:15px; }
-
-/* Section rhythm. Toned sections carry a little more air, so the change in
-   ground reads as a change in chapter. */
-.feature-sec,
-.index-sec,
-.trend-sec,
-.picks-sec,
-.uses-sec{ padding:clamp(56px,6.5vw,104px) 0; }
-.tone{ padding-block:clamp(72px,8vw,128px); }
-
 
 /* ============================================
    HERO
    ============================================ */
-.hero{ padding:clamp(32px,3.6vw,58px) 0 clamp(24px,2.6vw,40px); }
+.hero{
+  position:relative;
+  min-height:100svh;
+  background:var(--void);
+  overflow:hidden;
+}
+/* The canvas is prepended by mountOrbital(); this lifts the copy above it. */
+.orbital-content{ position:relative; z-index:1; }
+.hero-inner{
+  min-height:100svh;
+  display:flex; flex-direction:column; justify-content:center;
+  max-width:var(--container); margin:0 auto;
+  padding:calc(var(--nav-h) + var(--space-10)) var(--gutter) var(--space-16);
+}
+.hero-copy{ max-width:34rem; }
 .hero-h{
-  font-size:clamp(42px,5.6vw,84px); font-weight:500;
-  line-height:1.0; letter-spacing:-0.036em;
-  margin:var(--space-4) 0 var(--space-5);
-  max-width:14ch; text-wrap:balance;
-  color:var(--text-primary);
+  font-size:clamp(2.5rem,6.2vw,4.5rem); font-weight:300;
+  line-height:1.04; letter-spacing:-0.035em;
+  color:#fff; text-wrap:balance;
 }
 .hero-lede{
-  max-width:56ch; margin:0 0 var(--space-7);
-  color:var(--text-muted); font-size:var(--text-md); line-height:var(--leading-body);
+  margin-top:var(--space-6); max-width:34rem;
+  font-size:var(--text-md); line-height:var(--leading-body);
+  color:var(--text-muted);
 }
-.hero-jump{ display:flex; align-items:center; gap:var(--space-3); flex-wrap:wrap; margin-top:var(--space-5); }
-.hero-jump-label{
-  font-family:var(--font-label); text-transform:uppercase;
-  letter-spacing:var(--track-caps); font-size:var(--text-2xs); color:var(--text-muted);
-}
-.hero-jump-links{ display:flex; gap:var(--space-2); flex-wrap:wrap; }
-.hero-jump-links a{
-  font-size:var(--text-sm); color:var(--text-muted); text-decoration:none;
-  padding:7px 15px; border:1px solid var(--border-subtle); border-radius:var(--radius-pill);
-  transition:color var(--dur-micro) var(--ease-out), border-color var(--dur-micro) var(--ease-out), background var(--dur-micro) var(--ease-out);
-}
-.hero-jump-links a:hover{ color:var(--text-primary); border-color:var(--border-strong); background:var(--surface); }
+.hero-lede [data-count]{ color:#fff; font-variant-numeric:tabular-nums; }
+.hero-actions{ margin-top:var(--space-8); display:flex; flex-wrap:wrap; gap:var(--space-3); }
 
-/* Metadata rule: figures hung off a hairline, the way a masthead carries an
-   issue number. Not a row of boxes. */
-.meta-strip{
-  margin-top:clamp(26px,2.8vw,44px); padding-top:var(--space-5);
-  border-top:1px solid var(--border-subtle);
-  display:flex; flex-wrap:wrap; gap:clamp(20px,4vw,64px);
+/* Round, icon only, and pinned to the bottom of the hero. 44px so it is
+   a legal tap target on its own. */
+.scroll-cue{
+  position:absolute; left:50%; bottom:var(--space-8);
+  transform:translateX(-50%);
+  display:inline-flex; align-items:center; justify-content:center;
+  width:44px; height:44px; border-radius:var(--radius-pill);
+  color:#fff;
 }
-.meta-item{ display:flex; flex-direction:column-reverse; gap:6px; }
-.meta-value{
-  font-size:clamp(24px,2.2vw,34px); font-weight:500;
-  letter-spacing:-0.028em; line-height:1.05;
-  font-variant-numeric:tabular-nums; color:var(--text-primary);
-}
-.meta-label{
-  font-family:var(--font-label); text-transform:uppercase;
-  letter-spacing:var(--track-caps); font-size:var(--text-2xs); color:var(--text-muted);
-}
-
-
-/* ---- entering the product --------------------------------------------
-   The one large transformation on the site, and the only place scroll drives
-   anything: as you leave the hero it recedes -- back, dimmer, slightly out
-   of focus -- while the workspace bar takes its place under the nav. From
-   that point down, the page reads as an application rather than as a page
-   with sections.
-
-   Built on scroll-driven animations, so it runs on the compositor with no
-   scroll listener, no layout reads and no JavaScript at all. Browsers
-   without the feature simply never enter the @supports block: the hero
-   stays put and the bar is always visible, which is a perfectly good page.
-   Reduced motion is excluded for the same reason. */
-@supports (animation-timeline:scroll()){
-  @media (prefers-reduced-motion:no-preference){
-    .hero-stage{
-      animation:hero-recede linear both;
-      animation-timeline:scroll(root block);
-      animation-range:0 78vh;
-      transform-origin:50% 0;
-    }
-    @keyframes hero-recede{
-      /* Holds for the first third, so a small scroll does not dim the page
-         you just arrived on. */
-      0%,   30%{ opacity:1; transform:none; filter:blur(0); }
-      100%{ opacity:.14; transform:translate3d(0,-5vh,0) scale(.97); filter:blur(3px); }
-    }
-
-    .workbar{
-      animation:workbar-in linear both;
-      animation-timeline:scroll(root block);
-      animation-range:38vh 76vh;
-    }
-    @keyframes workbar-in{
-      from{ opacity:0; transform:translate3d(0,-10px,0); }
-      to{ opacity:1; transform:none; }
-    }
+.scroll-cue:active{ transform:translateX(-50%) scale(.96); }
+@media (prefers-reduced-motion: no-preference){
+  .scroll-cue .icon{ animation:cue-drift 2.4s var(--ease-out) infinite; }
+  @keyframes cue-drift{
+    0%,70%,100%{ transform:translateY(0); opacity:.85; }
+    35%{ transform:translateY(3px); opacity:1; }
   }
 }
 
-.workbar{
-  position:sticky; top:var(--nav-h); z-index:40;
-  padding:var(--space-3) 0;
-  background:var(--nav-bg);
-  backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
-  border-block:1px solid var(--border-subtle);
-}
-.workbar-inner{ display:flex; align-items:center; gap:var(--space-4); }
-.workbar-search{
-  display:inline-flex; align-items:center; gap:var(--space-3);
-  flex:0 0 auto; min-width:min(280px,42vw);
-  padding:9px 10px 9px 14px; border-radius:var(--radius-pill);
-  background:var(--surface); border:1px solid var(--border-subtle);
-  font:inherit; font-size:var(--text-sm); color:var(--text-muted);
-  text-align:left; cursor:pointer;
-  transition:border-color var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out);
-}
-.workbar-search:hover{ border-color:var(--border-strong); color:var(--text-primary); }
-.workbar-search:focus-visible{ outline:2px solid var(--focus-ring); outline-offset:2px; }
-.workbar-search span{ flex:1; }
-.workbar-search .icon{ width:15px; height:15px; }
-.workbar-kbd{
-  font-family:var(--font-display); font-size:var(--text-2xs); line-height:1;
-  padding:4px 7px; border-radius:var(--radius-sm);
-  border:1px solid var(--border-subtle); background:var(--surface-2); color:var(--text-muted);
-}
-/* Scrolls sideways rather than wrapping: the bar must stay one line tall or
-   it stops being chrome and starts being a section. */
-.workbar-links{
-  display:flex; gap:var(--space-2); min-width:0;
-  overflow-x:auto; scrollbar-width:none;
-  -webkit-mask-image:linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 24px), transparent 100%);
-  mask-image:linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 24px), transparent 100%);
-}
-.workbar-links::-webkit-scrollbar{ display:none; }
-.workbar-links a{
-  flex:0 0 auto;
-  font-size:var(--text-sm); color:var(--text-muted); text-decoration:none;
-  padding:7px 13px; border-radius:var(--radius-pill);
-  border:1px solid transparent; white-space:nowrap;
-  transition:color var(--dur-micro) var(--ease-out), border-color var(--dur-micro) var(--ease-out), background var(--dur-micro) var(--ease-out);
-}
-.workbar-links a:hover{ color:var(--text-primary); border-color:var(--border-subtle); background:var(--surface); }
-@media (max-width:640px){
-  .workbar-search span{ display:none; }
-  .workbar-search{ min-width:0; padding:9px 12px; }
-  .workbar-kbd{ display:none; }
+/* Melts the canvas into the page. Without this the scene ends on a hard
+   horizontal line wherever the hero stops. */
+.hero-fade{
+  position:absolute; left:0; right:0; bottom:0; height:22svh; z-index:1;
+  pointer-events:none;
+  background:linear-gradient(to bottom, transparent, var(--void) 92%);
 }
 
-.hero-actions{ display:flex; gap:var(--space-3); flex-wrap:wrap; margin-top:var(--space-6); }
+/* ---- the handoff ------------------------------------------------------
+   As the hero leaves, the copy drifts up and fades and the scene dims.
+   Scroll-driven where the browser has it, which keeps it on the
+   compositor with no scroll listener at all; script.js drives the same
+   custom property from rAF only when it does not. */
+.hero-copy,
+.scroll-cue{ --hero-out:0; }
+.hero-copy{
+  opacity:calc(1 - var(--hero-out) * 0.9);
+  transform:translate3d(0, calc(var(--hero-out) * -4vh), 0);
+}
+.scroll-cue{ opacity:calc(1 - var(--hero-out) * 1.6); }
 
+@supports (animation-timeline: scroll()){
+  @media (prefers-reduced-motion: no-preference){
+    .hero-copy,
+    .scroll-cue{
+      animation:hero-out linear both;
+      animation-timeline:scroll(root block);
+      animation-range:0 80svh;
+    }
+    @keyframes hero-out{ to{ --hero-out:1; } }
+  }
+}
+/* --hero-out has to be registered or it cannot be animated: an unregistered
+   custom property has no type, so the browser can only flip it at 50%. */
+@property --hero-out{ syntax:"<number>"; inherits:true; initial-value:0; }
+
+@media (prefers-reduced-motion: reduce){
+  .hero-copy{ opacity:1; transform:none; }
+  .scroll-cue{ opacity:1; }
+}
 
 /* ============================================
-   FEATURED COMPOSITION
-
-   Twelve columns, three rows, five tiles. The lead spans seven columns and
-   both of the first two rows; the secondary pair fills the remaining five,
-   one per row; the supporting pair sits on row three. Every boundary is a
-   column line, which is the whole difference between art direction and a
-   masonry collage.
+   SECTION BANDS
    ============================================ */
-.feature-grid{
-  display:grid; gap:clamp(14px,1.4vw,22px);
-  grid-template-columns:repeat(12,minmax(0,1fr));
+.band{
+  position:relative;
+  padding:clamp(72px,9vw,140px) 0;
+  background:var(--void);
 }
-.fcard{ position:relative; display:block; grid-column:span 12; }
+/* Glass needs something behind it or it reads as flat grey. One large,
+   soft, static glow per section, tinted with that section's accent, at
+   an opacity you would not notice if you looked for it. */
+.band-glow{
+  position:absolute; inset:0; z-index:0; pointer-events:none; overflow:hidden;
+}
+.band-glow::before{
+  content:""; position:absolute;
+  top:-30%; left:50%; width:min(1100px,120%); aspect-ratio:2/1;
+  transform:translateX(-50%);
+  background:radial-gradient(closest-side, var(--accent), transparent 70%);
+  opacity:.07;
+  filter:blur(40px);
+}
+.band > .shell{ position:relative; z-index:1; }
 
-@media (min-width:900px){
-  .fcard--lead{ grid-column:1 / 8;  grid-row:1 / 3; }
-  .fcard--sec:nth-of-type(2){ grid-column:8 / 13; grid-row:1; }
-  .fcard--sec:nth-of-type(3){ grid-column:8 / 13; grid-row:2; }
-  .fcard--sup:nth-of-type(4){ grid-column:1 / 5;  grid-row:3; }
-  .fcard--sup:nth-of-type(5){ grid-column:5 / 8;  grid-row:3; }
-
-  /* The lead is sized by its grid area rather than by an aspect ratio, so
-     its height is exactly the two rows beside it and the right-hand edge of
-     the composition is flush. */
-  .fcard--lead .fcard-frame{ position:absolute; inset:0; }
-  .fcard--lead{ min-height:clamp(420px,42vw,600px); }
-  .fcard--sec .fcard-frame{ aspect-ratio:16/10; }
-  .fcard--sup .fcard-frame{ aspect-ratio:4/3; }
+.band-h{
+  font-size:clamp(1.9rem,3.6vw,3rem); font-weight:300;
+  line-height:1.08; letter-spacing:-0.03em; color:#fff;
+  max-width:20ch; text-wrap:balance;
 }
-@media (min-width:560px) and (max-width:899px){
-  .fcard--lead{ grid-column:span 12; }
-  .fcard--sec{ grid-column:span 6; }
-  .fcard--sup{ grid-column:span 6; }
-  .fcard--lead .fcard-frame{ aspect-ratio:16/9; }
-  .fcard--sec .fcard-frame,
-  .fcard--sup .fcard-frame{ aspect-ratio:4/3; }
+.band-lede{
+  margin-top:var(--space-4); max-width:56ch;
+  font-size:var(--text-base); line-height:var(--leading-body);
+  color:var(--text-muted);
 }
-@media (max-width:559px){
-  .fcard-frame{ aspect-ratio:4/3; }
-  .fcard--lead .fcard-frame{ aspect-ratio:5/4; }
+.band-cta{ margin-top:var(--space-10); }
+.band-empty{
+  margin-top:var(--space-8); color:var(--text-muted); font-size:var(--text-base);
+}
+.linklike{
+  background:none; border:0; padding:0; cursor:pointer;
+  font:inherit; color:var(--accent-ink); text-decoration:underline;
+  text-underline-offset:3px;
 }
 
-.fcard-frame{
-  display:block; position:relative; overflow:hidden;
-  width:100%; height:100%;
+/* ============================================
+   IMAGE EXAMPLES
+   ============================================ */
+.chip-row{ margin-top:var(--space-8); display:flex; gap:var(--space-2); flex-wrap:wrap; }
+.example-grid{
+  margin-top:var(--space-6);
+  display:grid; gap:clamp(12px,1.4vw,18px);
+  grid-template-columns:repeat(auto-fill,minmax(min(230px,100%),1fr));
+}
+.example{
+  position:relative;
   border-radius:var(--radius-lg);
-  background:var(--surface);
-  box-shadow:var(--shadow-card);
+  overflow:hidden;
 }
-.fcard-img{
+.example-frame{
+  display:block; position:relative;
+  aspect-ratio:1/1; overflow:hidden;
+  border-radius:var(--radius-lg) var(--radius-lg) 0 0;
+}
+.example-img{
   width:100%; height:100%; object-fit:cover; object-position:center;
   transition:transform var(--dur-reveal) var(--ease-out);
 }
-.fcard:hover .fcard-img{ transform:scale(1.03); }
-
-/* Metadata sits ON the image over a gradient, so the tile stays one object
-   instead of an image with a card bolted underneath. */
-.fcard-scrim{
-  position:absolute; inset:0; pointer-events:none;
-  background:linear-gradient(180deg, transparent 42%, rgba(6,6,7,.34) 66%, rgba(6,6,7,.86) 100%);
+.example:hover .example-img,
+.example:focus-within .example-img{ transform:scale(1.04); }
+.example-veil{
+  position:absolute; inset:0;
+  background:linear-gradient(to top, rgba(0,0,0,.72), transparent 55%);
+  opacity:0;
+  transition:opacity var(--dur-hover) var(--ease-out);
 }
-.fcard-meta{
-  position:absolute; left:0; right:0; bottom:0;
-  padding:clamp(16px,1.5vw,24px);
-  display:flex; align-items:flex-end; justify-content:space-between; gap:var(--space-4);
-}
-.fcard-cat{
-  display:block;
-  font-family:var(--font-label); text-transform:uppercase;
-  letter-spacing:var(--track-caps); font-size:var(--text-2xs);
-  color:rgba(255,255,255,.76); margin-bottom:6px;
-}
-.fcard-name{
-  font-size:var(--text-md); font-weight:500;
-  letter-spacing:var(--track-heading); line-height:1.25; color:#fff;
-}
-.fcard--lead .fcard-name{ font-size:clamp(22px,2vw,30px); letter-spacing:-0.022em; }
-.fcard-name a{ text-decoration:none; color:inherit; }
-.fcard-name a::after{ content:""; position:absolute; inset:0; }
-.fcard-name a:focus-visible{ outline:none; }
-.fcard-frame:has(a:focus-visible){ outline:2px solid var(--focus-ring); outline-offset:3px; }
-
-/* Controls fade up out of the scrim. They are already reachable by keyboard
-   at all times; the fade is only about keeping the image clean at rest. */
-.fcard-act{
-  display:flex; gap:var(--space-2); flex-shrink:0;
-  opacity:0; transform:translate3d(0,6px,0);
+.example:hover .example-veil,
+.example:focus-within .example-veil{ opacity:1; }
+/* The affordance. It says what clicking does, rather than relying on the
+   cursor to imply it. */
+.example-cue{
+  position:absolute; left:50%; top:50%;
+  transform:translate(-50%,-50%) scale(.96);
+  padding:9px 16px; border-radius:var(--radius-pill);
+  font-size:var(--text-sm); color:#fff; white-space:nowrap;
+  opacity:0;
   transition:opacity var(--dur-hover) var(--ease-out), transform var(--dur-hover) var(--ease-out);
 }
-.fcard:hover .fcard-act,
-.fcard:focus-within .fcard-act{ opacity:1; transform:none; }
-@media (hover:none){ .fcard-act{ opacity:1; transform:none; } }
-
-.icon-btn{
-  position:relative; z-index:1;
-  display:inline-flex; align-items:center; justify-content:center;
-  width:38px; height:38px; padding:0; flex-shrink:0;
-  border-radius:var(--radius-pill);
-  background:rgba(0,0,0,.55); color:#fff;
-  border:1px solid rgba(255,255,255,.22);
-  /* No backdrop-filter: there are two of these on every one of 273
-     gallery cards, and each live blur is a separate compositing pass. */
-  cursor:pointer;
-  transition:background var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out), border-color var(--dur-micro) var(--ease-out);
+.example:hover .example-cue,
+.example:focus-within .example-cue{ opacity:1; transform:translate(-50%,-50%) scale(1); }
+.example-meta{ padding:var(--space-4); }
+.example-name{
+  display:block; font-size:var(--text-base); font-weight:500;
+  color:#fff; line-height:1.3;
 }
-.icon-btn:hover{ background:var(--accent); color:var(--on-accent); border-color:transparent; }
-.icon-btn .icon{ width:16px; height:16px; }
-.icon-btn[aria-pressed="true"]{ background:var(--accent); color:var(--on-accent); border-color:transparent; }
-.icon-btn[aria-pressed="true"] .icon{ fill:currentColor; }
+.example-cat{
+  display:block; margin-top:4px;
+  font-size:var(--text-xs); color:var(--text-muted);
+}
+/* Stretched over the whole card so the hit area is the card, while the
+   button itself stays a real, focusable control. */
+.example-open{
+  position:absolute; inset:0; z-index:2;
+  width:100%; height:100%; padding:0;
+  background:none; border:0; cursor:pointer;
+}
+.example-open:focus-visible{ outline:2px solid #fff; outline-offset:-3px; border-radius:var(--radius-lg); }
 
+@media (prefers-reduced-motion: reduce){
+  .example:hover .example-img,
+  .example:focus-within .example-img{ transform:none; }
+  .example-cue{ transition:opacity var(--dur-micro) linear; }
+}
 
 /* ============================================
-   CATEGORY INDEX
-   ============================================ */
-.index-wrap{ position:relative; }
-.index-canvas{
-  position:absolute; inset:-2% -1%;
-  z-index:0; overflow:hidden; pointer-events:none;
+   WRITING TILES
+
+   Not four clones. The two largest categories take a wider cell and
+   carry a sample line; the other two are compact. */
+.tile-grid{
+  margin-top:var(--space-8);
+  display:grid; gap:clamp(12px,1.4vw,18px);
+  grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr));
+}
+@media (min-width:820px){
+  .tile-grid{ grid-template-columns:repeat(4,minmax(0,1fr)); }
+  .tile-lead{ grid-column:span 2; }
+}
+.tile{
+  display:flex; flex-direction:column; align-items:flex-start;
+  padding:clamp(20px,2vw,28px);
   border-radius:var(--radius-lg);
-}
-.index-shot{
-  position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
-  opacity:0; transform:scale(1.06);
-  transition:opacity var(--dur-reveal) var(--ease-out), transform 900ms var(--ease-out);
-}
-.index-shot.is-live{ opacity:.3; transform:scale(1); }
-.index-canvas::after{
-  content:""; position:absolute; inset:0;
-  background:linear-gradient(90deg, var(--bg-void) 0%, var(--ground-fade) 48%, transparent 100%);
-}
-.index-list{ position:relative; z-index:1; list-style:none; }
-.index-row + .index-row{ border-top:1px solid var(--border-subtle); }
-.index-link{
-  display:grid; grid-template-columns:auto minmax(0,1fr) auto auto;
-  align-items:baseline; gap:clamp(12px,2vw,32px);
-  padding:clamp(16px,1.7vw,26px) clamp(10px,1vw,18px);
-  margin-inline:clamp(-10px,-1vw,-18px);
-  border-radius:var(--radius);
   text-decoration:none; color:inherit;
-  transition:background var(--dur-hover) var(--ease-out);
+  min-height:172px;
+  transition:transform var(--dur-hover) var(--ease-out), border-color var(--dur-hover) var(--ease-out);
 }
-.index-link:hover,
-.index-link:focus-visible{ background:var(--surface); }
-.index-num{
+.tile:hover{ transform:translateY(-3px); }
+.tile-icon{ color:var(--accent-ink); margin-bottom:auto; }
+.tile-icon .icon-lg{ width:26px; height:26px; }
+.tile-name{
+  margin-top:var(--space-6);
+  font-size:var(--text-lg); font-weight:500; color:#fff;
+  letter-spacing:-0.015em;
+}
+.tile-count{
+  margin-top:4px; font-size:var(--text-xs); color:var(--text-muted);
   font-variant-numeric:tabular-nums;
-  font-family:var(--font-display); font-size:var(--text-xs);
-  letter-spacing:var(--track-caps); color:var(--text-muted);
-  transition:color var(--dur-micro) var(--ease-out);
 }
-.index-name{
-  font-size:clamp(24px,3vw,44px); font-weight:500;
-  letter-spacing:-0.028em; line-height:1.06;
-  color:var(--text-muted);
-  transition:color var(--dur-hover) var(--ease-out), transform var(--dur-hover) var(--ease-out);
+.tile-sample{
+  margin-top:var(--space-4);
+  font-family:var(--font-mono); font-size:var(--text-xs);
+  line-height:1.7; color:var(--text-muted);
+  display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;
 }
-.index-count{
-  font-variant-numeric:tabular-nums;
-  font-family:var(--font-display); font-size:var(--text-xs);
-  color:var(--text-muted); white-space:nowrap;
-  transition:color var(--dur-micro) var(--ease-out);
-}
-.index-arrow{
-  width:20px; height:20px; color:var(--accent-ink);
-  opacity:0; transform:translate3d(-8px,0,0);
-  transition:opacity var(--dur-micro) var(--ease-out), transform var(--dur-hover) var(--ease-out);
-}
-.index-link:hover .index-name,
-.index-link:focus-visible .index-name{ color:var(--text-primary); transform:translate3d(clamp(4px,.6vw,12px),0,0); }
-.index-link:hover .index-num,
-.index-link:focus-visible .index-num{ color:var(--accent-ink); }
-.index-link:hover .index-count,
-.index-link:focus-visible .index-count{ color:var(--text-primary); }
-.index-link:hover .index-arrow,
-.index-link:focus-visible .index-arrow{ opacity:1; transform:none; }
-.index-link:focus-visible{ outline:2px solid var(--focus-ring); outline-offset:2px; }
-
+@media (prefers-reduced-motion: reduce){ .tile:hover{ transform:none; } }
 
 /* ============================================
-   TRENDING  --  one lead document, three supporting
-   ============================================ */
-.trend{
-  display:grid; gap:clamp(14px,1.4vw,22px);
-  grid-template-columns:minmax(0,1fr);
-}
-@media (min-width:900px){
-  .trend{ grid-template-columns:repeat(12,minmax(0,1fr)); }
-  .trend > .doc:first-child{ grid-column:1 / 7; grid-row:1 / 4; }
-  .trend > .doc:nth-child(2){ grid-column:7 / 13; }
-  .trend > .doc:nth-child(3){ grid-column:7 / 13; }
-  .trend > .doc:nth-child(4){ grid-column:7 / 13; }
-}
+   BUILDER PANEL
 
-/* ---- the document ----------------------------------------------------
-   A prompt is a document, so it is set like one. The large ghosted numeral
-   behind the text is the only decoration, and it earns its place by giving
-   the panel a background plane. */
-.doc{
-  position:relative; overflow:hidden;
+   One glass panel, controls beside a live preview. The same
+   buildPrompt() drives builder.html; the fields here are a subset and
+   the builder reads whichever exist.
+   ============================================ */
+.builder-mini{
+  margin-top:var(--space-8);
+  display:grid; gap:0;
+  grid-template-columns:minmax(0,1fr);
+  border-radius:var(--radius-lg);
+  overflow:hidden;
+}
+@media (min-width:860px){
+  .builder-mini{ grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
+}
+.builder-mini-controls{
+  padding:clamp(20px,2.2vw,30px);
   display:flex; flex-direction:column; gap:var(--space-4);
-  padding:clamp(20px,2.2vw,34px);
-  background:var(--surface); border:1px solid var(--border-subtle);
-  border-radius:var(--radius-lg);
-  transition:border-color var(--dur-hover) var(--ease-out), background var(--dur-hover) var(--ease-out);
 }
-.doc:hover{ border-color:var(--border-strong); background:var(--surface-2); }
-.doc-ghost{
-  position:absolute; right:-.05em; top:-.28em; z-index:0;
-  font-size:clamp(120px,14vw,220px); font-weight:500; line-height:1;
-  letter-spacing:-0.06em; color:var(--text-primary); opacity:.04;
-  pointer-events:none; user-select:none;
+.builder-mini-preview{
+  display:flex; flex-direction:column;
+  padding:clamp(20px,2.2vw,30px);
+  background:rgba(0,0,0,.35);
+  border-left:1px solid var(--border-subtle);
 }
-.doc > *{ position:relative; z-index:1; }
-.doc-head{ display:flex; align-items:center; justify-content:space-between; gap:var(--space-3); }
-.doc-cat{
-  font-family:var(--font-label); text-transform:uppercase;
-  letter-spacing:var(--track-caps); font-size:var(--text-2xs); color:var(--accent-ink);
+@media (max-width:859px){
+  .builder-mini-preview{ border-left:0; border-top:1px solid var(--border-subtle); }
 }
-.doc-badge{
-  font-family:var(--font-label); text-transform:uppercase;
-  letter-spacing:var(--track-caps); font-size:var(--text-2xs); color:var(--text-muted);
-  border:1px solid var(--border-subtle); border-radius:var(--radius-pill); padding:3px 10px;
-  white-space:nowrap;
+.builder-mini-bar{
+  display:flex; align-items:baseline; justify-content:space-between;
+  gap:var(--space-3); margin-bottom:var(--space-4);
 }
-.doc-title{
-  font-size:clamp(22px,2.4vw,36px); font-weight:500;
-  letter-spacing:-0.026em; line-height:1.08; color:var(--text-primary);
+.builder-mini-title{
+  font-size:var(--text-2xs); text-transform:uppercase;
+  letter-spacing:var(--track-caps); color:var(--text-muted);
 }
-.doc-rule{ height:1px; background:var(--border-subtle); }
-.doc-body{
-  font-family:var(--font-mono); font-size:var(--text-sm); line-height:1.8;
-  color:var(--text-muted);
-  display:-webkit-box; -webkit-line-clamp:6; -webkit-box-orient:vertical; overflow:hidden;
-}
-.doc-foot{ margin-top:auto; padding-top:var(--space-2); display:flex; align-items:center; gap:var(--space-2); flex-wrap:wrap; }
-
-.doc--sm{ padding:clamp(16px,1.6vw,24px); gap:var(--space-3); }
-.doc--sm .doc-ghost{ display:none; }
-.doc--sm .doc-title{ font-size:var(--text-md); }
-.doc--sm .doc-body{ -webkit-line-clamp:2; font-size:var(--text-xs); line-height:1.7; }
-
-
-/* ============================================
-   EDITOR'S PICKS  --  large left, stacked right
-   ============================================ */
-.picks{
-  display:grid; gap:clamp(16px,1.8vw,28px);
-  grid-template-columns:minmax(0,1fr);
-  align-items:start;
-}
-@media (min-width:900px){
-  .picks{ grid-template-columns:minmax(0,1.25fr) minmax(0,.75fr); }
-  /* The first cell is the large one; everything after it stacks in the
-     second column. */
-  .picks > :first-child{ grid-row:1 / span 3; }
+.builder-mini-actions{
+  margin-top:var(--space-6); display:flex; gap:var(--space-2); flex-wrap:wrap;
 }
 
-.pick{ position:relative; }
-.pick-frame{
-  display:block; position:relative; overflow:hidden;
-  aspect-ratio:4/3; border-radius:var(--radius-lg);
-  background:var(--surface); box-shadow:var(--shadow-card);
+/* ---- home responsive --------------------------------------------------- */
+@media (max-width:640px){
+  .hero-inner{ justify-content:flex-start; padding-top:calc(var(--nav-h) + var(--space-8)); }
+  .hero-actions .btn{ width:100%; justify-content:center; }
+  .band{ padding:clamp(56px,12vw,80px) 0; }
 }
-.pick-img{
-  width:100%; height:100%; object-fit:cover; object-position:center;
-  transition:transform var(--dur-reveal) var(--ease-out);
-}
-.pick:hover .pick-img{ transform:scale(1.03); }
-.pick-body{ padding:var(--space-5) 0 0; display:flex; align-items:flex-end; justify-content:space-between; gap:var(--space-4); }
-.pick-cat{
-  display:block;
-  font-family:var(--font-label); text-transform:uppercase;
-  letter-spacing:var(--track-caps); font-size:var(--text-2xs); color:var(--text-muted);
-  margin-bottom:var(--space-2);
-}
-.pick-name{ font-size:var(--text-lg); font-weight:500; letter-spacing:var(--track-heading); line-height:1.2; }
-.pick-name a{ text-decoration:none; color:var(--text-primary); }
-.pick-name a::after{ content:""; position:absolute; inset:0; }
-.pick-meta{ margin-top:var(--space-2); font-family:var(--font-display); font-size:var(--text-xs); color:var(--text-muted); }
-.pick-act{ display:flex; gap:var(--space-2); flex-shrink:0; }
-.pick-act .icon-btn{ background:var(--surface); color:var(--text-muted); border-color:var(--border-subtle); backdrop-filter:none; -webkit-backdrop-filter:none; }
-.pick-act .icon-btn:hover{ background:var(--accent); color:var(--on-accent); border-color:transparent; }
-
-
-/* ============================================
-   USE CASES
-   ============================================ */
-.use-list{ list-style:none; }
-.use + .use{ border-top:1px solid var(--border-subtle); }
-.use a{
-  display:grid; grid-template-columns:minmax(0,1fr) auto;
-  align-items:baseline; gap:var(--space-3) var(--space-6);
-  padding:clamp(18px,1.8vw,26px) clamp(10px,1vw,18px);
-  margin-inline:clamp(-10px,-1vw,-18px);
-  border-radius:var(--radius);
-  text-decoration:none; color:inherit;
-  transition:background var(--dur-hover) var(--ease-out);
-}
-@media (min-width:840px){
-  .use a{ grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr) auto; }
-}
-.use a:hover,
-.use a:focus-visible{ background:var(--surface); }
-.use-verb{
-  font-size:clamp(20px,1.8vw,27px); font-weight:500;
-  letter-spacing:-0.018em; color:var(--text-primary);
-}
-.use-detail{ color:var(--text-muted); font-size:var(--text-base); line-height:var(--leading-body); max-width:52ch; }
-.use a .icon{
-  width:19px; height:19px; color:var(--text-muted);
-  opacity:0; transform:translate3d(-8px,0,0);
-  transition:opacity var(--dur-micro) var(--ease-out), transform var(--dur-hover) var(--ease-out), color var(--dur-micro) var(--ease-out);
-}
-.use a:hover .icon,
-.use a:focus-visible .icon{ opacity:1; transform:none; color:var(--accent-ink); }
-
-
-/* ============================================
-   CLOSE
-   ============================================ */
-.close-sec{ padding:clamp(72px,9vw,140px) 0 clamp(56px,7vw,104px); }
-.close-inner{ display:flex; flex-direction:column; align-items:flex-start; gap:var(--space-8); }
-.close-h{
-  font-size:clamp(32px,4.4vw,62px); font-weight:500;
-  line-height:1.03; letter-spacing:-0.032em; max-width:16ch;
-  color:var(--text-primary); text-wrap:balance;
-}
-.close-actions{ display:flex; gap:var(--space-3); flex-wrap:wrap; }
-
-
-/* ---- homepage responsive ---------------------------------------------- */
-@media (max-width:620px){
-  .hero{ padding:var(--space-8) 0 var(--space-6); }
-  .meta-strip{ gap:var(--space-6); }
-  .index-link{ grid-template-columns:auto minmax(0,1fr) auto; }
-  .index-arrow{ display:none; }
-  .picks > :first-child{ grid-row:auto; }
-}
-
-@media (prefers-reduced-motion:reduce){
-  .fcard:hover .fcard-img,
-  .pick:hover .pick-img,
-  .index-link:hover .index-name,
-  .index-link:focus-visible .index-name{ transform:none; }
-  [data-reveal].in-view > *,
-  [data-reveal-items].in-view > *{ animation:none; opacity:1; }
-  .js [data-reveal] > *,
-  .js [data-reveal-items] > *{ opacity:1; }
-}
-
 
 /* ============================================
    SEARCH — triggers and command palette
@@ -1636,6 +1401,27 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
   pointer-events:none;
 }
 .nav-indicator.is-ready{ opacity:1; }
+
+.nav-link{
+  position:relative; z-index:1;
+  font-family:var(--font-display); font-size:var(--text-sm); font-weight:500;
+  letter-spacing:var(--track-body);
+  text-decoration:none; color:var(--text-muted);
+  padding:var(--space-2) var(--space-4); border-radius:var(--radius-pill);
+  transition:color var(--dur-micro) var(--ease-out);
+  white-space:nowrap;
+}
+.nav-link:hover{ color:var(--text-primary); }
+/* No background here — the indicator supplies it. Weight and colour carry
+   the active state so it still reads when the indicator has not positioned
+   yet, or when JS is off entirely. */
+.nav-link.active{ color:var(--text-primary); font-weight:600; }
+
+.nav-toggle{ display:none; flex-direction:column; justify-content:center; gap:5px; width:34px; height:34px; background:none; border:none; cursor:pointer; }
+.nav-toggle span{ display:block; width:100%; height:2px; background:var(--text-primary); transition:transform var(--transition-fast), opacity var(--transition-fast); }
+.nav-toggle.open span:nth-child(1){ transform:translateY(7px) rotate(45deg); }
+.nav-toggle.open span:nth-child(2){ opacity:0; }
+.nav-toggle.open span:nth-child(3){ transform:translateY(-7px) rotate(-45deg); }
 
 
 /* ============================================

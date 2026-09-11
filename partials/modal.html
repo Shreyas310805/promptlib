@@ -1,0 +1,24 @@
+<!-- The reveal dialog. Shared by index.html and images.html; filled by
+     openPromptModal() from whichever prompt object the page has. -->
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalStyleName">
+    <button class="modal-close" id="modalClose" aria-label="Close"></button>
+    <div class="modal-image-wrap"><div class="modal-swatch" id="modalSwatch"></div></div>
+    <div class="modal-body">
+      <div class="modal-meta">
+        <span class="badge badge-model" id="modalModel"></span>
+        <span class="badge badge-input" id="modalInput"></span>
+      </div>
+      <h3 class="modal-style-name" id="modalStyleName"></h3>
+      <div class="prompt-block">
+        <div class="prompt-block-bar"><span class="demo-dot"></span><span>prompt.txt</span></div>
+        <p class="prompt-text" id="modalPromptText"></p>
+      </div>
+      <div class="prompt-actions">
+        <button class="btn btn-primary btn-copy" id="modalCopyBtn"></button>
+        <div class="send-row" id="modalSendRow"></div>
+      </div>
+      <p class="modal-howto">Attach your own photo in ChatGPT, Gemini, or any image editor that accepts a reference image, then paste this prompt alongside it. Both buttons copy the prompt first, so you can paste it either way.</p>
+    </div>
+  </div>
+</div>

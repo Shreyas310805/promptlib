@@ -31,14 +31,19 @@ window.libraryCategories = [
   {"name": "Emails", "count": 114, "kind": "text", "href": "email.html", "cover": null, "sample": "Outreach · Workplace · Difficult"},
 ];
 
-/* The featured composition: [0] is the dominant tile, [1] and [2]
-   the secondary pair, [3] and [4] the supporting row. */
-window.featurePrompts = [
+/* The home page's image preview. Ten renders, one per category
+   in rotation. */
+window.homeExamples = [
   {"style": "Watercolor Painting", "cat": "Traditional Media", "slug": "watercolor-painting", "input": "1 photo", "size": "tall", "prompt": "Transform the uploaded photo into a soft watercolor painting with bleeding edges, visible paper texture and translucent washes. Keep the subject's pose, proportions and facial features clearly recognisable, and preserve the original composition.", "thumb": true},
   {"style": "Hand-Painted Anime Film", "cat": "Illustration & Animation", "slug": "hand-painted-anime-film", "input": "1 photo", "size": "", "prompt": "Convert the attached photo into a hand-painted anime film frame with soft cel shading, detailed painted backgrounds and warm natural light. Keep the subject's identity, pose and clothing recognisable while simplifying detail to suit the style.", "thumb": true},
   {"style": "4K Ultra Sharp", "cat": "Photography & Camera", "slug": "4k-ultra-sharp", "input": "1 photo", "size": "", "prompt": "Redraw this photo as an ultra-sharp 4K photograph with crisp micro-detail and clean natural colour. Keep the subject and composition exactly as they are — change only the photographic treatment.", "thumb": true},
   {"style": "Glitch Art", "cat": "Digital & Glitch", "slug": "glitch-art", "input": "1 photo", "size": "short", "prompt": "Redraw this photo as glitch art with corrupted digital artifacts, displaced scanlines and colour channel bleed. Keep the underlying subject readable beneath the effect so it stays identifiable.", "thumb": true},
   {"style": "Renaissance Oil", "cat": "Art Movements", "slug": "renaissance-oil", "input": "1 photo", "size": "", "prompt": "Convert the attached photo into a Renaissance oil painting with balanced composition, soft modelling and warm varnished tone. Keep the subject's pose and the overall composition intact while adopting the movement's visual language.", "thumb": true},
+  {"style": "Outer Space", "cat": "Scene & Setting", "slug": "outer-space", "input": "1 photo", "size": "", "prompt": "Take the subject from the uploaded photo and present it floating in outer space with stars, nebula colour and rim lighting from a distant sun. Keep the subject unchanged and replace only the surroundings. Match the lighting on the subject to the new environment.", "thumb": true},
+  {"style": "Professional Headshot", "cat": "Portrait Makeover", "slug": "professional-headshot", "input": "1 photo", "size": "short", "prompt": "Convert the attached photo into a clean professional headshot with soft studio lighting and a neutral background. Keep the person's facial features, skin tone and expression clearly recognisable.", "thumb": true},
+  {"style": "Made of Glass", "cat": "Material & Sculpture", "slug": "made-of-glass", "input": "1 photo", "size": "", "prompt": "Recreate the subject from the uploaded photo as if it were sculpted from clear glass with refractive highlights and internal reflections. Keep the silhouette, pose and proportions intact so the subject stays recognisable.", "thumb": true},
+  {"style": "White Background Product", "cat": "Practical Edits", "slug": "white-background-product", "input": "1 photo", "size": "tall", "prompt": "Process the uploaded image into a clean e-commerce product photo on a pure white background with soft even lighting. Keep the subject accurate and unaltered — this is a correction, not a reinterpretation.", "thumb": true},
+  {"style": "Oil Painting", "cat": "Traditional Media", "slug": "oil-painting", "input": "1 photo", "size": "", "prompt": "Restyle this image as a rich oil painting with thick visible brushwork and deep layered colour. Keep the subject's pose, proportions and facial features clearly recognisable, and preserve the original composition.", "thumb": true},
 ];
 
 /* Flagged trending:true in prompts-image.js. */
@@ -50,13 +55,6 @@ window.trendingPrompts = [
   {"style": "Infinite Field", "cat": "Featured Concepts", "slug": "infinite-field", "input": "no photo", "size": "", "prompt": "A vast, ultra-wide landscape shot of a lone young explorer standing in an endless, rolling field of vibrant wildflowers. Background: giant fluffy cumulonimbus clouds against a bright blue sky. Style: hand-drawn 2D animation, traditional painterly textures, cel-shaded, soft natural light.", "thumb": false},
   {"style": "Magical Train", "cat": "Featured Concepts", "slug": "magical-train", "input": "no photo", "size": "", "prompt": "An interior POV perspective from a vintage train carriage travelling seamlessly across a shallow, glowing ocean at sunset. Style: 1990s anime aesthetic, hand-painted watercolour backgrounds. Lighting: warm golden-hour light flooding the cabin, reflective water surface. Mood: dreamy, surreal, melancholic.", "thumb": false},
   {"style": "90s Cyberpunk Cafe", "cat": "Featured Concepts", "slug": "90s-cyberpunk-cafe", "input": "no photo", "size": "tall", "prompt": "A retro 1990s anime screenshot of an underground futuristic hacker cafe. Elements: glowing green CRT monitors, messy cable runs, overflowing ashtrays. Style: vintage cyberpunk anime, cel-shaded animation, authentic VHS tracking artifacts, static noise, scanlines. Colour palette: neon magenta, cyan, deep shadows.", "thumb": false},
-];
-
-/* Editor's picks — image half. */
-window.pickPrompts = [
-  {"style": "Outer Space", "cat": "Scene & Setting", "slug": "outer-space", "input": "1 photo", "size": "", "prompt": "Take the subject from the uploaded photo and present it floating in outer space with stars, nebula colour and rim lighting from a distant sun. Keep the subject unchanged and replace only the surroundings. Match the lighting on the subject to the new environment.", "thumb": true},
-  {"style": "Professional Headshot", "cat": "Portrait Makeover", "slug": "professional-headshot", "input": "1 photo", "size": "short", "prompt": "Convert the attached photo into a clean professional headshot with soft studio lighting and a neutral background. Keep the person's facial features, skin tone and expression clearly recognisable.", "thumb": true},
-  {"style": "Made of Glass", "cat": "Material & Sculpture", "slug": "made-of-glass", "input": "1 photo", "size": "", "prompt": "Recreate the subject from the uploaded photo as if it were sculpted from clear glass with refractive highlights and internal reflections. Keep the silhouette, pose and proportions intact so the subject stays recognisable.", "thumb": true},
 ];
 
 /* Editor's picks — writing half, one per category. */
