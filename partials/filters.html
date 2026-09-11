@@ -1,0 +1,11 @@
+<!-- Displacement map for the hero CTAs. Only Chromium can use an SVG
+     filter inside backdrop-filter; script.js probes for it and adds
+     .has-liquid to <html> only on a pass, so elsewhere this is inert.
+     Zero-sized and aria-hidden: it is a filter definition, not a graphic. -->
+<svg class="filter-defs" aria-hidden="true" focusable="false" width="0" height="0">
+  <filter id="liquid-glass" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
+    <feTurbulence type="fractalNoise" baseFrequency="0.011 0.017" numOctaves="2" seed="7" result="noise"/>
+    <feGaussianBlur in="noise" stdDeviation="1.1" result="soft"/>
+    <feDisplacementMap in="SourceGraphic" in2="soft" scale="12" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+</svg>

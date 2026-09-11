@@ -904,6 +904,68 @@ function bindVariableTokens(root){
 }
 
 /* ==================================================================
+   GLASS
+
+   Two jobs, both cheap.
+
+   1. THE SPECULAR HIGHLIGHT. Every glass surface carries a soft bright
+      spot that follows the pointer, positioned by --mx/--my. One
+      delegated pointermove for the whole document, coalesced into a
+      single rAF, writing two custom properties on at most one element.
+      No per-element listeners, nothing re-rendered, and the properties
+      only ever change on the surface actually under the cursor.
+
+   2. THE LIQUID PROBE. url() inside backdrop-filter genuinely refracts
+      what is behind a button, which over a starfield looks like thick
+      glass. Only Chromium implements it. Rather than sniffing the
+      browser, this sets the declaration on a throwaway element and asks
+      whether it survived: a browser that cannot parse it drops it, and
+      the computed value comes back without "url". Only on a pass does
+      <html> get .has-liquid, so everywhere else the plain glass stands.
+   ================================================================== */
+function initGlass(){
+  const SEL = ".glass, .glass-panel, .glass-card, .btn-ghost";
+  let pending = false;
+  let last = null;
+  let ev = null;
+
+  const paint = () => {
+    pending = false;
+    if(!ev) return;
+    const el = ev.target.closest ? ev.target.closest(SEL) : null;
+    if(el !== last && last){
+      last.style.removeProperty("--mx");
+      last.style.removeProperty("--my");
+    }
+    last = el;
+    if(!el) return;
+    const r = el.getBoundingClientRect();
+    el.style.setProperty("--mx", ((ev.clientX - r.left) / r.width * 100).toFixed(1) + "%");
+    el.style.setProperty("--my", ((ev.clientY - r.top) / r.height * 100).toFixed(1) + "%");
+  };
+
+  document.addEventListener("pointermove", (e) => {
+    /* A coarse pointer has no hover, so there is no highlight to track. */
+    if(e.pointerType === "touch") return;
+    ev = e;
+    if(pending) return;
+    pending = true;
+    requestAnimationFrame(paint);
+  }, { passive:true });
+
+  /* ---- liquid probe ---- */
+  if(prefersReducedMotion) return;
+  const probe = document.createElement("div");
+  probe.style.cssText = "position:absolute;width:1px;height:1px;backdrop-filter:blur(1px) url(#liquid-glass)";
+  document.body.appendChild(probe);
+  const survived = /url\(/.test(getComputedStyle(probe).backdropFilter || "");
+  probe.remove();
+  if(survived && document.getElementById("liquid-glass")){
+    document.documentElement.classList.add("has-liquid");
+  }
+}
+
+/* ==================================================================
    ATMOSPHERE
 
    One rAF loop for the whole environment. It writes two custom properties
@@ -2207,6 +2269,7 @@ function boot(name, fn){
   }
 }
 
+boot("glass", initGlass);
 boot("atmosphere", initAtmosphere);
 boot("setActiveNav", setActiveNav);
 boot("navIndicator", initNavIndicator);
