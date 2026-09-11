@@ -4,99 +4,114 @@
 /* ---------------------------------------------------------------
    THEME TOKENS
 
-   :root is the dark theme — the site's default and its identity.
-   [data-theme="light"] below overrides the same names; nothing else in this
-   file needs to know which theme is active.
+   Dark only. The orbital hero draws onto a #000 canvas, and any page
+   colour other than true black would show as a visible rectangle where
+   the canvas ends. So the ground is #000000 everywhere — not #0a0a0b,
+   not #111 — and every surface above it is white at low alpha rather
+   than an opaque near-black. That is also what makes the glass read:
+   translucent panels need something real behind them.
 
-   Accents come in two forms because one value cannot serve both jobs:
-     --accent        the brand fill (button/chip backgrounds, borders)
-     --accent-ink    the same hue at a weight that is readable AS TEXT on the
-                     page background. A fill-strength blue on a light surface
-                     lands near 3:1, so text needs a deeper tone.
-     --on-accent     text sitting on top of an --accent fill.
+   FIVE colours carry the whole product:
+
+     --void    #000000  the page
+     --sun     #FFF2CC  the one warm light: focus, active state, hero bleed
+     --amber   #FFA62E  Jupiter. The image half of the library
+     --ice     #5FD8FF  Earth. The writing half
+     --deep    #3F7DFF  Neptune. The builder
+
+   Each section sets --accent to its own colour on a wrapper, so every
+   button, chip and focus ring inside it picks the section up without a
+   single per-section rule. --accent-ink is the same hue at a weight that
+   is readable AS TEXT; --on-accent is the label sitting on a fill.
    --------------------------------------------------------------- */
 :root{
   color-scheme:dark;
 
-  /* Cool slate rather than pure black. Black plus orange is a warning
-     palette — high alarm, low credibility — so the surfaces carry a slight
-     blue cast and the accent lives in the same family instead of fighting it. */
-  --bg-void:#0a0a0b;      /* page — deep charcoal, near black           */
-  --surface:#131316;      /* cards, panels — one step up from the page   */
-  --surface-2:#1c1c20;    /* elevated: hover, popovers, the palette      */
-  --ground-fade:rgba(10,10,11,.74);  /* scrim over revealed imagery      */
+  /* ---- the five ---------------------------------------------------- */
+  --void:#000000;
+  --sun:#FFF2CC;
+  --amber:#FFA62E;
+  --ice:#5FD8FF;
+  --deep:#3F7DFF;
 
-  /* Atmosphere. Two cool lights a few degrees apart, a rule that is barely
-     a rule, and a vignette that closes the frame. */
-  --aurora-a:rgba(88,124,255,.055);
-  --aurora-b:rgba(120,205,220,.035);
-  --rule:rgba(244,241,234,.028);
-  --vignette:rgba(0,0,0,.55);
-  /* Sections separate by a change in tone, not by a hairline across the
-     page. One step, used alternately. */
-  --bg-alt:#0e0e10;
+  /* ---- ground and surfaces -----------------------------------------
+     Surfaces are white at low alpha, so they sit ON the black rather
+     than replacing it. Stacking two of them reads as depth for free. */
+  --bg-void:var(--void);
+  --surface:rgba(255,255,255,.045);
+  --surface-2:rgba(255,255,255,.075);
+  --bg-alt:rgba(255,255,255,.022);
   --bg-panel:var(--surface);
   --bg-panel-hover:var(--surface-2);
-  --border-subtle:rgba(244,241,234,.09);
-  --border-strong:rgba(244,241,234,.20);
+  --ground-fade:rgba(0,0,0,.74);
 
-  /* type */
-  /* Muted tones are the primary ink at reduced alpha rather than separate
-     greys, so they stay in the same colour family as the surface beneath. */
-  --text-primary:#f4f1ea;
-  --text-muted:rgba(244,241,234,.58);
-  --text-placeholder:rgba(244,241,234,.56);
+  --border-subtle:rgba(255,255,255,.12);
+  --border-strong:rgba(255,255,255,.24);
 
-  /* ONE accent. It used to be two — amber plus a blue that existed only
-     because amber was overloaded, which gave the site two different focus
-     rings and made hover, focus and error look identical. Now amber is the
-     only hue, and the jobs below are separated by ROLE, not by colour. */
-  --accent:#4d8dff;          /* fills: primary button, active chip           */
-  --accent-ink:#8ab4ff;      /* the same hue at a weight readable as TEXT    */
-  --accent-hover:#6ba0ff;
-  --on-accent:#06101f;       /* label sitting on an --accent fill            */
-  --accent-soft:rgba(77,141,255,.28);
-  --accent-amber:var(--accent);        /* legacy alias, still referenced     */
+  /* ---- type -------------------------------------------------------- */
+  /* Pure white at three weights. On true black a tinted white reads as a
+     colour cast, not as warmth. */
+  --text-primary:#ffffff;
+  --text-muted:rgba(255,255,255,.70);
+  --text-placeholder:rgba(255,255,255,.50);
+
+  /* ---- accent ------------------------------------------------------
+     Defaults to the Sun. Sections override --accent/--accent-ink on a
+     wrapper and everything inside follows. */
+  --accent:var(--sun);
+  --accent-ink:var(--sun);
+  --accent-hover:#ffffff;
+  --on-accent:#000000;
+  --accent-soft:rgba(255,242,204,.24);
+  --accent-amber:var(--accent);        /* legacy alias, still referenced */
   --accent-amber-soft:var(--accent-soft);
 
-  /* Roles that must stay legible independently of the brand hue. */
-  --focus-ring:#8ab4ff;
-  /* Warm, so [fill-in] tokens separate from a now-blue accent. */
-  --syntax-var:#e3b778;
-  --syntax-var-bg:rgba(227,183,120,.12);
+  /* Roles that must stay legible whatever the section accent is. */
+  --focus-ring:#ffffff;
+  --syntax-var:var(--amber);
+  --syntax-var-bg:rgba(255,166,46,.14);
   --ok-ink:#6fcf97;
   --danger-ink:#ff8f8f;
 
-  /* atmosphere */
+  /* ---- atmosphere --------------------------------------------------
+     Kept for the inner pages. The home page has the orbital scene
+     instead and does not render this layer at all. */
+  --aurora-a:rgba(88,124,255,.055);
+  --aurora-b:rgba(120,205,220,.035);
+  --rule:rgba(255,255,255,.026);
+  --vignette:rgba(0,0,0,.55);
   --grid-line:rgba(255,255,255,.028);
-  --scrim:rgba(6,6,7,.80);
-  --shadow-card:0 14px 34px -16px rgba(0,0,0,.7);
-  --shadow-modal:0 30px 80px -30px rgba(0,0,0,.7);
-  /* Depth here comes from layering, so a lifted surface needs a shadow long
-     and soft enough to read as distance rather than as a border. */
+
+  /* ---- glass -------------------------------------------------------
+     The tint is a top-lit gradient rather than a flat fill: the light
+     edge along the top is what separates glass from a grey panel. */
+  --glass-tint:linear-gradient(135deg, rgba(255,255,255,.16), rgba(255,255,255,.04));
+  --glass-flat:rgba(255,255,255,.08);
+  --glass-edge:rgba(255,255,255,.35);
+  --glass-border:rgba(255,255,255,.18);
+  --glass-border-hover:rgba(255,255,255,.30);
+  --glass-blur:blur(16px) saturate(170%);
+  --glass-fallback:rgb(20 22 30 / 0.9);
+
+  --scrim:rgba(0,0,0,.82);
+  --nav-bg:rgba(0,0,0,.55);
+  --shadow-card:0 12px 32px -12px rgba(0,0,0,.7);
+  --shadow-modal:0 30px 80px -30px rgba(0,0,0,.85);
   --shadow-lift:0 26px 52px -26px rgba(0,0,0,.78);
   --shadow-deep:0 54px 108px -46px rgba(0,0,0,.9);
-  /* Translucent so the grid shows through the sticky nav. Must be tokenised:
-     hardcoded dark here left light-mode nav text at 2.65:1. */
-  --nav-bg:rgba(11,13,16,.72);
-  /* Frosted glass. The tint is the surface at low alpha, the hairline is a
-     light edge catching along the top — that highlight is what separates
-     glass from a plain translucent panel. */
-  /* 30% more transparent (.44 -> .31). Thinner glass shows more of what is
-     behind it, which is the whole point — but it also means the blooms above
-     had to come up, or there is nothing to see through it. */
-  --glass-tint:rgba(28,32,38,.38);
-  --glass-edge:rgba(255,255,255,.14);
-  --glass-blur:saturate(1.35) blur(10px);
-  --accent-hover:#f5bb5e;
-  --danger-ink:#ff8f8f;
-  /* Instrument Sans: editorial grotesque, tighter and less corporate than Plex.
-     JetBrains Mono for anything terminal-flavoured. */
-  /* Archivo is a grotesque with a true condensed sibling, which is what makes
-     small uppercase labels work without faking it by tracking out a normal
-     face. Mono stays for prompt text, where it is functional not decorative. */
-  --font-display:'Archivo',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-  --font-label:'Archivo Narrow','Archivo',-apple-system,sans-serif;
+
+  /* ---- section accents ---------------------------------------------
+     One class per area. Applied to a section or a page wrapper. */
+  /* Two families, not three. Schibsted Grotesk is a Norwegian grotesque
+     with real character at large light weights and tight tracking, which
+     is what the hero headline needs; it also holds up at label sizes, so
+     the condensed second face Archivo needed is gone.
+
+     Mono is confined to PROMPT TEXT and [variables] — the places where
+     it is functional. Counts, labels and shortcut hints use the display
+     face with tabular figures. */
+  --font-display:'Schibsted Grotesk',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --font-label:var(--font-display);
   --font-mono:'JetBrains Mono','SFMono-Regular',Menlo,Consolas,monospace;
   /* ---- type scale ----------------------------------------------------
      A real ratio instead of 18 ad-hoc sizes with half-pixel steps. Fluid
@@ -143,7 +158,7 @@
   /* Two families, deliberately not one value everywhere.
 
      Small interactive controls are CAPSULES — chips, buttons, the nav track,
-     the theme switch. A fully-round end reads as "this is a control you
+     the search trigger. A fully-round end reads as "this is a control you
      press", and it is what stops a row of them looking like table cells.
 
      Surfaces that hold content get a modest radius instead: a capsule on a
@@ -188,69 +203,15 @@
   --section-pad:clamp(56px,9vw,110px);
 }
 
-/* Light theme. Warm paper white rather than pure #fff, which glares against
-   this much monospace. Applied by the inline bootstrap in each <head> before
-   first paint, so switching never flashes the other theme. */
-:root[data-theme="light"]{
-  color-scheme:light;
+/* ---- section accents --------------------------------------------------
+   Set --accent on a wrapper and every control inside it follows: buttons,
+   chips, focus rings, the nav pill. No per-section component rules. */
+.accent-sun{   --accent:var(--sun);   --accent-ink:var(--sun);   --accent-soft:rgba(255,242,204,.24); --on-accent:#000; }
+.accent-amber{ --accent:var(--amber); --accent-ink:var(--amber); --accent-soft:rgba(255,166,46,.24);  --on-accent:#000; }
+.accent-ice{   --accent:var(--ice);   --accent-ink:var(--ice);   --accent-soft:rgba(95,216,255,.24);  --on-accent:#000; }
+.accent-deep{  --accent:var(--deep);  --accent-ink:#8fb2ff;      --accent-soft:rgba(63,125,255,.30);  --on-accent:#fff; }
 
-  /* Light blue rather than warm paper — same family as the dark theme's
-     slate, so the two themes read as one system seen under two lights. */
-  --bg-void:#f6f4ef;
-  --ground-fade:rgba(246,244,239,.76);
 
-  /* Light is a warm room, not an inverted dark one: the lights go warm, the
-     vignette barely exists, and the rules go to ink at low alpha. */
-  --aurora-a:rgba(255,214,150,.16);
-  --aurora-b:rgba(150,190,255,.10);
-  --rule:rgba(26,25,23,.036);
-  --vignette:rgba(120,110,95,.10);
-  --bg-alt:#efece6;
-  --surface:#ffffff;
-  --surface-2:#eae7e0;
-  --bg-panel:var(--surface);
-  --bg-panel-hover:var(--surface-2);
-  --border-subtle:rgba(26,25,23,.12);
-  --border-strong:rgba(26,25,23,.24);
-
-  --text-primary:#1a1917;
-  --text-muted:rgba(26,25,23,.66);
-  --text-placeholder:rgba(26,25,23,.64);
-
-  --accent:#1f6fe0;
-  --accent-ink:#14539f;
-  --accent-hover:#1a5ec2;
-  /* Dark, not white: --accent is a mid amber here, so a near-white label
-     measured 3.12:1. Dark ink on the same fill is 5.70:1. */
-  --on-accent:#1a1200;
-  --accent-soft:rgba(31,111,224,.24);
-  --accent-amber-soft:var(--accent-soft);
-
-  --focus-ring:#14539f;
-  /* Darkened from #8a5a12. Measured through the thinner glass over the
-     strongest bloom it fell to 4.14:1 — saturated fields raise the effective
-     background luminance, so warm mid-tones stop clearing AA. */
-  --syntax-var:#6f4a0c;
-  --syntax-var-bg:rgba(111,74,12,.10);
-  --ok-ink:#1f7a4d;
-  --danger-ink:#b3261e;
-
-  --grid-line:rgba(15,23,32,.045);
-  --scrim:rgba(26,25,23,.44);
-  --shadow-card:0 14px 30px -18px rgba(26,25,23,.30);
-  --shadow-modal:0 30px 70px -30px rgba(26,25,23,.38);
-  --shadow-lift:0 26px 52px -28px rgba(26,25,23,.30);
-  --shadow-deep:0 54px 108px -50px rgba(26,25,23,.36);
-  --nav-bg:rgba(246,244,239,.76);
-  /* Electric blue into aqua, violet into magenta. A flat pale field gives a
-     translucent layer nothing to refract, so it reads as a grey box; saturated
-     fields are what produce visible colour separation through the glass. */
-  --glass-tint:rgba(255,255,255,.46);
-  --glass-edge:rgba(255,255,255,.92);
-  --glass-blur:saturate(1.28) blur(10px);
-  --accent-hover:#c9861f;
-  --danger-ink:#b3261e;
-}
 
 *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
 
@@ -374,7 +335,7 @@ main{ position:relative; z-index:1; }
    SHARED PIECES
    ============================================ */
 .eyebrow{
-  font-family:var(--font-mono);
+  font-family:var(--font-display);
   font-size:var(--text-xs);
   color:var(--accent-ink);
   letter-spacing:.04em;
@@ -396,14 +357,14 @@ main{ position:relative; z-index:1; }
 
 .badge{
   display:inline-flex; align-items:center; padding:4px 11px; border-radius:var(--radius-pill);
-  font-family:var(--font-mono); font-size:var(--text-2xs); letter-spacing:.02em;
+  font-family:var(--font-display); font-size:var(--text-2xs); letter-spacing:.02em;
   background:var(--bg-panel-hover); color:var(--text-muted); border:1px solid var(--border-subtle);
 }
 .badge-model{ color:var(--accent-ink); border-color:var(--accent-amber-soft); }
 
 .btn{
   display:inline-flex; align-items:center; gap:8px; padding:13px 26px; border-radius:var(--radius-pill);
-  font-family:var(--font-mono); font-size:var(--text-sm); font-weight:500; cursor:pointer;
+  font-family:var(--font-display); font-size:var(--text-sm); font-weight:500; cursor:pointer;
   border:1px solid transparent; text-decoration:none; background:none;
   transition:background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
 }
@@ -425,7 +386,7 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
 
 .back-link{
   display:inline-flex; align-items:center; gap:6px;
-  font-family:var(--font-mono); font-size:var(--text-sm); color:var(--text-muted);
+  font-family:var(--font-display); font-size:var(--text-sm); color:var(--text-muted);
   text-decoration:none; margin-bottom:28px; transition:color var(--transition-fast);
 }
 .back-link:hover{ color:var(--accent-ink); }
@@ -500,7 +461,7 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
 .prompt-block-bar{
   display:flex; align-items:center; gap:8px; padding:10px 14px;
   background:var(--bg-panel-hover); border-bottom:1px solid var(--border-subtle);
-  font-family:var(--font-mono); font-size:var(--text-xs); color:var(--text-muted);
+  font-family:var(--font-display); font-size:var(--text-xs); color:var(--text-muted);
   border-radius:var(--radius) var(--radius) 0 0;
 }
 
@@ -520,29 +481,6 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
 }
 
 
-/* ---- theme cross-fade -----------------------------------------------
-   Switching themes repaints every surface at once, which reads as a flash.
-   The class is added by initThemeToggle() only for the length of the swap,
-   so nothing carries a permanent all-properties transition.
-
-   Deliberately inside no-preference: the global reduced-motion block below
-   uses `*` with !important, and `.theme-transition *` would out-specify it.
-   Gating here means reduced-motion users simply never get these rules. */
-@media (prefers-reduced-motion: no-preference){
-  :root.theme-transition,
-  :root.theme-transition *,
-  :root.theme-transition *::before,
-  :root.theme-transition *::after{
-    transition:background-color var(--dur-3) var(--ease-standard),
-               border-color var(--dur-3) var(--ease-standard),
-               color var(--dur-3) var(--ease-standard),
-               fill var(--dur-3) var(--ease-standard),
-               stroke var(--dur-3) var(--ease-standard),
-               box-shadow var(--dur-3) var(--ease-standard) !important;
-  }
-  /* The indicator must not slide while the palette changes underneath it. */
-  :root.theme-transition .nav-indicator{ transition:none !important; }
-}
 
 
 /* ---- frosted surface -------------------------------------------------
@@ -671,7 +609,8 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
   .sec-head{ grid-template-columns:auto minmax(0,1fr) auto; }
 }
 .sec-index{
-  font-family:var(--font-mono); font-size:var(--text-xs);
+  font-variant-numeric:tabular-nums;
+  font-family:var(--font-display); font-size:var(--text-xs);
   letter-spacing:var(--track-caps); color:var(--text-muted);
   padding-bottom:.55em;
 }
@@ -811,7 +750,7 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
 .workbar-search span{ flex:1; }
 .workbar-search .icon{ width:15px; height:15px; }
 .workbar-kbd{
-  font-family:var(--font-mono); font-size:var(--text-2xs); line-height:1;
+  font-family:var(--font-display); font-size:var(--text-2xs); line-height:1;
   padding:4px 7px; border-radius:var(--radius-sm);
   border:1px solid var(--border-subtle); background:var(--surface-2); color:var(--text-muted);
 }
@@ -985,7 +924,8 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
 .index-link:hover,
 .index-link:focus-visible{ background:var(--surface); }
 .index-num{
-  font-family:var(--font-mono); font-size:var(--text-xs);
+  font-variant-numeric:tabular-nums;
+  font-family:var(--font-display); font-size:var(--text-xs);
   letter-spacing:var(--track-caps); color:var(--text-muted);
   transition:color var(--dur-micro) var(--ease-out);
 }
@@ -996,7 +936,8 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
   transition:color var(--dur-hover) var(--ease-out), transform var(--dur-hover) var(--ease-out);
 }
 .index-count{
-  font-family:var(--font-mono); font-size:var(--text-xs);
+  font-variant-numeric:tabular-nums;
+  font-family:var(--font-display); font-size:var(--text-xs);
   color:var(--text-muted); white-space:nowrap;
   transition:color var(--dur-micro) var(--ease-out);
 }
@@ -1116,7 +1057,7 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
 .pick-name{ font-size:var(--text-lg); font-weight:500; letter-spacing:var(--track-heading); line-height:1.2; }
 .pick-name a{ text-decoration:none; color:var(--text-primary); }
 .pick-name a::after{ content:""; position:absolute; inset:0; }
-.pick-meta{ margin-top:var(--space-2); font-family:var(--font-mono); font-size:var(--text-xs); color:var(--text-muted); }
+.pick-meta{ margin-top:var(--space-2); font-family:var(--font-display); font-size:var(--text-xs); color:var(--text-muted); }
 .pick-act{ display:flex; gap:var(--space-2); flex-shrink:0; }
 .pick-act .icon-btn{ background:var(--surface); color:var(--text-muted); border-color:var(--border-subtle); backdrop-filter:none; -webkit-backdrop-filter:none; }
 .pick-act .icon-btn:hover{ background:var(--accent); color:var(--on-accent); border-color:transparent; }
@@ -1212,7 +1153,7 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
 .hero-search-kbd,
 .cmdk-esc,
 .cmdk-foot kbd{
-  font-family:var(--font-mono); font-size:var(--text-2xs); line-height:1;
+  font-family:var(--font-display); font-size:var(--text-2xs); line-height:1;
   padding:3px 6px; border:1px solid var(--border-subtle); border-radius:var(--radius-sm);
   color:var(--text-muted); background:var(--surface-2);
 }
@@ -1529,58 +1470,6 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
 }
 .nav-indicator.is-ready{ opacity:1; }
 
-/* ---- theme switch ---------------------------------------------------
-   One compact control, not a two-cell track. The two glyphs are stacked and
-   crossfade through a rotation, so the moon does not vanish before the sun
-   arrives — the swap reads as one object turning rather than two icons
-   swapping places. Both animated properties are composited.
-
-   role=switch + aria-checked carries the state; the glyphs are decorative. */
-.theme-switch{
-  position:relative; flex-shrink:0;
-  display:inline-flex; align-items:center; justify-content:center;
-  width:40px; height:40px;
-  background:var(--glass-tint);
-  backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
-  border:1px solid var(--border-subtle);
-  box-shadow:inset 0 1px 0 var(--glass-edge);
-  border-radius:var(--radius-pill);
-  color:var(--text-muted); cursor:pointer;
-  transition:color var(--transition-fast), border-color var(--transition-fast);
-}
-.theme-switch:hover{ color:var(--text-primary); border-color:var(--border-strong); }
-
-.theme-icons{ position:relative; width:18px; height:18px; display:block; }
-.theme-icons .icon{
-  position:absolute; inset:0; width:18px; height:18px;
-  transition:opacity var(--dur-3) var(--ease-standard),
-             transform var(--dur-3) var(--ease-expressive);
-}
-/* Dark: moon settled, sun waiting rotated back and small. */
-.theme-icon-moon{ opacity:1; transform:rotate(0deg) scale(1); }
-.theme-icon-sun{ opacity:0; transform:rotate(-90deg) scale(.5); }
-:root[data-theme="light"] .theme-icon-moon{ opacity:0; transform:rotate(90deg) scale(.5); }
-:root[data-theme="light"] .theme-icon-sun{ opacity:1; transform:rotate(0deg) scale(1); }
-.nav-link{
-  position:relative; z-index:1;
-  font-family:var(--font-display); font-size:var(--text-sm); font-weight:500;
-  letter-spacing:var(--track-body);
-  text-decoration:none; color:var(--text-muted);
-  padding:var(--space-2) var(--space-4); border-radius:var(--radius-pill);
-  transition:color var(--dur-2) var(--ease-standard);
-  white-space:nowrap;
-}
-.nav-link:hover{ color:var(--text-primary); }
-/* No background here — the indicator supplies it. Weight and colour carry
-   the active state so it still reads when the indicator has not positioned
-   yet, or when JS is off entirely. */
-.nav-link.active{ color:var(--text-primary); font-weight:600; }
-
-.nav-toggle{ display:none; flex-direction:column; justify-content:center; gap:5px; width:34px; height:34px; background:none; border:none; cursor:pointer; }
-.nav-toggle span{ display:block; width:100%; height:2px; background:var(--text-primary); transition:transform var(--transition-fast), opacity var(--transition-fast); }
-.nav-toggle.open span:nth-child(1){ transform:translateY(7px) rotate(45deg); }
-.nav-toggle.open span:nth-child(2){ opacity:0; }
-.nav-toggle.open span:nth-child(3){ transform:translateY(-7px) rotate(-45deg); }
 
 /* ============================================
    PAGE HEADER (images / text hub / category pages)
@@ -1684,7 +1573,8 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
 /* ---- controls --------------------------------------------------------- */
 .gallery-controls{ margin-bottom:clamp(24px,3vw,44px); display:flex; flex-direction:column; gap:var(--space-4); }
 .gallery-search-wrap{ position:relative; display:flex; align-items:center; gap:var(--space-4); flex-wrap:wrap; }
-.gallery-count{ font-family:var(--font-mono); font-size:var(--text-xs); color:var(--text-muted); white-space:nowrap; }
+.gallery-count{
+  font-variant-numeric:tabular-nums; font-family:var(--font-display); font-size:var(--text-xs); color:var(--text-muted); white-space:nowrap; }
 .chip-row{ display:flex; gap:var(--space-2); flex-wrap:wrap; }
 .chip-row-sub{ padding-top:var(--space-1); }
 .chip{
@@ -1697,7 +1587,7 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
 }
 .chip:hover{ color:var(--text-primary); border-color:var(--border-strong); }
 .chip.active{ color:var(--on-accent); background:var(--accent); border-color:var(--accent); }
-.chip-sm{ font-family:var(--font-mono); text-transform:none; letter-spacing:0; font-size:var(--text-xs); padding:6px 13px; }
+.chip-sm{ font-family:var(--font-display); text-transform:none; letter-spacing:0; font-size:var(--text-xs); padding:6px 13px; }
 
 .gallery-empty{
   padding:var(--space-16) var(--space-6); text-align:center;
@@ -1950,7 +1840,8 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
   color:var(--accent-ink);
 }
 .tdoc-num{
-  font-family:var(--font-mono); font-size:var(--text-2xs);
+  font-variant-numeric:tabular-nums;
+  font-family:var(--font-display); font-size:var(--text-2xs);
   letter-spacing:var(--track-caps); color:var(--text-muted);
 }
 .tdoc-body{
@@ -2142,7 +2033,8 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
 }
 .ws-hint,
 .builder-count{
-  font-family:var(--font-mono); font-size:var(--text-2xs); color:var(--text-muted);
+  font-variant-numeric:tabular-nums;
+  font-family:var(--font-display); font-size:var(--text-2xs); color:var(--text-muted);
 }
 .ws-panel-body{ padding:var(--space-5); display:flex; flex-direction:column; gap:var(--space-5); }
 .ws-panel-foot{
@@ -2165,7 +2057,7 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
 
 .wfield{ display:flex; flex-direction:column; gap:var(--space-2); }
 .wfield label{
-  font-family:var(--font-mono); font-size:var(--text-xs); color:var(--text-muted);
+  font-family:var(--font-display); font-size:var(--text-xs); color:var(--text-muted);
   display:flex; align-items:center; gap:var(--space-2);
 }
 .wfield input,
@@ -2231,7 +2123,7 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
 }
 .builder-placeholder{ color:var(--text-muted); }
 .builder-note{
-  font-family:var(--font-mono); font-size:var(--text-2xs); color:var(--text-muted);
+  font-family:var(--font-display); font-size:var(--text-2xs); color:var(--text-muted);
   padding:0 var(--space-5) var(--space-4);
 }
 
@@ -2240,7 +2132,7 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
    FOOTER
    ============================================ */
 .footer{ border-top:1px solid var(--border-subtle); padding:32px; text-align:center; }
-.footer-line{ font-family:var(--font-mono); font-size:var(--text-sm); color:var(--text-muted); }
+.footer-line{ font-family:var(--font-display); font-size:var(--text-sm); color:var(--text-muted); }
 .footer-credit{ margin-top:var(--space-2); font-size:var(--text-xs); }
 
 /* Contact row. Small on purpose — it is a signature, not a call to action. */
@@ -2296,8 +2188,6 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
   /* Stacked panel on mobile — a horizontal indicator has nothing to track. */
   .nav-links{ padding:var(--space-4) var(--gutter); border:none; border-radius:0; }
   .nav-indicator{ display:none; }
-  /* The toggle lives outside .nav-links so it stays reachable without opening
-     the menu — a theme switch is not worth a hamburger tap. */
   .nav-cluster{ gap:var(--space-2); }
 
   .section-inner{ padding:40px 20px; }

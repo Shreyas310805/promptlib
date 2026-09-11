@@ -358,7 +358,6 @@ function initPane(){
    SETTINGS
    ================================================================== */
 function initSettings(){
-  const theme = document.getElementById("setTheme");
   const shuffle = document.getElementById("setShuffle");
   const motion = document.getElementById("setMotion");
 
@@ -372,21 +371,6 @@ function initSettings(){
     });
   };
 
-  bind(theme,
-    () => document.documentElement.getAttribute("data-theme") === "light",
-    (on) => {
-      const next = on ? "light" : "dark";
-      document.documentElement.classList.add("theme-transition");
-      setTimeout(() => document.documentElement.classList.remove("theme-transition"), 400);
-      document.documentElement.setAttribute("data-theme", next);
-      writeStore("promptlib-theme-raw", next);
-      try { localStorage.setItem("promptlib-theme", next); } catch(err){ /* ignore */ }
-      const navBtn = document.getElementById("themeToggle");
-      if(navBtn){
-        navBtn.setAttribute("aria-checked", String(on));
-      }
-      announce(on ? "Light theme enabled" : "Dark theme enabled");
-    });
 
   bind(shuffle,
     () => readStore(STORE_KEYS.shuffle, true) !== false,
@@ -1437,52 +1421,6 @@ function setActiveNav(){
   });
 }
 
-/* Dark is the default and the site's identity; the toggle is an override that
-   persists per browser. The stored value is applied by the inline bootstrap in
-   <head> so the page never paints one theme then swaps to the other. */
-function initThemeToggle(){
-  const btn = document.getElementById("themeToggle");
-  if(!btn) return;
-
-  const current = () => document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
-
-  /* Paint the swap over --dur-3 instead of flashing. The class is removed once
-     the transition has run, so no element keeps an all-properties transition. */
-  let fadeTimer;
-  const crossFade = () => {
-    const root = document.documentElement;
-    root.classList.add("theme-transition");
-    clearTimeout(fadeTimer);
-    fadeTimer = setTimeout(() => root.classList.remove("theme-transition"), 400);
-  };
-
-  const apply = (theme) => {
-    document.documentElement.setAttribute("data-theme", theme);
-    /* role=switch, so state is aria-checked. The label names what the switch
-       controls, not what pressing it would do — the state carries that. */
-    btn.setAttribute("aria-checked", String(theme === "light"));
-    btn.setAttribute("aria-label", "Light theme");
-    /* The panel has a switch for the same setting; keep them in agreement. */
-    const panelSwitch = document.getElementById("setTheme");
-    if(panelSwitch) panelSwitch.setAttribute("aria-checked", String(theme === "light"));
-  };
-
-  apply(current());
-
-  btn.addEventListener("click", () => {
-    const next = current() === "light" ? "dark" : "light";
-    crossFade();
-    apply(next);
-    try {
-      localStorage.setItem("promptlib-theme", next);
-    } catch(err){
-      /* Storage can throw in private mode. The switch still works for this
-         page; it just will not be remembered. */
-    }
-    announce(next === "light" ? "Light theme enabled" : "Dark theme enabled");
-  });
-}
-
 /* Slides one shared pill behind the nav links instead of giving each link its
    own background. Only transform and width animate, both composited, so
    moving between links never costs layout on the links themselves.
@@ -2273,7 +2211,6 @@ boot("atmosphere", initAtmosphere);
 boot("setActiveNav", setActiveNav);
 boot("navIndicator", initNavIndicator);
 boot("navScrollState", initNavScrollState);
-boot("themeToggle", initThemeToggle);
 boot("mobileNav", initMobileNav);
 boot("pageTransitions", initPageTransitions);
 boot("gallery", initGallery);

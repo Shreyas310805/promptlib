@@ -1,19 +1,17 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230e1013'/%3E%3Cpath d='M10 10l7 6-7 6' stroke='%234d8dff' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=Archivo+Narrow:wght@500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <script>
-/* Bootstrap — keep inline and keep it tiny. Sets html.js for the few rules
-   that legitimately need to know JS is running, and applies the stored theme
-   before first paint so switching never flashes.
+/* Bootstrap — keep inline and keep it tiny. Sets html.js for the few
+   rules that legitimately need to know JS is running.
 
-   It no longer reveals the page: that is a pure CSS animation now, so page
-   visibility does not depend on this script, on script.js, or on either of
-   them running without throwing. */
+   It does not reveal the page: that is a pure CSS animation, so page
+   visibility depends on neither this script nor script.js.
+
+   There is no theme to restore. The site is dark only — the orbital
+   hero paints onto a #000 canvas, and any other page colour would show
+   as a rectangle where the canvas ends. */
 document.documentElement.classList.add("js");
-try {
-  var t = localStorage.getItem("promptlib-theme");
-  if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
-} catch (e) { /* private mode / storage blocked — dark default is fine */ }
 </script>

@@ -8,21 +8,19 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230e1013'/%3E%3Cpath d='M10 10l7 6-7 6' stroke='%234d8dff' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=Archivo+Narrow:wght@500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <script>
-/* Bootstrap — keep inline and keep it tiny. Sets html.js for the few rules
-   that legitimately need to know JS is running, and applies the stored theme
-   before first paint so switching never flashes.
+/* Bootstrap — keep inline and keep it tiny. Sets html.js for the few
+   rules that legitimately need to know JS is running.
 
-   It no longer reveals the page: that is a pure CSS animation now, so page
-   visibility does not depend on this script, on script.js, or on either of
-   them running without throwing. */
+   It does not reveal the page: that is a pure CSS animation, so page
+   visibility depends on neither this script nor script.js.
+
+   There is no theme to restore. The site is dark only — the orbital
+   hero paints onto a #000 canvas, and any other page colour would show
+   as a rectangle where the canvas ends. */
 document.documentElement.classList.add("js");
-try {
-  var t = localStorage.getItem("promptlib-theme");
-  if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
-} catch (e) { /* private mode / storage blocked — dark default is fine */ }
 </script>
 <!-- @end head -->
 </head>
@@ -58,12 +56,6 @@ try {
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg>
       <span class="nav-search-label">Search</span>
       <kbd class="nav-search-kbd">/</kbd>
-    </button>
-    <button type="button" class="theme-switch" id="themeToggle" role="switch" aria-checked="false" aria-label="Light theme">
-      <span class="theme-icons" aria-hidden="true">
-        <svg class="icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.7 6.7 0 0 0 10.5 10.5z"/></svg>
-        <svg class="icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.4v2.2M12 19.4v2.2M4.2 4.2l1.6 1.6M18.2 18.2l1.6 1.6M2.4 12h2.2M19.4 12h2.2M4.2 19.8l1.6-1.6M18.2 5.8l1.6-1.6"/></svg>
-      </span>
     </button>
     </div>
   </div>
@@ -135,10 +127,6 @@ try {
     <section class="pane-section" aria-labelledby="settingsHeading">
       <h3 class="pane-heading" id="settingsHeading">Settings</h3>
       <ul class="setting-list">
-        <li class="setting">
-          <label class="setting-label" for="setTheme">Light theme</label>
-          <button type="button" class="switch" id="setTheme" role="switch" aria-checked="false"><span class="switch-thumb" aria-hidden="true"></span></button>
-        </li>
         <li class="setting">
           <label class="setting-label" for="setShuffle">Shuffle prompts on open<span class="setting-hint">Off shows them in a fixed order</span></label>
           <button type="button" class="switch" id="setShuffle" role="switch" aria-checked="true"><span class="switch-thumb" aria-hidden="true"></span></button>
