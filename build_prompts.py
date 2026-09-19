@@ -6,6 +6,7 @@ Re-run this any time you add styles below:  python3 build_prompts.py
 """
 
 import json
+import re
 
 # (style name, descriptor injected into the prompt)
 CATALOG = {
@@ -616,6 +617,233 @@ FEATURED = [
 ]
 
 
+
+# ---------------------------------------------------------------------------
+# DETAILED PROMPTS
+#
+# The catalogue above holds the irreducible part of each style: one hand
+# written descriptor naming the medium. That is the style core, and it is
+# reused verbatim. Everything around it is composed here, because the things
+# that make a prompt work on a real model -- say what to keep, describe the
+# medium in physical terms, fix the light, fix the palette, say how much
+# detail, and name the failure to avoid -- are properties of the FAMILY a
+# style belongs to, not of the style itself. A watercolour and a gouache want
+# the same advice about paper and pigment; a tilt-shift and a fisheye want the
+# same advice about focal length.
+#
+# So there are fourteen families, each with its own set of clauses, and each
+# clause rotates between variants so 273 prompts do not read as one template
+# filled in 273 times.
+#
+# The short original is kept on every entry as promptShort.
+# ---------------------------------------------------------------------------
+
+# Family is decided by slug, first match winning. Ordered most specific first.
+FAMILIES = [
+    ("mockup",    r"mockup|billboard|t-shirt|magazine-cover|album-cover|movie-poster|trading-card|vintage-advertisement|travel-poster|postage-stamp|framed-wall-art|storefront-window|museum-exhibit|vinyl-collectible|action-figure|snow-globe"),
+    ("practical", r"remove-|upscale|restore|colorize|passport|corporate-portrait|white-background|real-estate|studio-backdrop|lifestyle-product|food-photography|professional-headshot|fashion-editorial"),
+    ("character", r"astronaut|wizard|samurai|pirate|cowboy|knight|steampunk|netrunner|superhero|caricature"),
+    ("light",     r"golden-hour|blue-hour|change-to-night|overcast|midday|dramatic-sky|thick-fog|season|water-reflection|cinematic-color|colour-grade|color-grade"),
+    ("material",  r"^made-of-|marble-bust|bronze-statue|wax-figure|balloon-sculpture|gingerbread|plush-toy|toy-brick|papercraft|sand-art|cross-stitch|embroidery|claymation"),
+    ("glitch",    r"glitch|datamosh|pixel-sort|vhs|crt|jpeg|chromatic|deep-fried|falling-code|security-camera|night-vision|heat-map|x-ray|point-cloud|dashcam|thermal-receipt|dot-matrix|kaleidoscope|fractal|vaporwave|holographic|hologram|duotone"),
+    ("render3d",  r"low-poly|voxel|isometric|cel-shaded|wireframe|blueprint|topographic|miniature-diorama|concept-art"),
+    ("anime",     r"anime|manga|chibi|rubber-hose|western-cartoon|comic-book|graphic-novel|coloring-book|sticker|picture-book|silhouette-animation|character-sheet|storyboard|newspaper-comic|cartoon"),
+    ("photo",     r"film-grain|bokeh|tilt-shift|long-exposure|fisheye|telephoto|macro|disposable|lomography|tintype|instant-photo|cross-processed|hdr|4k|8k|double-exposure|light-painting|underwater|drone|wide-angle|film-portrait|1920s|sepia|high-contrast-monochrome|film-noir|noir"),
+    ("print",     r"woodblock|linocut|screen-print|risograph|lithograph|etching|halftone|stencil|banknote|engraving|blueprint|vector-trace|vector-flat|pixel-art|16-bit|line-art|op-art"),
+    ("movement",  r"cubism|bauhaus|art-deco|art-nouveau|de-stijl|constructivist|dada|futurism|surrealism|pop-art|minimalism|pointillism|romanticism|rococo|neoclassical|baroque|renaissance|ukiyo-e|mughal|persian|warli|illuminated|impressionist|expressionism|fauvism|abstract"),
+    ("draw",      r"pencil|graphite|charcoal|conte|crayon|ink-pen|ink-wash|brush-pen|marker|chalkboard|scratchboard|sketch|tattoo|chinese-ink"),
+    ("scene",     r"desert|jungle|forest|village|ruins|rooftop|cherry-blossom|outer-space|infinite-field|cozy-room|medieval"),
+    ("paint",     r"."),   # everything left is a painted medium
+]
+
+
+def family_of(slug):
+    for name, pattern in FAMILIES:
+        if re.search(pattern, slug):
+            return name
+    return "paint"
+
+
+# What survives the edit. Split by whether the subject is a person, because
+# "keep the pose" means something different to a mug.
+KEEP_PERSON = [
+    "Keep the person's face, expression, pose and proportions clearly recognisable, and hold the original framing.",
+    "The subject must stay the same person throughout: same facial structure, same expression, same angle of the head, same crop.",
+    "Preserve identity above all else -- the same face, the same posture, the same position in frame.",
+]
+KEEP_THING = [
+    "Keep the subject, its position in frame and the original composition unchanged.",
+    "Hold the layout of the original: same subject, same placement, same crop.",
+    "The arrangement stays exactly as it is; only the treatment changes.",
+]
+
+LIGHT = {
+    "paint":     ["Light the scene the way the original was lit, but let the medium soften it: gentle directional light, no hard speculars.",
+                  "Keep the original light direction and let it read through the paint as broad soft modelling rather than photographic shading."],
+    "draw":      ["Read the original lighting as tone rather than colour, with the light source implied by where the paper is left bare.",
+                  "Translate the light into shading density alone: darkest where the original was in shadow, untouched paper where it was brightest."],
+    "print":     ["Flatten the lighting into a small number of tonal steps, since the process cannot hold a smooth gradient.",
+                  "Reduce the light to two or three flat values with no blending between them."],
+    "glitch":    ["Keep the underlying exposure of the original; the corruption sits on top of the image rather than relighting it.",
+                  "Do not relight the scene. The artefacts are a layer over the existing exposure."],
+    "photo":     ["Keep the original light direction and quality, and let the lens and stock change how it falls off rather than where it comes from.",
+                  "Same light source and direction as the original, rendered through the optical character described."],
+    "light":     ["This is the one thing that changes: relight the scene completely while leaving every object exactly where it is.",
+                  "Change only the light and the sky. Geometry, subject and framing are untouched."],
+    "material":  ["Light it as a studio object: one broad key from the upper left, soft fill, and a shadow that sits the form on its surface.",
+                  "Studio lighting, a single large soft key with gentle falloff, so the material's surface properties are legible."],
+    "render3d":  ["Use clean even three-point lighting typical of a rendered scene, with soft ambient occlusion in the crevices.",
+                  "Neutral render lighting: a key, a fill and a rim, with soft contact shadows."],
+    "anime":     ["Simplify the light into flat cel bands: one lit tone, one shadow tone, and a small bright highlight.",
+                  "Cel-style lighting with a hard-edged shadow shape rather than a gradient."],
+    "movement":  ["Handle light the way the movement did rather than the way a camera does.",
+                  "Let the period's own conventions govern the light instead of photographic realism."],
+    "character": ["Light the subject like a portrait made for this world: directional key, deep falloff, a touch of rim light to separate them.",
+                  "Cinematic portrait lighting, strong key from one side with the background falling into shadow."],
+    "practical": ["Even, neutral, unobtrusive lighting -- nothing about the light should draw attention to itself.",
+                  "Clean neutral lighting with no coloured cast and no dramatic shadow."],
+    "mockup":    ["Light the mock-up as a product photograph: soft key, gentle falloff, shadow consistent with the surface it sits on.",
+                  "Even commercial lighting with a believable contact shadow."],
+    "scene":     ["Light the new setting convincingly, and make the subject's own lighting match it in direction and warmth.",
+                  "The subject must sit in the scene's light, not carry the old light into it."],
+}
+
+COLOUR = {
+    "paint":     ["Keep the palette close to the original but let the pigment shift it slightly warm and unify the whole surface.",
+                  "Work in a coherent painterly palette drawn from the original colours, with [colour] leading."],
+    "draw":      ["Monochrome or near-monochrome throughout, carried by the drawing material's own colour.",
+                  "Restrict the palette to the drawing medium itself on [colour] paper."],
+    "print":     ["Limit the palette hard, to three or four flat inks with visible overlap where they meet.",
+                  "A restricted ink palette of [colour] and black, printed flat."],
+    "glitch":    ["Push channel separation and let the colour tear away from the form in places.",
+                  "Saturated RGB fringing against the original's otherwise unchanged colour."],
+    "photo":     ["Grade the colour the way the stock or process would: shifted highlights, tinted shadows, slightly off-neutral whites.",
+                  "Apply the characteristic colour cast of the process rather than a corrected neutral grade."],
+    "light":     ["Let the new light drive the entire palette -- the colour of everything follows the colour of the source.",
+                  "Recolour the scene to match the new light temperature throughout, including the shadows."],
+    "material":  ["Colour comes from the material itself, with whatever translucency, metallic response or surface tint it has.",
+                  "The palette is the material's own, in [colour], reading believably under the studio light."],
+    "render3d":  ["Flat, clean colour with a limited palette and no photographic noise.",
+                  "Simple material colours, slightly desaturated, with [colour] as the accent."],
+    "anime":     ["Bright, saturated, limited palette with clean separation between areas of colour.",
+                  "Flat saturated colour with a clear accent in [colour]."],
+    "movement":  ["Use the palette the movement is known for rather than the photograph's own colours.",
+                  "Adopt the period palette wholesale, even where it departs from the original colours."],
+    "character": ["Rich, slightly cinematic colour with the costume and setting leading the palette.",
+                  "A grounded palette built around the costume, with [colour] as the signature note."],
+    "practical": ["Accurate neutral colour with correct white balance and natural skin tones.",
+                  "True-to-life colour, properly white balanced, nothing stylised."],
+    "mockup":    ["Colour accurate to a printed or manufactured product, with the artwork reading clearly.",
+                  "Realistic product colour against a [background] background."],
+    "scene":     ["Let the setting's own palette dominate while keeping the subject's colours believable within it.",
+                  "Scene-led palette with the subject integrated rather than pasted on."],
+}
+
+CAMERA = {
+    "photo":     ["Render it as if shot on the appropriate focal length for the effect, with depth of field and perspective to match.",
+                  "Match the lens character the effect implies, including its depth of field and any distortion."],
+    "practical": ["Shoot it at a flattering portrait focal length, around 85mm equivalent, with a moderately shallow depth of field.",
+                  "Standard product or portrait perspective, no wide-angle distortion, background gently separated."],
+    "character": ["Frame it as a character portrait at a medium focal length, with the background compressed and soft.",
+                  "Medium telephoto framing with the background falling out of focus."],
+    "material":  ["Shoot it as a product would be shot: slightly above eye level, everything in focus, no distortion.",
+                  "Clean product angle with deep focus across the object."],
+    "mockup":    ["Photograph the mock-up in a believable setting at a natural angle, slightly off square.",
+                  "Realistic perspective on the object, artwork face-on and legible."],
+    "render3d":  ["Use an orthographic or near-orthographic view where the style calls for it, otherwise a neutral perspective.",
+                  "Clean render camera, no lens distortion, no depth-of-field blur."],
+    "scene":     ["Keep the camera where it was and rebuild the world around it.",
+                  "Same viewpoint and framing; only the surroundings change."],
+}
+
+FINISH = {
+    "paint":     "Finish it as a complete painting rather than a filtered photograph: visible marks everywhere, including the background.",
+    "draw":      "Leave it looking hand-made: uneven pressure, visible construction, and paper showing through in the lightest areas.",
+    "print":     "Include the small imperfections of the process -- slight misregistration, uneven ink, a visible substrate.",
+    "glitch":    "Keep the corruption believable and uneven rather than applied as a regular overlay.",
+    "photo":     "Hold photographic detail throughout, with the process's own grain or artefacts rather than digital sharpening.",
+    "light":     "Keep every surface, texture and edge from the original intact at full detail.",
+    "material":  "Model the surface properly: correct reflectivity, thickness, edge highlights and how light enters or bounces off it.",
+    "render3d":  "Keep geometry clean and deliberate, with consistent facet or voxel size across the whole image.",
+    "anime":     "Clean confident linework of even weight, with flat fills and no photographic texture anywhere.",
+    "movement":  "Commit fully to the style rather than blending it with the photograph underneath.",
+    "character": "High detail on costume, materials and props, with believable wear rather than a clean costume-shop look.",
+    "practical": "Sharp, clean and natural, with no visible editing artefacts, halos or over-smoothed skin.",
+    "mockup":    "Realistic materials and edges so it reads as a physical object that exists, not a flat paste-up.",
+    "scene":     "Build the setting to the same level of detail as the subject so neither looks cut out.",
+}
+
+AVOID = {
+    "paint":     "Avoid the common failure here, which is a photograph with a texture laid over it -- the image must be genuinely re-drawn in paint.",
+    "draw":      "Avoid a grey photographic desaturation pretending to be a drawing; it needs real marks, not a filter.",
+    "print":     "Avoid smooth gradients and photographic detail, which this process cannot produce.",
+    "glitch":    "Avoid a uniform overlay of noise; real corruption is patchy, directional and follows the data.",
+    "photo":     "Avoid an over-processed HDR look with crushed blacks and halos around edges.",
+    "light":     "Avoid changing the subject, moving anything, or letting the new light wash out detail.",
+    "material":  "Avoid a flat recolour; the object must genuinely look made of the material, with the right thickness and light response.",
+    "render3d":  "Avoid photographic textures and realistic lighting, which break the rendered look.",
+    "anime":     "Avoid semi-realistic shading or photographic skin texture, which reads as neither one thing nor the other.",
+    "movement":  "Avoid a token gesture toward the style applied over an unchanged photograph.",
+    "character": "Avoid a cheap costume look, and do not alter the underlying facial identity.",
+    "practical": "Avoid plastic over-retouched skin, visible cut-out edges and any loss of real detail.",
+    "mockup":    "Avoid artwork that floats, ignores the surface, or is distorted illegibly.",
+    "scene":     "Avoid a cut-and-paste composite where the subject's light and edges do not match the new setting.",
+}
+
+# Whether the "keep" clause should talk about a face or about a layout. Driven
+# by the category and the slug, never by the family: Practical Edits covers
+# both passport photos and background cleanup on a product shot.
+PERSON_CATS = {"Portrait Makeover"}
+PERSON_HINT = re.compile(
+    r"portrait|headshot|face|selfie|passport|caricature|wizard|samurai|pirate"
+    r"|cowboy|knight|astronaut|netrunner|steampunk|corporate|fashion|1920s"
+    r"|film-portrait|superhero|character-sheet"
+)
+
+
+OPENINGS = [
+    "Restyle the uploaded photograph as {d}.",
+    "Transform the uploaded photo into {d}.",
+    "Redraw the attached image as {d}.",
+    "Rework the supplied photograph into {d}.",
+    "Take the uploaded photo and render it as {d}.",
+]
+# The material descriptors are participles -- "sculpted from clear glass" --
+# so they need a frame that takes one.
+OPENINGS_MATERIAL = [
+    "Recreate the subject of the uploaded photo as if it were {d}.",
+    "Rebuild the subject from the attached photo as though {d}.",
+    "Remake the subject in the uploaded image as if {d}.",
+]
+
+
+def _pick(seq, i):
+    return seq[i % len(seq)]
+
+
+def detailed_prompt(name, desc, cat, slug, i):
+    """Compose one detailed prompt from the style core plus its family."""
+    fam = family_of(slug)
+    person = cat in PERSON_CATS or fam == "character" or bool(PERSON_HINT.search(slug))
+
+    opens = OPENINGS_MATERIAL if fam == "material" else OPENINGS
+    opening = _pick(opens, i).format(d=desc)
+    keep = _pick(KEEP_PERSON if person else KEEP_THING, i)
+
+    parts = [
+        opening,
+        keep,
+        _pick(LIGHT[fam], i),
+        _pick(COLOUR[fam], i + 1),
+    ]
+    cam = CAMERA.get(fam)
+    if cam:
+        parts.append(_pick(cam, i))
+    parts.append(FINISH[fam])
+    parts.append(AVOID[fam])
+    return " ".join(parts)
+
+
 def slugify(s):
     out = []
     for ch in s.lower():
@@ -632,12 +860,13 @@ for cat, styles in CATALOG.items():
     for name, desc in styles:
         wrapper_set = WRAPPERS.get(cat, DEFAULT_WRAPPERS)
         wrapper = wrapper_set[i % len(wrapper_set)]
-        prompt = wrapper.format(d=desc) + " " + PRESERVE[cat]
+        short = wrapper.format(d=desc) + " " + PRESERVE[cat]
         entries.append({
             "style": name,
             "cat": cat,
             "size": SIZES[i % len(SIZES)],
-            "prompt": prompt,
+            "prompt": detailed_prompt(name, desc, cat, slugify(name), i),
+            "promptShort": short,
             "slug": slugify(name),
             "search": search_term(name),
             "stock": name not in NO_STOCK,
@@ -659,6 +888,7 @@ for f in FEATURED:
         "cat": "Featured Concepts",
         "size": SIZES[len(entries) % len(SIZES)],
         "prompt": f["prompt"],
+        "promptShort": f["prompt"],
         "slug": slugify(f["style"]),
         "search": search_term(f["style"]),
         "stock": False,

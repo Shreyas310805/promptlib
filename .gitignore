@@ -4,3 +4,7 @@ Thumbs.db
 desktop.ini
 # Local run logs
 fetch-log.txt
+.env
+# Local generation ledger and review page
+.image-usage.json
+review.html

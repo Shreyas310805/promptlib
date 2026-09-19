@@ -213,6 +213,202 @@
 
 
 
+
+/* ---------------------------------------------------------------
+   LIGHT THEME
+
+   Not the dark tokens inverted. Two things break if you do that.
+
+   Glass is the first. A translucent WHITE fill over a white page is
+   invisible, so on light ground the fill goes to a translucent INK, the
+   borders darken instead of lightening, and the inner top highlight --
+   which is what separates glass from a flat panel on dark -- becomes a
+   white catch that still reads against ink. Shadows soften a long way:
+   the deep black glows that give depth on near-black turn into grey
+   smudges on paper.
+
+   The second is the hero. The orbital canvas paints its own #000 and
+   cannot be relit, so on a light page it stays a dark object and the
+   join is handled deliberately -- see .hero-fade below.
+   --------------------------------------------------------------- */
+:root[data-theme="light"]{
+  color-scheme:light;
+
+  /* Warm paper, not white. Pure white against this much monospace glares. */
+  --void:#f7f5f1;
+  --bg-void:var(--void);
+  --bg-alt:rgba(26,25,23,.028);
+
+  /* Surfaces are ink at low alpha, so stacking still reads as depth. */
+  --surface:rgba(26,25,23,.045);
+  --surface-2:rgba(26,25,23,.082);
+  --bg-panel:var(--surface);
+  --bg-panel-hover:var(--surface-2);
+  --ground-fade:rgba(247,245,241,.76);
+
+  --border-subtle:rgba(26,25,23,.14);
+  --border-strong:rgba(26,25,23,.28);
+
+  --text-primary:#171614;
+  --text-muted:rgba(23,22,20,.68);
+  --text-placeholder:rgba(23,22,20,.64);
+
+  /* The five, re-weighted to stay legible as text on paper. The raw
+     Jupiter amber is 1.9:1 here, so anything that has to be READ uses the
+     -ink value while fills keep the true hue. */
+  --sun:#B8860B;
+  --amber:#B4610A;
+  --ice:#0F6E8C;
+  --deep:#2A4FD0;
+
+  --accent:var(--sun);
+  /* The fill keeps the true hue; the INK is a separate, darker value.
+     Jupiter amber on paper is 1.9:1 -- fine as a background, unreadable as
+     text -- so anything that has to be read uses these instead. Every one
+     is measured on #f7f5f1, not guessed. */
+  --accent-ink:#7A5A07;
+  --accent-hover:#171614;
+  --on-accent:#ffffff;
+  --accent-soft:rgba(184,134,11,.22);
+  --accent-amber:var(--accent);
+  --accent-amber-soft:var(--accent-soft);
+
+  --focus-ring:#171614;
+  --syntax-var:#9A4B00;
+  --syntax-var-bg:rgba(154,75,0,.12);
+  --ok-ink:#1d7a45;
+  --danger-ink:#b3261e;
+
+  --aurora-a:rgba(255,196,120,.20);
+  --aurora-b:rgba(120,170,255,.14);
+  --rule:rgba(26,25,23,.035);
+  --vignette:rgba(150,140,120,.14);
+  --grid-line:rgba(26,25,23,.03);
+
+  /* Glass, rebuilt. Ink fill, dark border, white top catch. */
+  --glass-tint:linear-gradient(135deg, rgba(26,25,23,.05), rgba(26,25,23,.015));
+  --glass-flat:rgba(26,25,23,.05);
+  --glass-edge:rgba(255,255,255,.85);
+  --glass-border:rgba(26,25,23,.16);
+  --glass-border-hover:rgba(26,25,23,.30);
+  --glass-blur:blur(16px) saturate(140%);
+  --glass-fallback:rgb(247 245 241 / 0.94);
+
+  --scrim:rgba(40,36,30,.42);
+  --nav-bg:rgba(247,245,241,.72);
+  --shadow-card:0 10px 26px -14px rgba(60,50,35,.24);
+  --shadow-modal:0 30px 70px -30px rgba(60,50,35,.32);
+  --shadow-lift:0 18px 38px -22px rgba(60,50,35,.24);
+  --shadow-deep:0 40px 80px -44px rgba(60,50,35,.28);
+}
+
+/* The section accents each need their own ink on paper. .accent-deep is the
+   clearest case: it hardcodes a pale blue for dark ground, which measures
+   1.9:1 here. */
+:root[data-theme="light"] .accent-sun{   --accent-ink:#7A5A07; --accent-soft:rgba(184,134,11,.20); --on-accent:#fff; }
+:root[data-theme="light"] .accent-amber{ --accent-ink:#8A4907; --accent-soft:rgba(180,97,10,.20);  --on-accent:#fff; }
+:root[data-theme="light"] .accent-ice{   --accent-ink:#0C5A73; --accent-soft:rgba(15,110,140,.20); --on-accent:#fff; }
+:root[data-theme="light"] .accent-deep{  --accent-ink:#2342B0; --accent-soft:rgba(42,79,208,.20);  --on-accent:#fff; }
+
+/* The specular highlight is a white bloom; on paper it has to be ink or it
+   does nothing. */
+:root[data-theme="light"] .glass::before,
+:root[data-theme="light"] .glass-panel::before,
+:root[data-theme="light"] .glass-card::before{
+  background:radial-gradient(140px circle at var(--mx,30%) var(--my,0%),
+             rgba(26,25,23,.10), transparent 60%);
+}
+:root[data-theme="light"] .glass-ghost{
+  background:linear-gradient(135deg, rgba(26,25,23,.04), rgba(26,25,23,.01));
+  border-color:rgba(26,25,23,.14);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.9), 0 6px 18px -12px rgba(60,50,35,.28);
+}
+:root[data-theme="light"] .btn-ghost{
+  background:linear-gradient(135deg, rgba(26,25,23,.05), rgba(26,25,23,.015));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.85);
+}
+/* Controls that sit ON a photograph stay dark in both themes: the image
+   behind them is the same either way. */
+:root[data-theme="light"] .icon-btn,
+:root[data-theme="light"] .modal-close{
+  background:rgba(0,0,0,.55); color:#fff; border-color:rgba(255,255,255,.24);
+}
+/* The card overlay and its label sit on the render, which is unchanged. */
+:root[data-theme="light"] .gcard-cat{ color:rgba(255,255,255,.8); }
+:root[data-theme="light"] .gcard-name,
+:root[data-theme="light"] .example-cue{ color:#fff; }
+
+/* ---- the hero join ----------------------------------------------------
+   The orbital canvas paints its own black and cannot follow the theme, so
+   on a light page the hero stays a dark band. Rather than pretend
+   otherwise, it is finished like a printed plate: the gradient at its
+   foot runs to the page colour so the scene resolves into paper instead
+   of stopping on a hard black edge, and the nav over it keeps dark-theme
+   contrast for as long as it is above the canvas. */
+:root[data-theme="light"] .hero{ background:#000; }
+:root[data-theme="light"] .hero-fade{
+  background:linear-gradient(to bottom, transparent, var(--void) 94%);
+}
+:root[data-theme="light"] body.home .nav:not(.is-scrolled){
+  --accent:#FFF2CC;
+  background:rgba(0,0,0,.34);
+  border-bottom-color:transparent;
+}
+:root[data-theme="light"] body.home .nav:not(.is-scrolled) .nav-link{ color:rgba(255,255,255,.72); }
+:root[data-theme="light"] body.home .nav:not(.is-scrolled) .nav-link.active,
+:root[data-theme="light"] body.home .nav:not(.is-scrolled) .logo,
+:root[data-theme="light"] body.home .nav:not(.is-scrolled) .nav-search,
+:root[data-theme="light"] body.home .nav:not(.is-scrolled) .theme-switch{ color:#fff; }
+:root[data-theme="light"] body.home .nav:not(.is-scrolled) .nav-links{
+  background:rgba(255,255,255,.10); border-color:rgba(255,255,255,.20);
+}
+
+/* ---- theme switch -----------------------------------------------------
+   One control, not a two-cell track. The glyphs are stacked and crossfade
+   through a rotation, so the moon does not vanish before the sun arrives:
+   the swap reads as one object turning. Both animated properties are
+   composited. role=switch carries the state; the glyphs are decorative. */
+.theme-switch{
+  position:relative; flex-shrink:0;
+  display:inline-flex; align-items:center; justify-content:center;
+  width:44px; height:44px;
+  background:var(--glass-tint);
+  backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
+  border:1px solid var(--glass-border);
+  box-shadow:inset 0 1px 0 var(--glass-edge);
+  border-radius:var(--radius-pill);
+  color:var(--text-muted); cursor:pointer;
+  transition:color var(--dur-micro) var(--ease-out), border-color var(--dur-micro) var(--ease-out);
+}
+.theme-switch:hover{ color:var(--text-primary); border-color:var(--glass-border-hover); }
+.theme-switch:focus-visible{ outline:2px solid var(--focus-ring); outline-offset:3px; }
+.theme-icons{ position:relative; width:18px; height:18px; display:block; }
+.theme-icons .icon{
+  position:absolute; inset:0; width:18px; height:18px;
+  transition:opacity var(--dur-hover) var(--ease-out), transform var(--dur-hover) var(--ease-out);
+}
+.theme-icon-moon{ opacity:1; transform:rotate(0deg) scale(1); }
+.theme-icon-sun{ opacity:0; transform:rotate(-90deg) scale(.5); }
+:root[data-theme="light"] .theme-icon-moon{ opacity:0; transform:rotate(90deg) scale(.5); }
+:root[data-theme="light"] .theme-icon-sun{ opacity:1; transform:rotate(0deg) scale(1); }
+
+/* Repainting every surface at once reads as a flash, so the swap gets a
+   brief transition -- added by initThemeToggle only for its duration, so
+   nothing carries a permanent all-properties transition. */
+@media (prefers-reduced-motion: no-preference){
+  .theme-transition *,
+  .theme-transition *::before,
+  .theme-transition *::after{
+    transition:background-color var(--dur-hover) var(--ease-out),
+               border-color var(--dur-hover) var(--ease-out),
+               color var(--dur-hover) var(--ease-out),
+               fill var(--dur-hover) var(--ease-out),
+               box-shadow var(--dur-hover) var(--ease-out) !important;
+  }
+  /* The nav pill must not slide while the palette changes under it. */
+  .theme-transition .nav-indicator{ transition:none !important; }
+}
+
 *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
 
 html{ scroll-behavior:smooth; }
@@ -1739,25 +1935,37 @@ body.home .nav{ position:fixed; left:0; right:0; }
 
 
 /* ============================================
-   MODAL  (images.html)
+   MODAL  (shared by the home page and the gallery)
 
-   A split reading view: the render at full size on the left, everything you
-   act on down the right at a comfortable measure.
+   A split reading view: the render at full size on the left, everything
+   you act on down the right.
+
+   The right side is its own three-row grid -- header, prompt, actions --
+   and only the middle row scrolls. That is the whole point: the prompts
+   are now around a hundred words, and when the panel scrolled as one
+   body the Copy button went off the bottom of the screen exactly when
+   you had finished reading and wanted it.
    ============================================ */
 .modal-backdrop{
   position:fixed; inset:0; z-index:200;
   display:flex; align-items:center; justify-content:center;
-  padding:clamp(16px,3vw,40px);
+  padding:clamp(16px,3vw,44px);
   background:var(--scrim);
   backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
   opacity:0; pointer-events:none;
   transition:opacity var(--dur-hover) var(--ease-out);
 }
 .modal-backdrop.open{ opacity:1; pointer-events:auto; }
+
 .modal{
   position:relative;
-  width:min(1080px,100%); max-height:min(86vh,900px);
-  display:grid; grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);
+  width:min(1180px,100%); max-height:min(88vh,920px);
+  display:grid; grid-template-columns:minmax(0,1fr) minmax(430px,0.92fr);
+  /* The row has to be bounded, not content-sized. Without this the implicit
+     row grows to fit the prompt, max-height merely CLIPS the overflow, and
+     the pinned actions get cut off the bottom -- the exact failure this
+     layout exists to prevent. */
+  grid-template-rows:minmax(0,1fr);
   background:var(--surface);
   border:1px solid var(--border-strong);
   border-radius:var(--radius-lg); overflow:hidden;
@@ -1766,15 +1974,13 @@ body.home .nav{ position:fixed; left:0; right:0; }
   transition:transform var(--dur-page) var(--ease-out);
 }
 .modal-backdrop.open .modal{ transform:none; }
-@media (max-width:820px){
-  .modal{ grid-template-columns:minmax(0,1fr); grid-template-rows:auto minmax(0,1fr); }
-}
+
 .modal-close{
   position:absolute; top:var(--space-4); right:var(--space-4); z-index:5;
   display:inline-flex; align-items:center; justify-content:center;
-  width:38px; height:38px; border-radius:var(--radius-pill);
-  background:rgba(14,14,16,.6); color:#fff;
-  border:1px solid rgba(255,255,255,.22);
+  width:40px; height:40px; border-radius:var(--radius-pill);
+  background:rgba(0,0,0,.55); color:#fff;
+  border:1px solid rgba(255,255,255,.24);
   backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
   cursor:pointer;
   transition:background var(--dur-micro) var(--ease-out);
@@ -1782,28 +1988,123 @@ body.home .nav{ position:fixed; left:0; right:0; }
 .modal-close:hover{ background:var(--accent); color:var(--on-accent); border-color:transparent; }
 .modal-close .icon{ width:17px; height:17px; }
 
-.modal-image-wrap{ position:relative; background:var(--bg-void); min-height:280px; }
+.modal-image-wrap{ position:relative; background:var(--void); min-height:300px; }
 .modal-swatch{ position:absolute; inset:0; display:flex; align-items:flex-end; padding:var(--space-5); }
 .modal-swatch .real-photo{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
 .modal-swatch-name{
   position:relative; z-index:1;
-  font-family:var(--font-label); text-transform:uppercase;
-  letter-spacing:var(--track-caps); font-size:var(--text-2xs);
-  color:#fff; text-shadow:0 1px 8px rgba(0,0,0,.7);
+  font-size:var(--text-2xs); text-transform:uppercase; letter-spacing:var(--track-caps);
+  color:#fff; text-shadow:0 1px 8px rgba(0,0,0,.8);
 }
+/* No render on disk: the panel carries the name on its own rather than
+   leaving an empty frame. */
+.modal-swatch.is-textonly{ align-items:center; justify-content:center; }
+.modal-swatch.is-textonly .modal-swatch-name{ font-size:var(--text-md); text-transform:none; letter-spacing:0; }
 
+/* Three rows. Only the middle one scrolls. */
 .modal-body{
-  padding:clamp(20px,2.4vw,34px);
-  display:flex; flex-direction:column; gap:var(--space-5);
-  overflow-y:auto;
+  display:grid;
+  grid-template-rows:auto minmax(0,1fr) auto;
+  min-height:0;
+  border-left:1px solid var(--border-subtle);
+}
+.modal-head{
+  padding:clamp(24px,2.4vw,34px) clamp(24px,2.4vw,34px) var(--space-5);
+  display:flex; flex-direction:column; gap:var(--space-3);
 }
 .modal-meta{ display:flex; gap:var(--space-2); flex-wrap:wrap; }
 .modal-style-name{
-  font-size:clamp(24px,2.4vw,34px); font-weight:500;
-  letter-spacing:-0.026em; line-height:1.08;
+  font-size:clamp(24px,2.3vw,32px); font-weight:500;
+  letter-spacing:-0.026em; line-height:1.1;
 }
+/* The gist, from promptShort, so the whole thing need not be read to see
+   what this does. */
+.modal-summary{
+  color:var(--text-muted); font-size:var(--text-base);
+  line-height:var(--leading-body); max-width:52ch;
+}
+
+.modal-prompt{
+  min-height:0;
+  display:flex; flex-direction:column;
+  margin:0 clamp(24px,2.4vw,34px);
+  border:1px solid var(--border-subtle);
+  border-radius:var(--radius);
+  background:var(--bg-void);
+  overflow:hidden;
+}
+.modal-prompt-bar{
+  flex:0 0 auto;
+  display:flex; align-items:center; justify-content:space-between; gap:var(--space-3);
+  padding:var(--space-3) var(--space-4);
+  border-bottom:1px solid var(--border-subtle);
+  background:var(--surface);
+}
+.modal-prompt-label{
+  font-size:var(--text-2xs); text-transform:uppercase;
+  letter-spacing:var(--track-caps); color:var(--text-muted);
+}
+.modal-prompt-hint{
+  font-size:var(--text-2xs); color:var(--text-placeholder);
+  font-variant-numeric:tabular-nums;
+}
+.modal-prompt-scroll{
+  min-height:0; overflow-y:auto;
+  padding:var(--space-5);
+  overscroll-behavior:contain;
+}
+.modal-prompt-scroll .prompt-text{
+  font-family:var(--font-mono);
+  /* 15px over 1.85 across a capped measure: a hundred words of monospace
+     is genuinely read here, not glanced at. */
+  font-size:15px; line-height:1.85;
+  color:var(--text-primary);
+  max-width:62ch;
+  white-space:pre-wrap; word-break:break-word;
+}
+/* The fill-in slots have to be findable at a glance in a long prompt. */
+.modal-prompt-scroll .var{
+  color:var(--syntax-var); background:var(--syntax-var-bg);
+  padding:1px 5px; border-radius:var(--radius-sm);
+  font-weight:500;
+}
+
+.modal-actions{
+  flex:0 0 auto;
+  display:flex; flex-direction:column; gap:var(--space-3);
+  padding:var(--space-5) clamp(24px,2.4vw,34px) clamp(20px,2vw,28px);
+  border-top:1px solid var(--border-subtle);
+  background:var(--surface);
+}
+.modal-actions .send-row{ display:flex; gap:var(--space-2); flex-wrap:wrap; }
+.modal-actions .btn-send{ flex:1 1 auto; justify-content:center; }
 .modal-howto{ font-size:var(--text-xs); color:var(--text-muted); line-height:var(--leading-body); }
-.badge-input{ border-color:var(--border-subtle); color:var(--text-muted); background:transparent; }
+
+/* ---- phone: a full-height sheet ----------------------------------------
+   Rising from the bottom rather than appearing in the middle, because a
+   dialog that fills the screen on a phone is a sheet whatever it is
+   called. The prompt still scrolls inside itself, so the actions stay
+   pinned to the bottom of the viewport. */
+@media (max-width:820px){
+  .modal-backdrop{ padding:0; align-items:flex-end; }
+  .modal{
+    width:100%; max-width:100%;
+    height:92svh; max-height:92svh;
+    grid-template-columns:minmax(0,1fr);
+    grid-template-rows:minmax(160px,30svh) minmax(0,1fr);
+    border-radius:var(--radius-lg) var(--radius-lg) 0 0;
+    transform:translateY(100%);
+  }
+  .modal-backdrop.open .modal{ transform:none; }
+  .modal-body{ border-left:0; border-top:1px solid var(--border-subtle); }
+  .modal-head{ padding:var(--space-5) var(--space-5) var(--space-4); }
+  .modal-prompt{ margin-inline:var(--space-5); }
+  .modal-actions{ padding:var(--space-4) var(--space-5) calc(var(--space-5) + env(safe-area-inset-bottom)); }
+  .modal-howto{ display:none; }
+}
+@media (prefers-reduced-motion: reduce){
+  .modal{ transition:none; }
+}
 
 
 /* ============================================

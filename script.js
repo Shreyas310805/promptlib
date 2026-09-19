@@ -358,6 +358,7 @@ function initPane(){
    SETTINGS
    ================================================================== */
 function initSettings(){
+  const theme = document.getElementById("setTheme");
   const shuffle = document.getElementById("setShuffle");
   const motion = document.getElementById("setMotion");
 
@@ -371,6 +372,10 @@ function initSettings(){
     });
   };
 
+
+  bind(theme,
+    () => currentTheme() === "light",
+    (on) => applyTheme(on ? "light" : "dark"));
 
   bind(shuffle,
     () => readStore(STORE_KEYS.shuffle, true) !== false,
@@ -901,6 +906,64 @@ function bindVariableTokens(root){
     refreshPromptCard(card);
     announce("Cleared the values on this prompt");
   });
+}
+
+/* ==================================================================
+   THEME
+
+   Dark is the identity; light is an override that persists per browser.
+   The stored value is applied by the inline bootstrap in <head>, before
+   the first paint, so the page never renders one theme and swaps to the
+   other. This only handles the toggling.
+   ================================================================== */
+function currentTheme(){
+  return document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
+}
+
+function applyTheme(next){
+  const root = document.documentElement;
+  /* The class is added only for the length of the swap. */
+  if(!prefersReducedMotion){
+    root.classList.add("theme-transition");
+    setTimeout(() => root.classList.remove("theme-transition"), 400);
+  }
+  root.setAttribute("data-theme", next);
+  try { localStorage.setItem("promptlib-theme", next); } catch(err){ /* private mode */ }
+
+  const on = next === "light";
+  const navBtn = document.getElementById("themeToggle");
+  if(navBtn){
+    navBtn.setAttribute("aria-checked", String(on));
+    navBtn.setAttribute("aria-label", on ? "Dark theme" : "Light theme");
+  }
+  const setBtn = document.getElementById("setTheme");
+  if(setBtn) setBtn.setAttribute("aria-checked", String(on));
+
+  /* The nav pill is positioned in pixels, and the palette swap can change
+     link weight, so remeasure once the transition has settled. */
+  if(navSettle) setTimeout(navSettle, 60);
+  announce(on ? "Light theme" : "Dark theme");
+}
+
+function initThemeToggle(){
+  const btn = document.getElementById("themeToggle");
+  const on = currentTheme() === "light";
+  if(btn){
+    btn.setAttribute("aria-checked", String(on));
+    btn.setAttribute("aria-label", on ? "Dark theme" : "Light theme");
+    btn.addEventListener("click", () => applyTheme(currentTheme() === "light" ? "dark" : "light"));
+  }
+
+  /* Follow the OS only while the visitor has never chosen for themselves. */
+  if(window.matchMedia){
+    const sys = window.matchMedia("(prefers-color-scheme: light)");
+    sys.addEventListener("change", (e) => {
+      let stored = null;
+      try { stored = localStorage.getItem("promptlib-theme"); } catch(err){ /* ignore */ }
+      if(stored === "light" || stored === "dark") return;
+      document.documentElement.setAttribute("data-theme", e.matches ? "light" : "dark");
+    });
+  }
 }
 
 /* ==================================================================
@@ -1941,6 +2004,23 @@ function openPromptModal(p){
   document.getElementById("modalModel").textContent = p.cat;
   const inputEl = document.getElementById("modalInput");
   if(inputEl) inputEl.textContent = p.input || "no photo";
+
+  /* The one-line gist above the full text. promptShort is the original
+     single-sentence version of every prompt, kept for exactly this. */
+  const summary = document.getElementById("modalSummary");
+  if(summary) summary.textContent = p.promptShort || "";
+
+  const meta = document.getElementById("modalPromptMeta");
+  if(meta){
+    const words = (p.prompt || "").trim().split(/\s+/).filter(Boolean).length;
+    const slots = new Set((p.prompt || "").match(/\[([^\]\n]{1,60})\]/g) || []).size;
+    meta.textContent = `${words} words${slots ? ` \u00b7 ${slots} to fill in` : ""}`;
+  }
+
+  /* A reopened dialog should start at the top of the prompt, not wherever
+     the last one was left. */
+  const scroller = document.querySelector(".modal-prompt-scroll");
+  if(scroller) scroller.scrollTop = 0;
   document.getElementById("modalPromptText").innerHTML = highlightVars(p.prompt);
   document.getElementById("modalCopyBtn").dataset.raw = p.prompt;
 
@@ -2299,6 +2379,7 @@ function boot(name, fn){
   }
 }
 
+boot("themeToggle", initThemeToggle);
 boot("glass", initGlass);
 boot("atmosphere", initAtmosphere);
 boot("setActiveNav", setActiveNav);
