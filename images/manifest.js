@@ -13,6 +13,7 @@ window.imageManifest = [
   "1970s-film-portrait",
   "35mm-film-grain",
   "4k-ultra-sharp",
+  "80s-retro-portrait",
   "8k-hyper-detail",
   "90s-anime",
   "abstract-expressionism",

@@ -65,6 +65,12 @@ const ROOT = __dirname;
 const IMAGES_DIR = path.join(ROOT, "images");
 const BASE_DIR = path.join(IMAGES_DIR, "base");
 const USAGE_LOG = path.join(ROOT, ".image-usage.json");
+/* Which slugs this script actually produced. Committed, unlike the usage
+   log, which resets at 00:00 UTC and so cannot answer the one question a
+   multi-day run has to ask on resume: is images/<slug>.jpg something I
+   made, or is it the stock photograph it is meant to replace? Both are a
+   file on disk, and "the file exists" was the only test. */
+const LEDGER = path.join(IMAGES_DIR, "generated.json");
 
 const MODEL = "@cf/black-forest-labs/flux-2-klein-4b";
 
@@ -338,6 +344,18 @@ const API_URL = `https://api.cloudflare.com/client/v4/accounts/${ENV.CLOUDFLARE_
    ------------------------------------------------------------------ */
 function today() {
   return new Date().toISOString().slice(0, 10); // UTC, matching the reset
+}
+
+function readLedger() {
+  try { return JSON.parse(fs.readFileSync(LEDGER, "utf8")); }
+  catch (err) { return { model: MODEL, slugs: {} }; }
+}
+let ledger = null;
+function recordGenerated(slug) {
+  if (!ledger) ledger = readLedger();
+  ledger.model = MODEL;
+  ledger.slugs[slug] = today();
+  fs.writeFileSync(LEDGER, JSON.stringify(ledger, null, 2) + String.fromCharCode(10));
 }
 
 function readUsage() {
@@ -697,6 +715,7 @@ async function runQueue(jobs, usage) {
       usage.calls += 1;
       usage.images.push(path.basename(job.dst));
       writeUsage(usage);
+      if (!job.isBase) recordGenerated(job.label);
       done += 1;
       console.log(`  ok ${job.label.padEnd(34)} ${info}  [${Math.round(usage.neurons)}/${DAILY_NEURONS} neurons]`);
     }
@@ -739,6 +758,7 @@ material clashes: ${found.length}`);
     if (fs.existsSync(dst) && !FORCE_BASES) continue;
     baseJobs.push({
       label: `base/${name}`,
+      isBase: true,
       dst,
       prompt: `${prompt} Photorealistic, shot on a full-frame camera, natural colour.`,
       width: OUT_SIZE, height: OUT_SIZE, inputs: [], seed: 1000 + baseJobs.length
@@ -772,11 +792,16 @@ material clashes: ${found.length}`);
 
   /* ---- the edits ---- */
   const prompts = loadPrompts();
+  const madeByUs = new Set(Object.keys(readLedger().slugs || {}));
   let queue = prompts.filter((p) => {
     const dst = path.join(IMAGES_DIR, `${p.slug}.jpg`);
     if (SLUGS) return SLUGS.includes(p.slug);
     if (FORCE) return true;
-    return !fs.existsSync(dst);
+    /* Not "does a file exist" but "did we make it". Everything in
+       images/ started as a stock photograph, and the whole point of the
+       run is to replace those, so a slug missing from the ledger is work
+       still to do however many bytes are sitting on disk. */
+    return !fs.existsSync(dst) || !madeByUs.has(p.slug);
   });
   if (ONLY) queue = queue.slice(0, ONLY);
 
@@ -822,6 +847,20 @@ function finish(usage, stopped) {
   const onDisk = fs.existsSync(IMAGES_DIR)
     ? fs.readdirSync(IMAGES_DIR).filter((f) => f.endsWith(".jpg")).length
     : 0;
+
+  /* The gallery decides whether a card gets an <img> from images/
+     manifest.js, not from the directory, so a render that is never added
+     to the manifest is a render nobody sees. Rebuilding it here means
+     that cannot be forgotten: the file appears and the manifest learns
+     about it in the same breath. */
+  if (!DRY_RUN) {
+    try {
+      execFileSync(process.execPath, [path.join(ROOT, "build-manifest.js")], { stdio: "pipe" });
+      console.log("images/manifest.js rebuilt");
+    } catch (err) {
+      console.log("could not rebuild images/manifest.js — run build-manifest.js by hand");
+    }
+  }
   console.log(`\nresult images on disk: ${onDisk}`);
   console.log(`neurons used today: ${Math.round(usage.neurons)} of ${DAILY_NEURONS}`);
   if (stopped === "budget" || stopped === "rate-limit") {
