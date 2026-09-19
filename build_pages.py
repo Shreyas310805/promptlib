@@ -75,14 +75,40 @@ def live_counts():
     }
 
 
+# Figures that cannot be wrapped in a span because they live in an
+# attribute or in running prose. Each pattern keeps the number in its own
+# group so only the digits are replaced.
+COUNT_ATTRS = [
+    # Anchored on the gallery input specifically. An unanchored
+    # placeholder="Search N prompts" also matches the text CATEGORY pages,
+    # whose N is 114 per category and has nothing to do with the image
+    # total -- it rewrote all four to 273 the first time it ran.
+    ("images", re.compile(r'(id="gallerySearch"[^>]*placeholder="Search )([\d,]+)( prompts)')),
+    ("images", re.compile(r'(first &mdash; )([\d,]+)( image transformations)')),
+    ("text",   re.compile(r'( and )([\d,]+)( fill-in-the-blank text templates)')),
+]
+
+
 def sync_counts(text, counts):
-    """Rewrite <span data-count="images">273</span> from the real data."""
+    """Rewrite every printed figure from the real data.
+
+    Spans first, then the ones that cannot be spans: a placeholder lives in
+    an attribute, and the about panel says the number in a sentence. Those
+    two had drifted to 266 -- the count of thumbnails on disk, which is not
+    the count of prompts -- and stayed wrong precisely because the sync only
+    ever looked at spans.
+    """
 
     def swap(m):
         n = counts.get(m.group("key"))
         return m.group(0) if n is None else m.group(1) + f"{n:,}" + m.group(4)
 
-    return COUNT_RE.sub(swap, text)
+    text = COUNT_RE.sub(swap, text)
+    for key, pat in COUNT_ATTRS:
+        n = counts.get(key)
+        if n is not None:
+            text = pat.sub(lambda m, n=n: m.group(1) + f"{n:,}" + m.group(3), text)
+    return text
 
 
 TRENDING_OUT = "prompts-trending.js"
@@ -285,6 +311,7 @@ def main():
         p for p in glob.glob(os.path.join(BASE, "*.html"))
     )
     changed, unmarked = [], []
+    counts = live_counts()
 
     for path in pages:
         name = os.path.basename(path)
@@ -296,8 +323,11 @@ def main():
             continue
 
         updated = apply_to(original, partials, name)
-        if COUNT_RE.search(updated):
-            updated = sync_counts(updated, live_counts())
+        # Unconditional. This used to be gated on the page containing a
+        # data-count span, which meant the pages whose only figures live in
+        # an attribute or a sentence were never synced at all -- which is
+        # how the gallery came to advertise "Search 266 prompts" over 273.
+        updated = sync_counts(updated, counts)
         if updated == original:
             continue
 
