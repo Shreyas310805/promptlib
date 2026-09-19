@@ -267,6 +267,9 @@ function materialClash(entry) {
 const args = process.argv.slice(2);
 const has = (f) => args.includes(f);
 const FORCE = has("--force");
+/* Rebuilding the cast is deliberate and separate -- see the note in the
+   base loop. --bases alone also still means "only do the bases". */
+const FORCE_BASES = has("--bases");
 const BASES_ONLY = has("--bases");
 const DRY_RUN = has("--dry-run");
 const REVIEW = has("--review");
@@ -728,7 +731,12 @@ material clashes: ${found.length}`);
   const baseJobs = [];
   for (const [name, prompt] of Object.entries(BASE_PHOTOS)) {
     const dst = path.join(BASE_DIR, `${name}.jpg`);
-    if (fs.existsSync(dst) && !FORCE) continue;
+    /* NOT gated on --force. The bases are the cast: every one of the 277
+       edits is that same face, that same mug, that same street, and a
+       base regenerated between two batches quietly hands half the
+       gallery a different person. --force means "redo the EDITS I named";
+       redoing the cast is --bases, on purpose and on its own. */
+    if (fs.existsSync(dst) && !FORCE_BASES) continue;
     baseJobs.push({
       label: `base/${name}`,
       dst,
@@ -754,7 +762,7 @@ material clashes: ${found.length}`);
     for (const name of Object.keys(BASE_PHOTOS)) {
       const src = path.join(BASE_DIR, `${name}.jpg`);
       const small = path.join(BASE_DIR, `${name}.in.jpg`);
-      if (fs.existsSync(src) && (!fs.existsSync(small) || FORCE)) {
+      if (fs.existsSync(src) && (!fs.existsSync(small) || FORCE_BASES)) {
         writeJpeg(fs.readFileSync(src), small, INPUT_SIZE, 200 * 1024);
       }
     }

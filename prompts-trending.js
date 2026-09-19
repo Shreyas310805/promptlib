@@ -10,7 +10,7 @@
    ================================================================== */
 
 /* Every figure below is counted, not estimated. */
-window.libraryStats = {"prompts": 733, "images": 277, "text": 456, "categories": 14, "thumbnails": 266};
+window.libraryStats = {"prompts": 733, "images": 277, "text": 456, "categories": 14, "thumbnails": 267};
 
 /* Ordered by size. `cover` is a prompt in that category that has a
    render on disk, so the hover reveal shows real output. */

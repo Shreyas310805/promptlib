@@ -677,20 +677,33 @@ FEATURED = [
 # ---------------------------------------------------------------------------
 
 # Family is decided by slug, first match winning. Ordered most specific first.
+# Order matters: first match wins. The last entry is a catch-all that
+# says "painted medium", and a catch-all only stays honest if everything
+# that is NOT one is named above it. It had quietly collected 23 things
+# that are not paintings at all -- a daguerreotype, a thermal image, an
+# ASCII dump, a rainy street -- and handed each of them "finish it as a
+# complete painting, visible marks everywhere". The 80s portrait came
+# back as an oil sketch, which is how this was noticed.
 FAMILIES = [
-    ("mockup",    r"mockup|billboard|t-shirt|magazine-cover|album-cover|movie-poster|trading-card|vintage-advertisement|travel-poster|postage-stamp|framed-wall-art|storefront-window|museum-exhibit|vinyl-collectible|action-figure|snow-globe"),
-    ("practical", r"remove-|upscale|restore|colorize|passport|corporate-portrait|white-background|real-estate|studio-backdrop|lifestyle-product|food-photography|professional-headshot|fashion-editorial"),
+    ("mockup",    r"mockup|billboard|t-shirt|magazine-cover|album-cover|movie-poster|trading-card|vintage-advertisement|travel-poster|postage-stamp|framed-wall-art|storefront-window|museum-exhibit|vinyl-collectible|action-figure|snow-globe|wanted-poster"),
+    ("practical", r"remove-|upscale|restore|colorize|passport|corporate-portrait|white-background|real-estate|studio-backdrop|lifestyle-product|food-photography|professional-headshot|fashion-editorial|virtual-staging|background-removal"),
     ("character", r"astronaut|wizard|samurai|pirate|cowboy|knight|steampunk|netrunner|superhero|caricature"),
     ("light",     r"golden-hour|blue-hour|change-to-night|overcast|midday|dramatic-sky|thick-fog|season|water-reflection|cinematic-color|colour-grade|color-grade"),
-    ("material",  r"^made-of-|marble-bust|bronze-statue|wax-figure|balloon-sculpture|gingerbread|plush-toy|toy-brick|papercraft|sand-art|cross-stitch|embroidery|claymation"),
-    ("glitch",    r"glitch|datamosh|pixel-sort|vhs|crt|jpeg|chromatic|deep-fried|falling-code|security-camera|night-vision|heat-map|x-ray|point-cloud|dashcam|thermal-receipt|dot-matrix|kaleidoscope|fractal|vaporwave|holographic|hologram|duotone"),
+    # stained-glass and mosaic-tile are assembled out of pieces of a
+    # material and lit through or across the surface -- not painted. Left
+    # in the paint family they picked up its tail ("visible marks
+    # everywhere, genuinely re-drawn in paint"), which directly
+    # contradicts "bold black leading sealing glowing translucent
+    # colour", and the result was a painted portrait with no lead lines.
+    ("material",  r"^made-of-|marble-bust|bronze-statue|wax-figure|balloon-sculpture|gingerbread|plush-toy|toy-brick|papercraft|sand-art|cross-stitch|embroidery|claymation|stained-glass|mosaic-tile"),
+    ("glitch",    r"glitch|datamosh|pixel-sort|vhs|crt|jpeg|chromatic|deep-fried|falling-code|security-camera|night-vision|heat-map|x-ray|point-cloud|dashcam|thermal-receipt|dot-matrix|kaleidoscope|fractal|vaporwave|holographic|hologram|duotone|thermal-imaging|ascii|liquid-distortion|neon-outline|loading-screen|circuit-board|cyberpunk-neon"),
     ("render3d",  r"low-poly|voxel|isometric|cel-shaded|wireframe|blueprint|topographic|miniature-diorama|concept-art"),
-    ("anime",     r"anime|manga|chibi|rubber-hose|western-cartoon|comic-book|graphic-novel|coloring-book|sticker|picture-book|silhouette-animation|character-sheet|storyboard|newspaper-comic|cartoon"),
-    ("photo",     r"film-grain|bokeh|tilt-shift|long-exposure|fisheye|telephoto|macro|disposable|lomography|tintype|instant-photo|cross-processed|hdr|4k|8k|double-exposure|light-painting|underwater|drone|wide-angle|film-portrait|1920s|sepia|high-contrast-monochrome|film-noir|noir"),
-    ("print",     r"woodblock|linocut|screen-print|risograph|lithograph|etching|halftone|stencil|banknote|engraving|blueprint|vector-trace|vector-flat|pixel-art|16-bit|line-art|op-art"),
+    ("anime",     r"anime|manga|chibi|rubber-hose|western-cartoon|comic-book|graphic-novel|coloring-book|sticker|picture-book|silhouette-animation|character-sheet|storyboard|newspaper-comic|cartoon|cel-animation|2d-feature-animation"),
+    ("photo",     r"film-grain|bokeh|tilt-shift|long-exposure|fisheye|telephoto|macro|disposable|lomography|tintype|instant-photo|cross-processed|hdr|4k|8k|double-exposure|light-painting|underwater|drone|wide-angle|film-portrait|1920s|sepia|high-contrast-monochrome|film-noir|noir|infrared|anamorphic|daguerreotype|yearbook|80s-retro-portrait|y2k-portrait|disco-portrait"),
+    ("print",     r"woodblock|linocut|screen-print|risograph|lithograph|etching|halftone|stencil|banknote|engraving|blueprint|vector-trace|vector-flat|pixel-art|16-bit|line-art|op-art|brutalist-graphic"),
     ("movement",  r"cubism|bauhaus|art-deco|art-nouveau|de-stijl|constructivist|dada|futurism|surrealism|pop-art|minimalism|pointillism|romanticism|rococo|neoclassical|baroque|renaissance|ukiyo-e|mughal|persian|warli|illuminated|impressionist|expressionism|fauvism|abstract"),
     ("draw",      r"pencil|graphite|charcoal|conte|crayon|ink-pen|ink-wash|brush-pen|marker|chalkboard|scratchboard|sketch|tattoo|chinese-ink"),
-    ("scene",     r"desert|jungle|forest|village|ruins|rooftop|cherry-blossom|outer-space|infinite-field|cozy-room|medieval"),
+    ("scene",     r"desert|jungle|forest|village|ruins|rooftop|cherry-blossom|outer-space|infinite-field|cozy-room|medieval|snowy|heavy-rain|cyberpunk-city|floating-island"),
     ("paint",     r"."),   # everything left is a painted medium
 ]
 
