@@ -195,7 +195,7 @@ for(let i=0;;i++){
 const examples = rota.slice(0,10).map(slim);
 
 /* ---- trending --------------------------------------------------------- */
-const trending = img.filter(p=>p.trending===true).map(slim);
+const featured = img.filter(p=>p.featured===true).map(slim);
 
 /* ---- text picks -------------------------------------------------------
    One from each writing category. A text prompt has no title in the data,
@@ -216,7 +216,7 @@ const totals = {
 };
 
 process.stdout.write(JSON.stringify({
-  trending, imageCats, textCats, totals, examples, textPicks
+  featured, imageCats, textCats, totals, examples, textPicks
 }));
 """
     dump = subprocess.run(["node", "-e", script],
@@ -261,8 +261,11 @@ process.stdout.write(JSON.stringify({
     emit("homeExamples", data.get("examples", []),
          "/* The home page's image preview. Ten renders, one per category\n"
          "   in rotation. */")
-    emit("trendingPrompts", data.get("trending", []),
-         "/* Flagged trending:true in prompts-image.js. */")
+    emit("featuredPrompts", data.get("featured", []),
+         "/* Flagged featured:true in prompts-image.js -- the multi-photo\n"
+         "   concept pieces the interface labels Featured Concepts. NOT the\n"
+         "   gallery Trending row: that is a separate flag, read straight\n"
+         "   out of prompts-image.js by images.html. */")
     emit("textPicks", data.get("textPicks", []),
          "/* Editor's picks — writing half, one per category. */")
 

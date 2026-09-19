@@ -445,7 +445,7 @@ function buildCmdkIndex(){
 
   /* Whatever the homepage happens to be showing is searchable from it. On
      images.html these are already in imagePrompts and get skipped. */
-  ["homeExamples", "trendingPrompts"].forEach((key) => {
+  ["homeExamples", "featuredPrompts"].forEach((key) => {
     (Array.isArray(window[key]) ? window[key] : []).forEach((p) => {
       if(out.some((x) => x.kind === "prompt" && x.title === p.style)) return;
       out.push({ kind:"prompt", title:p.style, sub:p.cat, prompt:p.prompt });
@@ -676,6 +676,13 @@ function withTransition(fn){
     return;
   }
   activeTransition = vt;
+  /* The name has to be handed over, not shared. .modal-swatch .real-photo
+     declares prompt-shared in CSS, so once the update callback has run
+     BOTH it and the thumbnail carry the name in the new state and the
+     browser logs "Unexpected duplicate view-transition-name" and drops
+     the morph. Releasing it as soon as the DOM is updated leaves exactly
+     one claimant in each snapshot, which is what the API asks for. */
+  vt.updateCallbackDone.then(releaseSharedName, releaseSharedName);
   const swallow = () => {};
   vt.ready.catch(swallow);
   vt.updateCallbackDone.catch(swallow);
@@ -738,7 +745,11 @@ let sharedCard = null;
 function claimSharedName(card){
   releaseSharedName();
   if(!card || prefersReducedMotion || !document.startViewTransition) return;
-  const img = card.querySelector(".gcard-img");
+  /* The trending rail uses its own class for its render, and looking only
+     for .gcard-img meant a card opened from the rail silently lost the
+     shared-element transition -- no error, just a dialog that appeared
+     instead of growing out of the thumbnail. */
+  const img = card.querySelector(".gcard-img, .trend-img");
   if(!img) return;
   img.style.viewTransitionName = "prompt-shared";
   sharedCard = img;
@@ -1745,6 +1756,52 @@ function renderGalleryUnavailable(){
     </div>`;
 }
 
+/* ---- the trending strip ----------------------------------------------
+   A horizontal rail of the twelve flagged trending:true, above the
+   category chips.
+
+   It is a rail and not a grid on purpose. The twelve are meant to be
+   glanced along and jumped into, not compared; a grid of twelve at the
+   top of a page of 277 reads as the page starting twice. On a phone it
+   scrolls sideways with snap points, so it costs one screen of height
+   instead of six.
+
+   Clicking one opens its dialog, exactly as a grid card does -- it
+   reuses the same delegated handler by carrying the same data-id. */
+function initTrending(){
+  const row = document.getElementById("trendingRow");
+  const strip = document.getElementById("trendingStrip");
+  if(!row || !strip || !Array.isArray(window.imagePrompts)) return;
+
+  /* p.trending is a RANK, not a flag: the gallery shuffles its order on
+     every load and a curated row has to survive that. */
+  const picks = window.imagePrompts
+    .map((p, i) => ({ ...p, i }))
+    .filter((p) => p.trending > 0)
+    .sort((a, b) => a.trending - b.trending);
+  if(!picks.length) return;
+
+  strip.innerHTML = picks.map((p) => `
+    <li class="trend-item swatch-${p.i % 6}">
+      <button type="button" class="trend-card gcard-open" data-id="${p.i}" data-slug="${escapeHTML(p.slug)}"
+              aria-label="${escapeHTML(p.style)}, ${escapeHTML(p.cat)}. Open prompt.">
+        <span class="swatch-texture" aria-hidden="true"></span>
+        ${hasRender(p) ? `<img class="trend-img" src="images/${encodeURIComponent(p.slug)}.jpg" alt="" loading="lazy" decoding="async" width="400" height="400">` : ""}
+        <span class="trend-scrim" aria-hidden="true"></span>
+        <span class="trend-name">${escapeHTML(p.style)}</span>
+      </button>
+    </li>`).join("");
+
+  row.hidden = false;
+
+  strip.addEventListener("click", (e) => {
+    const open = e.target.closest(".gcard-open");
+    if(!open) return;
+    claimSharedName(open);
+    withTransition(() => openModal(Number(open.dataset.id)));
+  });
+}
+
 function initGallery(){
   const grid = document.getElementById("galleryGrid");
   if(!grid) return;
@@ -2389,6 +2446,7 @@ boot("sectionTabs", initSectionTabs);
 boot("mobileNav", initMobileNav);
 boot("pageTransitions", initPageTransitions);
 boot("gallery", initGallery);
+boot("trending", initTrending);
 boot("viewSwitch", initViewSwitch);
 boot("cmdk", initCmdk);
 boot("home", initHome);

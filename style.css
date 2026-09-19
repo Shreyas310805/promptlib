@@ -1808,7 +1808,98 @@ body.home .nav{ position:fixed; left:0; right:0; }
    entirely left white ink sitting on a pale swatch -- the pink one is
    1.5:1 -- so the foot keeps a gradient here too; it is just lighter,
    because there is no photograph for it to protect. */
-.gcard:not(:has(.gcard-img)) .gcard-scrim{
+.gcard:not(:has(.gcard-img)) /* ---- the trending rail -----------------------------------------------
+   Twelve cards on one line at desktop, a snapping side-scroller on a
+   phone. Square, because the set spans portraits and objects and a
+   ragged rail reads as a mistake rather than as variety.
+
+   The rail is the only place on the page where a card is permanently
+   labelled: the grid reveals its caption on hover, but a rail you skim
+   has to say what each one IS without being touched. */
+.trending{
+  display:flex; flex-direction:column; gap:var(--space-4);
+  padding-bottom:var(--space-2);
+}
+.trending-head{ display:flex; align-items:baseline; gap:var(--space-3); flex-wrap:wrap; }
+.trending-title{
+  font-size:var(--text-lg); font-weight:500;
+  letter-spacing:var(--track-heading); color:var(--text-primary);
+}
+.trending-sub{ font-size:var(--text-sm); color:var(--text-muted); }
+
+.trending-strip{
+  display:grid; grid-auto-flow:column;
+  grid-auto-columns:minmax(0,1fr);
+  gap:var(--space-3);
+  list-style:none; margin:0; padding:0;
+}
+.trend-item{ min-width:0; }
+
+.trend-card{
+  position:relative; display:block; width:100%;
+  aspect-ratio:1/1; overflow:hidden;
+  border:1px solid var(--border-subtle);
+  border-radius:var(--radius);
+  background:var(--surface);
+  padding:0; cursor:pointer;
+  transition:transform var(--dur-hover) var(--ease-out),
+             border-color var(--dur-hover) var(--ease-out),
+             box-shadow var(--dur-hover) var(--ease-out);
+}
+.trend-card:hover{
+  transform:translate3d(0,-3px,0);
+  border-color:var(--border-strong);
+  box-shadow:var(--shadow-lift);
+}
+.trend-card:focus-visible{ outline:2px solid var(--focus-ring); outline-offset:3px; }
+.trend-img{
+  position:absolute; inset:0; width:100%; height:100%;
+  object-fit:cover; display:block;
+}
+/* Always on, unlike the grid's: a permanent label needs permanent ground.
+   Sized so it never climbs past the lower third and hides the effect the
+   card exists to show. */
+.trend-scrim{
+  position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(180deg, transparent 52%, rgba(6,6,7,.58) 78%, rgba(6,6,7,.92) 100%);
+}
+.trend-name{
+  position:absolute; left:0; right:0; bottom:0;
+  padding:var(--space-2) 10px 9px;
+  font-size:11px; font-weight:500; line-height:1.25;
+  letter-spacing:0; color:#fff; text-align:left;
+  text-shadow:0 1px 6px rgba(0,0,0,.75);
+  /* Two lines, then ellipsis. Twelve across at 1440 is a 108px card --
+     which is the point, since these are chosen for reading at thumbnail
+     size -- and "Toy Brick Minifigure" set solid took three lines and
+     covered the transformation it was labelling. */
+  display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2;
+  overflow:hidden;
+}
+
+/* Below the point where twelve squares would be 60px wide, the rail
+   scrolls instead of shrinking. Snap points so it lands on whole cards. */
+@media (max-width:1180px){
+  .trending-strip{
+    grid-auto-columns:minmax(132px,1fr);
+    overflow-x:auto; overscroll-behavior-x:contain;
+    scroll-snap-type:x proximity;
+    /* the gutter the page already has, so cards start flush with the text
+       above and the last one can still reach the left edge */
+    padding-bottom:var(--space-2);
+    scrollbar-width:thin;
+  }
+  .trend-item{ scroll-snap-align:start; }
+}
+@media (max-width:640px){
+  .trending-strip{ grid-auto-columns:minmax(124px,45vw); }
+}
+@media (prefers-reduced-motion: reduce){
+  .trend-card{ transition:none; }
+  .trend-card:hover{ transform:none; }
+}
+
+.gcard-scrim{
   background:linear-gradient(180deg, transparent 45%, rgba(6,6,7,.34) 72%, rgba(6,6,7,.78) 100%);
   opacity:1;
 }

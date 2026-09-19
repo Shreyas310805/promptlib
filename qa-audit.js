@@ -57,8 +57,9 @@
          walking ANCESTORS (the scrim is a sibling, and a gradient has no
          numeric colour), so these are reported separately and checked by
          eye rather than counted as token failures. */
-      var cap = el.closest('.gcard-meta');
-      if (cap && cap.closest('.gcard') && cap.closest('.gcard').querySelector('.gcard-scrim')) {
+      var cap = el.closest('.gcard-meta, .trend-card');
+      if (cap && cap.querySelector('.gcard-scrim, .trend-scrim') ||
+          (cap && cap.closest('.gcard') && cap.closest('.gcard').querySelector('.gcard-scrim'))) {
         window.__onArt = (window.__onArt || 0) + 1;
         return;
       }

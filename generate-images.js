@@ -92,8 +92,17 @@ const MAX_RETRIES = 4;
    never a named or recognisable person.
    ------------------------------------------------------------------ */
 const BASE_PHOTOS = {
+  /* FOUR faces, not one. An effect is only legible on a subject -- a person
+     in watercolour, in glass, as a statue, reads instantly -- so most of the
+     273 use a portrait, and one face repeated 200 times would make the
+     gallery a wall of the same woman. Varied by age, gender and setting, and
+     handed out in rotation so neighbours differ. Fictional people only,
+     described as types, never a likeness of anyone real. */
   portrait: "A candid outdoor portrait of a fictional woman in her early thirties with shoulder-length dark curly hair, wearing a plain olive jacket, looking slightly off camera, soft overcast daylight, shallow depth of field, natural skin texture, unremarkable background of a blurred park. Ordinary documentary photograph, not a model, no styling.",
   portrait2: "A candid outdoor portrait of a fictional girl about nine years old with shoulder-length dark curly hair, wearing a plain yellow raincoat, looking slightly off camera, soft overcast daylight, shallow depth of field, natural skin texture, unremarkable background of a blurred park. Ordinary family snapshot, not a model.",
+  portraitElder: "A candid indoor portrait of a fictional man in his late sixties with a short grey beard, deep lines and thinning hair, wearing a charcoal knitted jumper, seated near a window and looking slightly away from the camera, soft directional daylight from the left, warm interior shadow behind him, natural weathered skin texture. Ordinary documentary photograph, not a model.",
+  portraitMid: "A candid indoor portrait of a fictional woman in her mid forties with straight dark hair pulled back and a few greys at the temple, wearing a plain navy shirt, standing in a bright workshop or studio and looking toward the camera, soft window light from the right, natural skin texture with visible lines. Ordinary documentary photograph, not a model, no styling.",
+  portraitYouth: "A candid outdoor portrait of a fictional young man in his early twenties with short dark hair and a light stubble, wearing a faded denim jacket over a grey t-shirt, standing against a plain painted brick wall in open shade, even soft daylight, natural skin texture with visible pores. Ordinary street portrait, not a model, no styling.",
   street: "A quiet city street in late afternoon, wet pavement reflecting shopfront signage, a few anonymous pedestrians at a distance with faces not visible, parked cars, overhead tram wires, flat overcast light. Ordinary documentary photograph, no landmark, no readable brand names.",
   room: "A lived-in living room corner photographed in daylight: a linen sofa with a crumpled throw, a low wooden coffee table with a half-read book and a mug, a floor lamp, a rug with visible texture, plants on a windowsill. Natural window light, slightly untidy, ordinary interior photograph.",
   landscape: "A wide open landscape at mid-morning: rolling green hills under a big sky with broken cloud, a dirt track curving away toward a distant line of trees, dry grass in the foreground. Even natural light, no people, no buildings. Ordinary travel photograph.",
@@ -102,63 +111,99 @@ const BASE_PHOTOS = {
   food: "A bowl of noodle soup on a dark wooden table photographed from a high angle, chopsticks resting across the rim, scattered herbs and a small dish of chilli beside it, warm side lighting. Ordinary food photograph, natural and slightly imperfect."
 };
 
-/* Which base photo a prompt gets. Read in order; the first match wins.
-   The `input` field on a prompt says how MANY photos it needs, not which
-   kind, so the choice is made from the category and then refined by slug.
+/* ------------------------------------------------------------------
+   Which base photo a prompt gets
 
-   Slugs are hyphen-delimited, so the patterns match whole segments. Bare
-   substrings put caricature on the dog, because "cari-CAT-ure" contains
-   "cat", and there is a whole family of that mistake waiting in a list of
-   273 names. */
+   The rule is inverted from where this started. It used to map by
+   category, which sent every Material & Sculpture prompt to the mug --
+   and "made of glass" performed on a mug produces a glass mug, which
+   teaches nothing. An effect has to be visible ON A SUBJECT.
+
+   So a portrait is the default, and an object or a place has to be
+   ARGUED FOR: a prompt gets the product base only if it is genuinely
+   about products, and a landscape or street only if it is genuinely
+   about scenery. Everything else -- every medium, movement, material,
+   camera trick and character -- goes on a person, because that is where
+   you can see what it did.
+   ------------------------------------------------------------------ */
 const SEG = (...words) => new RegExp(`(^|-)(${words.join("|")})(-|$)`);
 
-/* Named outright where the automatic rules get it wrong or where a prompt
-   would otherwise land on a base that already looks like the answer. */
+/* Four adult faces, handed out in rotation. The child (portrait2) is
+   deliberately NOT among them: she exists as the second photo for
+   younger-self, and rotating her through the general set would have put a
+   nine-year-old on film-noir, corporate-portrait, passport-photo and
+   cyberpunk-netrunner -- 67 prompts in all. */
+const PORTRAITS = ["portrait", "portraitElder", "portraitMid", "portraitYouth"];
+
+/* The second pass over these lists, and the one that matters.
+   The first pass asked "is this slug about a place?" and answered from
+   the NAME. Reading the prompt TEXT instead gives a different answer for
+   a quarter of them, because most of the scene prompts say some version
+   of
+
+       "Keep the subject unchanged and replace only the surroundings"
+
+   which requires a subject to keep. Sent to the landscape base, that
+   instruction has nothing to act on and the result is a photograph of a
+   jungle: the thing itself, not the effect. Same for the sculpture
+   family -- plush-toy and balloon-sculpture both say "keep the person's
+   facial features" and both were pointed at a dog.
+
+   So the question is no longer what the prompt is NAMED after, it is
+   what the prompt asks to be preserved. Twenty-six moved to a person on
+   that reading. What is left below genuinely has no subject: a drone
+   looking straight down, a season changing over a scene, an empty room.
+   ------------------------------------------------------------------ */
+
+/* Genuinely about an object: the thing photographed IS the point. The
+   mockups are NOT here -- printing your image onto a shirt, a mug or a
+   billboard needs an image worth recognising afterwards, and a face is
+   the only one you can check at a glance. */
+const PRODUCT_SLUGS = new Set([
+  "white-background-product", "lifestyle-product-shot"
+]);
+
+/* Genuinely about a place, or about the weather and light OVER one.
+   "Change the season" edits a scene and keeps no subject; "golden hour"
+   as a LOOK reads on skin, so that one went to a person. */
+const LANDSCAPE_SLUGS = new Set([
+  "drone-top-down", "drone-orbit-shot", "long-exposure", "topographic-map",
+  "change-to-golden-hour", "change-season-to-autumn", "change-season-to-winter",
+  "add-dramatic-sky", "add-water-reflection"
+]);
+const STREET_SLUGS = new Set([
+  "security-camera", "dashcam-footage", "change-to-night", "90s-cyberpunk-cafe"
+]);
+const ROOM_SLUGS = new Set([
+  "real-estate-interior", "cozy-room", "virtual-staging",
+  /* there is no clutter to remove from a studio packshot */
+  "remove-background-clutter"
+]);
+const FOOD_SLUGS = new Set(["food-photography"]);
+const PET_SLUGS = new Set(["underwater-photography"]);
+
+/* A handful the rules cannot reason about. */
 const BASE_OVERRIDE = {
-  "cyberpunk-netrunner": "portrait",  // a netrunner is a person, not a street
-  "caricature": "portrait",           // a caricature is of somebody
-  "mug-mockup": "room",               // the product base IS a mug
-  "made-of-neon-tubes": "product",    // a material edit, like its siblings
-  "made-of-clay": "portrait",         // the product base IS fired clay
-  "marble-bust": "portrait",          // a bust is of a person
-  "bronze-statue": "portrait",
-  "wax-figure": "portrait",
-  "action-figure": "portrait",
-  "toy-brick-minifigure": "portrait",
-  "plush-toy": "pet",                 // a plush animal from a real animal
-  "gingerbread-figure": "portrait",
-  "balloon-sculpture": "pet",         // balloon animals are animals
-  "food-photography": "food",
-  "underwater-photography": "pet",    // a dog is a better swimmer than a mug
+  "made-of-clay": "portrait",        // the product base IS fired clay
+  "younger-self": "portrait"         // pairs with portrait2, handled below
 };
 
-const SLUG_HINTS = [
-  [SEG("food", "dish", "meal", "recipe", "cook"), "food"],
-  [SEG("product", "packshot", "mockup", "bottle", "label"), "product"],
-  [SEG("pet", "dog", "cat", "animal", "wildlife"), "pet"],
-  [SEG("room", "interior", "kitchen", "bedroom", "cozy"), "room"],
-  [SEG("street", "city", "urban", "neon", "noir", "cyberpunk", "rooftop"), "street"],
-  [SEG("landscape", "mountain", "forest", "field", "sky", "drone", "aerial", "space", "dunes", "jungle"), "landscape"],
-  [SEG("portrait", "headshot", "face", "selfie", "self"), "portrait"]
-];
+function baseFor(entry, index) {
+  const slug = entry.slug;
+  if (BASE_OVERRIDE[slug]) return BASE_OVERRIDE[slug];
+  if (FOOD_SLUGS.has(slug)) return "food";
+  if (ROOM_SLUGS.has(slug)) return "room";
+  if (PET_SLUGS.has(slug)) return "pet";
+  if (LANDSCAPE_SLUGS.has(slug)) return "landscape";
+  if (STREET_SLUGS.has(slug)) return "street";
+  if (PRODUCT_SLUGS.has(slug)) return "product";
 
-const CATEGORY_BASE = {
-  "Portrait Makeover": "portrait",
-  "Photography & Camera": "portrait",
-  "Traditional Media": "portrait",
-  "Art Movements": "portrait",
-  "Illustration & Animation": "portrait",
-  "Digital & Glitch": "street",
-  "Scene & Setting": "landscape",
-  "Material & Sculpture": "product",
-  "Practical Edits": "product",
-  "Featured Concepts": "portrait"
-};
-
-function baseFor(entry) {
-  if (BASE_OVERRIDE[entry.slug]) return BASE_OVERRIDE[entry.slug];
-  for (const [re, name] of SLUG_HINTS) if (re.test(entry.slug)) return name;
-  return CATEGORY_BASE[entry.cat] || "portrait";
+  /* Everything else is a person. Rotation is keyed off a hash of the slug
+     rather than array position, so it is stable across rebuilds and does
+     not shift every face when one prompt is added. */
+  let h = 0;
+  for (let i = 0; i < slug.length; i++) h = (h * 31 + slug.charCodeAt(i)) >>> 0;
+  return PORTRAITS[h % PORTRAITS.length];
 }
 
 /* ------------------------------------------------------------------
@@ -178,8 +223,11 @@ function baseFor(entry) {
    does make it invisible is the subject itself already being the answer:
    a fired-clay mug asked to become clay. */
 const BASE_MATERIALS = {
-  portrait:  { subject: ["skin", "hair"],        scene: ["fabric", "cotton", "foliage"] },
-  portrait2: { subject: ["skin", "hair"],        scene: ["fabric", "cotton", "foliage"] },
+  portrait:      { subject: ["skin", "hair"], scene: ["fabric", "cotton", "foliage"] },
+  portrait2:     { subject: ["skin", "hair"], scene: ["fabric", "cotton", "foliage"] },
+  portraitElder: { subject: ["skin", "hair"], scene: ["fabric", "wool"] },
+  portraitMid:   { subject: ["skin", "hair"], scene: ["fabric", "wood"] },
+  portraitYouth: { subject: ["skin", "hair"], scene: ["fabric", "denim", "brick"] },
   street:    { subject: ["concrete", "glass", "metal"], scene: ["asphalt", "water"] },
   room:      { subject: ["fabric", "wood"],      scene: ["paper", "plant"] },
   landscape: { subject: ["grass", "soil"],       scene: ["sky", "water"] },

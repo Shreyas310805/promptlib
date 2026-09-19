@@ -86,9 +86,24 @@ try {
 
     <div class="gallery-controls">
       <div class="gallery-search-wrap">
-        <input type="search" class="search-input" id="gallerySearch" aria-label="Search image prompts" placeholder="Search 273 prompts — try &quot;sketch&quot;, &quot;drone&quot;, &quot;pixel&quot;…" autocomplete="off">
+        <input type="search" class="search-input" id="gallerySearch" aria-label="Search image prompts" placeholder="Search 277 prompts — try &quot;sketch&quot;, &quot;drone&quot;, &quot;pixel&quot;…" autocomplete="off">
         <span class="gallery-count" id="galleryCount" role="status" aria-live="polite"></span>
       </div>
+      <!-- The Trending row. Twelve prompts flagged in prompts-image.js and
+           picked on one criterion: how much the picture changes at
+           thumbnail size. It sits above the category chips because it is
+           not a filter -- it is the answer to "just show me the good
+           ones", which is what most people want before they know what
+           the categories mean. Hidden until script fills it, so a page
+           with JS off shows the full grid rather than an empty heading. -->
+      <section class="trending" id="trendingRow" aria-labelledby="trendingHeading" hidden>
+        <div class="trending-head">
+          <h2 class="trending-title" id="trendingHeading">Trending</h2>
+          <p class="trending-sub">The twelve that change a photo the most.</p>
+        </div>
+        <ul class="trending-strip" id="trendingStrip"></ul>
+      </section>
+
       <div class="chip-row" id="galleryChips" role="group" aria-label="Filter prompts by category"></div>
       <div class="gallery-row">
         <div class="chip-row chip-row-sub" id="galleryInputs" role="group" aria-label="Filter prompts by what they need from you"></div>
@@ -174,7 +189,7 @@ try {
 
     <section class="pane-section" aria-labelledby="aboutHeading">
       <h3 class="pane-heading" id="aboutHeading">About</h3>
-      <p class="pane-body">PromptLib is a browsable library of prompts that have been run against a real model first &mdash; 273 image transformations and 456 fill-in-the-blank text templates.</p>
+      <p class="pane-body">PromptLib is a browsable library of prompts that have been run against a real model first &mdash; 277 image transformations and 456 fill-in-the-blank text templates.</p>
       <p class="pane-body">Everything runs in your browser. No account, no tracking, no key required. Saved prompts stay on this device.</p>
     </section>
   </div>

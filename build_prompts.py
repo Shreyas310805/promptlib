@@ -9,6 +9,35 @@ import json
 import re
 
 # (style name, descriptor injected into the prompt)
+# ---------------------------------------------------------------------------
+# The gallery's Trending row.
+#
+# Two different things wanted the word "trending" and only one of them is
+# this. The CATALOG key below called "Trending" is the small set of
+# multi-photo concept pieces, and it has always been LABELLED "Featured
+# Concepts" in the interface -- so that flag is now `featured`, matching
+# what a reader actually sees, and `trending` means this and only this.
+#
+# These twelve are picked on one criterion: how much the picture changes
+# at thumbnail size. Not by category, and not by how interesting the
+# technique is to read about -- a row of subtle grades is a row of
+# identical-looking faces. So the list spans drawn, sculpted, rendered,
+# lit and printed, and every one of them survives being 200px wide.
+TRENDING = [
+    "made-of-glass",          # the whole subject turns transparent
+    "hand-painted-anime-film",# photograph to drawing, unmistakable
+    "pencil-sketch",          # colour to graphite
+    "marble-bust",            # flesh to carved stone
+    "cel-shaded-3d",          # flat shading and a hard outline
+    "made-of-neon-tubes",     # self-lit on black
+    "watercolor-painting",    # paper grain and bleeding edges
+    "80s-retro-portrait",     # datable on hair and colour alone
+    "toy-brick-minifigure",   # a silhouette nobody can mistake
+    "stained-glass",          # lead lines and lit panels
+    "made-of-gold",           # specular metal, high contrast
+    "pixel-art",              # resolution collapse, legible anywhere
+]
+
 CATALOG = {
     "Traditional Media": [
         ("Watercolor Painting", "a soft watercolor painting with bleeding edges, visible paper texture and translucent washes"),
@@ -221,6 +250,15 @@ CATALOG = {
         ("Corporate Portrait", "a polished corporate portrait with even lighting and a blurred office background"),
         ("Passport Photo", "a formal passport photo with flat even lighting against a plain light background"),
         ("Yearbook Portrait", "a retro yearbook portrait with a mottled studio backdrop and soft warm lighting"),
+        # Four period looks. Each one has to be datable from the picture
+        # alone, so each leans on what actually separates the decades --
+        # the hair and the film stock, not just a colour grade. A person
+        # in 1985 and the same person in 1999 have to be told apart at
+        # thumbnail size, which is the whole point of the set.
+        ("80s Retro Portrait", "an authentic 1980s portrait with big volumised feathered hair, bold blue eyeshadow and blusher, a neon-lit backdrop of magenta and cyan, saturated Kodachrome colour, heavy film grain and a soft glamour-lens glow"),
+        ("90s Film Portrait", "a 1990s consumer film portrait shot on expired 35mm with a harsh on-camera flash, slightly green-shifted shadows, muted colour, visible grain and the flat washed look of a one-hour photo lab print"),
+        ("Y2K Portrait", "a year-2000 portrait with frosted lip gloss, thin plucked brows, butterfly clips and a metallic silver-blue wardrobe, shot on an early digital compact with a hard flash, blown highlights, chromatic fringing and low-resolution sharpening halos"),
+        ("Disco Portrait", "a 1977 discotheque portrait under a mirrorball with coloured spotlights raking across the frame, glitter and sequins catching the light, wide lapels and a feathered blowout, warm tungsten film with heavy halation around every highlight"),
         ("Royal Oil Portrait", "a formal royal oil portrait with rich fabrics, dark background and dramatic side light"),
         ("Marble Bust", "a carved white marble bust with polished stone surfaces and soft gallery lighting"),
         ("Bronze Statue", "a weathered bronze statue with green patina and hard outdoor light"),
@@ -871,7 +909,12 @@ for cat, styles in CATALOG.items():
             "search": search_term(name),
             "stock": name not in NO_STOCK,
             "input": "1 photo",
-            "trending": False,
+            "featured": False,
+            # RANK, not a boolean. The gallery shuffles its order on every
+            # load, and a curated row that reshuffles with it is not
+            # curated -- the twelve arrived in a different sequence each
+            # time. 0 means not in the row.
+            "trending": (TRENDING.index(slugify(name)) + 1) if slugify(name) in TRENDING else 0,
         })
         i += 1
 
@@ -893,7 +936,8 @@ for f in FEATURED:
         "search": search_term(f["style"]),
         "stock": False,
         "input": f["input"],
-        "trending": True,
+        "featured": True,
+        "trending": (TRENDING.index(slugify(name)) + 1) if slugify(name) in TRENDING else 0,
     })
 
 # sanity checks
