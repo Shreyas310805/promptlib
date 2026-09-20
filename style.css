@@ -968,7 +968,6 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
    quietly changes its mind near every section boundary, and that is
    indistinguishable from stutter. Nothing here needs the page to come
    to rest in a particular place; the sections are read, not paged. */
-}
 
 /* ============================================
    HERO
@@ -1897,7 +1896,6 @@ body.home .nav{ position:fixed; left:0; right:0; }
 }
 
 
-}
 
 .gcard-scrim{
   background:linear-gradient(180deg, transparent 45%, rgba(6,6,7,.34) 72%, rgba(6,6,7,.78) 100%);

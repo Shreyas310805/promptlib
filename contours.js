@@ -146,10 +146,15 @@
          below about 10 the extra detail is under the line width. */
       cell: 13,
 
-      /* Terrain. fieldScale is per pixel: this puts roughly three broad
-         ridges across a desktop hero, which is legible as landscape
-         rather than as noise. */
-      fieldScale: 0.0021,
+      /* How many noise features fit across the SHORT side of the hero.
+         This used to be a per-pixel fieldScale, which quietly made the
+         field's shape depend on the hero's aspect ratio: at 1425x612 it
+         gave 3 features across and 1.3 down, so the gradient pointed
+         almost entirely along x, every contour ran vertically and the
+         thing stopped reading as a map at all. Anchoring to the short
+         side keeps features square AND keeps enough of them in both
+         directions at any window shape. */
+      featuresDown: 3,
       drift: 0.055,          // how fast the terrain reshapes, per second
       octaves: 2,
       /* Frames between terrain rebuilds. At 3 the drift is 0.003 of a
@@ -162,16 +167,24 @@
       levels: 9,
       levelsEnd: 2,
 
-      /* How flat the terrain goes by the end of the scroll. Lower means
-         the remaining lines also straighten out. */
+      /* How much of the field's range the contours cover by the end of
+         the scroll. At 0.35 the levels sit inside the middle third of the
+         terrain, so most of it is above or below every contour and only a
+         couple of lines survive. */
       flattenTo: 0.35,
 
       /* Every nth contour is drawn heavier and in the accent colour, the
          way index contours work on a real map. It gives the field a
          hierarchy instead of a uniform hatch. */
       indexEvery: 3,
-      lineWidth: 1.15,
-      indexLineWidth: 1.9,
+      /* Crisp beats heavy. Round caps on a marching-squares path are a
+         trap: the tracer emits thousands of short two-point segments, and
+         a round cap turns each one into a capsule that bulges past its
+         own endpoints, so consecutive segments pile up and the line comes
+         out fat and soft with a halo. Butt caps meet exactly, because
+         adjacent segments share an interpolated endpoint by construction. */
+      lineWidth: 1,
+      indexLineWidth: 1.6,
 
       /* The pointer hill. Strength is in units of the field, whose noise
          spans roughly -1..1, so 1.15 is a hill taller than the natural
@@ -202,6 +215,7 @@
     var field = null;                 // (cols+1) * (rows+1) corner heights
     var base = null;                  // the same grid, terrain only, cached
     var baseAge = 1e9;                // frames since the terrain was rebuilt
+    var fieldMin = -1, fieldMax = 1;  // the terrain's actual range
     var ground = { r: 0, g: 0, b: 0 };
     var groundCss = "#000";
     var lineCol = "rgba(255,255,255,.55)";
@@ -277,16 +291,22 @@
        to be exact every frame, but it is arithmetic over the few hundred
        cells it actually covers, not over all 5,376. */
     function buildBase() {
-      var sc = cfg.fieldScale * cfg.cell;
+      /* One noise unit spans shortSide/featuresDown pixels, in BOTH axes,
+         so the features stay square whatever shape the hero is. */
+      var unit = Math.min(W, H) / Math.max(0.5, cfg.featuresDown);
+      var sc = cfg.cell / unit;
       var z = t * cfg.drift;
-      var i = 0;
+      var i = 0, mn = Infinity, mx = -Infinity;
       for (var y = 0; y <= rows; y++) {
         for (var x = 0; x <= cols; x++) {
           var n = noise2(x * sc + z, y * sc - z * 0.55);
           if (cfg.octaves > 1) n += 0.42 * noise2(x * sc * 2.2 - z * 0.7, y * sc * 2.2 + z * 0.35);
+          if (n < mn) mn = n;
+          if (n > mx) mx = n;
           base[i++] = n;
         }
       }
+      fieldMin = mn; fieldMax = mx;
       baseAge = 0;
     }
 
@@ -328,10 +348,11 @@
        edges the line runs between; 5 and 10 are the ambiguous saddles
        and get both segments, which at this cell size is invisible
        either way. */
-    function traceAll(paths, n, amp) {
+    function traceAll(paths, n, mid, half) {
       var cs = cfg.cell;
       var stride = cols + 1;
-      var span = 2 * amp;
+      var lo = mid - half, span = 2 * half;
+      if (span <= 0) return;
       for (var y = 0; y < rows; y++) {
         var row0 = y * stride, row1 = row0 + stride;
         var y0 = y * cs, y1 = y0 + cs;
@@ -342,16 +363,16 @@
           var mn = tl < tr ? tl : tr; if (bl < mn) mn = bl; if (br < mn) mn = br;
           var mx = tl > tr ? tl : tr; if (bl > mx) mx = bl; if (br > mx) mx = br;
 
-          /* level_i = -amp + span * (i + 0.5) / n, so invert for i. */
-          var iLo = Math.ceil(((mn + amp) / span) * n - 0.5);
-          var iHi = Math.floor(((mx + amp) / span) * n - 0.5);
+          /* level_i = lo + span * (i + 0.5) / n, so invert for i. */
+          var iLo = Math.ceil(((mn - lo) / span) * n - 0.5);
+          var iHi = Math.floor(((mx - lo) / span) * n - 0.5);
           if (iLo < 0) iLo = 0;
           if (iHi > n - 1) iHi = n - 1;
           if (iLo > iHi) continue;
 
           var x0 = x * cs, x1 = x0 + cs;
           for (var i = iLo; i <= iHi; i++) {
-            var level = -amp + span * ((i + 0.5) / n);
+            var level = lo + span * ((i + 0.5) / n);
             var idx = (tl > level ? 8 : 0) | (tr > level ? 4 : 0) | (br > level ? 2 : 0) | (bl > level ? 1 : 0);
             if (idx === 0 || idx === 15) continue;
 
@@ -403,18 +424,24 @@
       var fade = p > 0.8 ? Math.max(0, 1 - (p - 0.8) / 0.2) : 1;
       if (fade <= 0) return;
 
-      /* Flattening the terrain and spreading the levels are the same
-         operation: a contour of amp*n at level L is a contour of n at
-         L/amp. Dividing here means the cached terrain never has to be
-         rescaled, and the pointer hill keeps its full height while the
-         landscape around it goes flat. */
-      var amp = 1.35 / mix(1, cfg.flattenTo, p);
-      ctx.lineCap = "round";
+      /* Levels are placed inside the terrain's MEASURED range, not across
+         a guessed +/-1.35. The guess was wrong the moment anything changed
+         the field's amplitude -- a smoother field has a smaller range, so
+         most of the nine levels fell outside it entirely and only two or
+         three contours were ever drawn. Measuring means n levels always
+         produce n contours.
+
+         Scrolling then narrows the band the levels occupy, so they retreat
+         toward the middle of the terrain and the outer contours leave the
+         frame one by one. */
+      var mid = (fieldMin + fieldMax) / 2;
+      var half = (fieldMax - fieldMin) / 2 * mix(1, cfg.flattenTo, p);
+      ctx.lineCap = "butt";
       ctx.lineJoin = "round";
 
       var paths = new Array(n);
       for (var i = 0; i < n; i++) paths[i] = new Path2D();
-      traceAll(paths, n, amp);
+      traceAll(paths, n, mid, half);
 
       ctx.globalAlpha = fade;
       for (var j = 0; j < n; j++) {

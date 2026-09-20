@@ -1290,9 +1290,13 @@ function initHero(){
     /* A phone gets a coarser grid -- the same cell size over a third of
        the width is three times the line density -- and a tighter, softer
        pointer hill, since a finger covers far more of the frame. */
+    /* featuresDown counts noise features across the hero's short side, so
+       it is already independent of the window shape -- a phone needs a
+       slightly busier field only because its short side is so much
+       smaller in absolute terms. */
     const field = () => narrow.matches
-      ? { cell:15, fieldScale:0.0038, pointerRadius:120, levels:7 }
-      : { cell:13, fieldScale:0.0021, pointerRadius:165, levels:9 };
+      ? { cell:14, featuresDown:2.4, pointerRadius:120, levels:7 }
+      : { cell:13, featuresDown:3,   pointerRadius:165, levels:9 };
     const scene = mountContourField(host, field());
     window.heroScene = scene;
     narrow.addEventListener("change", () => scene.update(field()));
