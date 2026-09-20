@@ -383,6 +383,17 @@
   --well:rgba(0,0,0,.35);
   --panel-solid:#121211;
 
+  /* The raw five as well, not just the accent roles. The light theme
+     darkens these so they survive as TEXT on paper -- --sun becomes
+     #B8860B -- which is the wrong end of the scale for anything drawn on
+     a black plate. The flow field reads them straight to colour its
+     strokes, and on paper values it came out muddy olive instead of the
+     lit palette the hero is designed around. */
+  --sun:#FFF2CC;
+  --amber:#FFA62E;
+  --ice:#5FD8FF;
+  --deep:#3F7DFF;
+
   --glass-tint:linear-gradient(135deg, rgba(255,255,255,.16), rgba(255,255,255,.04));
   --glass-flat:rgba(255,255,255,.08);
   --glass-edge:rgba(255,255,255,.35);
@@ -1038,8 +1049,39 @@ html{
   background:var(--void);
   overflow:hidden;
 }
-/* The canvas is prepended by mountOrbital(); this lifts the copy above it. */
+/* The canvas is prepended by the hero scene; this lifts the copy above it. */
 .orbital-content{ position:relative; z-index:1; }
+
+/* A scrim between the field and the copy.
+
+   The flow field is a full-bleed texture, and type laid straight onto
+   one is legible only where the texture happens to be sparse -- which
+   changes every second. So the side the copy sits on is darkened, hard
+   at the edge and gone by about two thirds across, leaving the field at
+   full strength where there is nothing to read.
+
+   z-index 0 puts it above the canvas (which paints first, as the host's
+   first child) and below .orbital-content. The colour is a token rather
+   than a literal so that whoever one day lets the hero go light has a
+   single place to change. */
+.hero{ --hero-scrim:rgba(0,0,0,.86); }
+.hero::after{
+  content:""; position:absolute; inset:0; z-index:0; pointer-events:none;
+  background:linear-gradient(100deg,
+    var(--hero-scrim) 0%,
+    color-mix(in srgb, var(--hero-scrim) 62%, transparent) 34%,
+    transparent 68%);
+}
+/* On a phone the copy sits low and centred, so the shading comes up from
+   the foot instead of in from the side. */
+@media (max-width:767px){
+  .hero::after{
+    background:linear-gradient(to top,
+      var(--hero-scrim) 4%,
+      color-mix(in srgb, var(--hero-scrim) 70%, transparent) 46%,
+      transparent 82%);
+  }
+}
 .hero-inner{
   min-height:100svh;
   display:flex; flex-direction:column; justify-content:center;
