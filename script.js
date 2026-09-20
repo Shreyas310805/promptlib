@@ -1274,38 +1274,16 @@ const SAVE_ICON = `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="cur
    there is no room for that, so the whole thing turns through 90 degrees
    -- art low, copy high, veil from the top -- and the star field and
    bloom come down because the text is most of the screen there. */
-/* Which hero scene runs. "field" is the flow field; "orbital" is the
-   original. Both files are loaded while the new one is on trial, so
-   switching back is this word. */
-const HERO_SCENE = "field";
-
 function initHero(){
   const host = document.getElementById("top");
-  if(!host) return;
+  if(!host || typeof mountOrbital !== "function") return;
 
   const narrow = window.matchMedia("(max-width: 767px)");
-
-  if(HERO_SCENE === "field" && typeof mountFlowField === "function"){
-    /* A phone gets fewer threads and a tighter pointer radius -- the
-       finger is bigger than the cursor but the screen is smaller, and a
-       220px radius there would stir the entire hero at once. */
-    /* A phone gets a tighter pointer radius -- a finger is blunter than
-       a cursor, but the canvas is a third the width, and 220px there
-       would stir the whole hero at once -- and a higher field frequency,
-       since the same scale over a narrower canvas would show barely one
-       current. */
-    const settings = () => narrow.matches
-      ? { pointerRadius:150, pointerForce:1.7, fieldScale:0.0052 }
-      : { pointerRadius:220, pointerForce:1.5, fieldScale:0.0030 };
-    const scene = mountFlowField(host, settings());
-    window.heroScene = scene;   // so the scene can be driven where rAF is suspended
-    narrow.addEventListener("change", () => scene.update(settings()));
-    return;
-  }
-
-  if(typeof mountOrbital !== "function") return;
   const settings = () => narrow.matches
-    ? { focus:[0.5, 0.86], scrim:"top",  scrimStrength:0.94, viewRadius:2.1, lead:0.05, glow:0.5, starCount:600 }
+    ? { focus:[0.5, 0.86], scrim:"top",  scrimStrength:0.94, viewRadius:2.1, lead:0.05, glow:0.5, starCount:600,
+        /* A finger is blunter than a cursor and the frame is smaller, so
+           the same swing reads as twice as violent here. */
+        pointerSwing:16, pointerTilt:10 }
     : { focus:[0.74, 0.42], scrim:"left", scrimStrength:0.92, viewRadius:3.1, lead:0.12, glow:1,   starCount:1500 };
 
   const scene = mountOrbital(host, settings());

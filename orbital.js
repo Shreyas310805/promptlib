@@ -96,7 +96,25 @@
     showSunTrack: true,
     interactive: true,
     paused: false,
-    sunColor: "#FFF2CC"
+    sunColor: "#FFF2CC",
+
+    /* ---- how hard the pointer moves the scene ----------------------
+       The camera used to swing 7 degrees with an easing of 0.04, which
+       over a whole hero is a drift you notice only if you are looking
+       for it. These are the numbers that make the cursor feel connected
+       to the sky rather than adjacent to it. */
+    pointerSwing: 26,      // degrees of yaw at the edge of the frame
+    pointerTilt: 16,       // degrees of pitch at the top or bottom
+    pointerEase: 0.085,    // how fast the camera chases the cursor
+
+    /* Speed, not position. Moving the cursor QUICKLY winds the scene up:
+       the wakes brighten and the whole system runs faster for a moment,
+       then eases back. Holding the cursor still, however far from the
+       centre, does nothing -- it is the gesture that stirs it. */
+    stirGain: 3.2,         // how much a fast flick adds
+    stirDecay: 0.94,       // per frame at 60fps; the settle back
+    stirDrift: 3.4,        // extra orbital speed at full stir
+    stirGlow: 1.35         // extra wake and sun brightness at full stir
   };
 
   /* ---- maths -------------------------------------------------------- */
@@ -465,14 +483,35 @@
     }
 
     /* --- pointer ----------------------------------------------------- */
+    /* Two separate channels, because they answer different questions.
+
+       WHERE the cursor is swings the camera: a position, eased, so the
+       sky leans toward you and stays leaning while you hold still.
+
+       HOW FAST it moves stirs the system: a velocity, accumulated into
+       `stir` and decayed every frame, so a flick brightens the wakes and
+       runs the orbits on for a moment and then settles. Position alone
+       is what made the old version feel inert -- park the cursor in a
+       corner and everything was static again. */
     var pointerX = 0, pointerY = 0, camX = 0, camY = 0;
+    var lastPX = null, lastPY = null, stir = 0;
+
     function onPointer(ev) {
       if (!C.interactive) return;
       var rect = host.getBoundingClientRect();
-      pointerX = ((ev.clientX - rect.left) / rect.width - 0.5) * 2;
-      pointerY = ((ev.clientY - rect.top) / rect.height - 0.5) * 2;
+      var px = ((ev.clientX - rect.left) / rect.width - 0.5) * 2;
+      var py = ((ev.clientY - rect.top) / rect.height - 0.5) * 2;
+      if (lastPX !== null) {
+        var moved = Math.hypot(px - lastPX, py - lastPY);
+        stir = Math.min(1, stir + moved * C.stirGain);
+      }
+      lastPX = px; lastPY = py;
+      pointerX = px; pointerY = py;
     }
-    function onLeave() { pointerX = 0; pointerY = 0; }
+    function onLeave() {
+      pointerX = 0; pointerY = 0;
+      lastPX = null; lastPY = null;
+    }
 
     /* --- the star at the centre -------------------------------------- */
     function drawSun(k, t) {
@@ -521,15 +560,17 @@
 
     /* --- one frame ---------------------------------------------------- */
     function render(t) {
-      var k = C.glow;
+      /* Stir lifts the whole scene's brightness, which is what makes a
+         fast gesture visible rather than merely present. */
+      var k = C.glow * (1 + stir * C.stirGlow);
       /* layout first: it sets the course, which the element maths needs */
       layout();
       syncElements();
 
       /* ease the camera toward the pointer */
-      camX += (pointerX - camX) * 0.04;
-      camY += (pointerY - camY) * 0.04;
-      setCamera(C.spin + camX * 7, C.tilt + camY * 5, C.roll);
+      camX += (pointerX - camX) * C.pointerEase;
+      camY += (pointerY - camY) * C.pointerEase;
+      setCamera(C.spin + camX * C.pointerSwing, C.tilt + camY * C.pointerTilt, C.roll);
 
       dist = C.driftSpeed * t;
 
@@ -774,7 +815,11 @@
       var dt = lastFrame ? Math.min(0.05, (now - lastFrame) / 1000) : 0;
       lastFrame = now;
       if (!C.paused && !reduced) {
-        years += dt / Math.max(0.1, C.yearSeconds);
+        /* Framerate-independent decay, so the settle takes the same
+           time on a 120Hz display as on a 60Hz one. */
+        stir *= Math.pow(C.stirDecay, dt * 60);
+        if (stir < 0.001) stir = 0;
+        years += (dt / Math.max(0.1, C.yearSeconds)) * (1 + stir * C.stirDrift);
       }
       render(years);
     }

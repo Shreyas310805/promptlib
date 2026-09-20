@@ -219,8 +219,6 @@
 .accent-deep{  --accent:var(--deep);  --accent-ink:#8fb2ff;      --accent-soft:rgba(63,125,255,.30);  --on-accent:#000; }
 
 
-
-
 /* ---------------------------------------------------------------
    LIGHT THEME
 
@@ -754,8 +752,6 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
 }
 
 
-
-
 /* ---- frosted surface -------------------------------------------------
    One class for every floating control. -webkit- prefix included: Safari
    still needs it, and without it the panel falls back to a flat tint
@@ -933,8 +929,6 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
 }
 .btn-icon .icon{ width:18px; height:18px; }
 
-
-
 /* ---- content surfaces ------------------------------------------------
    SOLID, not glass. Glass is reserved for chrome that floats over content —
    the navbar, the command palette, the filter bar, the side pane, the modal.
@@ -1043,47 +1037,24 @@ html{
 /* ============================================
    HERO
    ============================================ */
+/* Tall enough to give the scene room, not so tall that it outruns what
+   it contains. A full 100svh meant 901px of hero around 397px of copy:
+   233px of nothing below the buttons before the next section, which on
+   paper reads as the page having ended. The clamp keeps a generous
+   canvas on a laptop and lets the hero grow past it on a phone, where
+   the copy stacks and genuinely needs the height. */
 .hero{
   position:relative;
-  min-height:100svh;
+  min-height:clamp(560px, 68svh, 720px);
   background:var(--void);
   overflow:hidden;
 }
 /* The canvas is prepended by the hero scene; this lifts the copy above it. */
 .orbital-content{ position:relative; z-index:1; }
 
-/* A scrim between the field and the copy.
 
-   The flow field is a full-bleed texture, and type laid straight onto
-   one is legible only where the texture happens to be sparse -- which
-   changes every second. So the side the copy sits on is darkened, hard
-   at the edge and gone by about two thirds across, leaving the field at
-   full strength where there is nothing to read.
-
-   z-index 0 puts it above the canvas (which paints first, as the host's
-   first child) and below .orbital-content. The colour is a token rather
-   than a literal so that whoever one day lets the hero go light has a
-   single place to change. */
-.hero{ --hero-scrim:rgba(0,0,0,.86); }
-.hero::after{
-  content:""; position:absolute; inset:0; z-index:0; pointer-events:none;
-  background:linear-gradient(100deg,
-    var(--hero-scrim) 0%,
-    color-mix(in srgb, var(--hero-scrim) 62%, transparent) 34%,
-    transparent 68%);
-}
-/* On a phone the copy sits low and centred, so the shading comes up from
-   the foot instead of in from the side. */
-@media (max-width:767px){
-  .hero::after{
-    background:linear-gradient(to top,
-      var(--hero-scrim) 4%,
-      color-mix(in srgb, var(--hero-scrim) 70%, transparent) 46%,
-      transparent 82%);
-  }
-}
 .hero-inner{
-  min-height:100svh;
+  min-height:clamp(560px, 68svh, 720px);
   display:flex; flex-direction:column; justify-content:center;
   max-width:var(--container); margin:0 auto;
   padding:calc(var(--nav-h) + var(--space-10)) var(--gutter) var(--space-16);
