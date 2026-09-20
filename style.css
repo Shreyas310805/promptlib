@@ -232,9 +232,10 @@
    the deep black glows that give depth on near-black turn into grey
    smudges on paper.
 
-   The second is the hero. The orbital canvas paints its own #000 and
-   cannot be relit, so on a light page it stays a dark object and the
-   join is handled deliberately -- see .hero-fade below.
+   The second used to be the hero, which painted its own #000 and could
+   not be relit. The contour field takes its colours from the page, so
+   the hero is now an ordinary section in both themes and needs no
+   special handling at all.
    --------------------------------------------------------------- */
 :root[data-theme="light"]{
   color-scheme:light;
@@ -1022,15 +1023,17 @@ html{
   }
 }
 
-/* Melts the canvas into the page. Fades to the PAGE BACKGROUND, not to a
-   fixed colour, so it is right in whichever theme is active -- there is
-   deliberately only one rule here rather than one per theme, because two
-   rules are two things that can disagree. */
-.hero-fade{
-  position:absolute; left:0; right:0; bottom:0; height:22svh; z-index:1;
-  pointer-events:none;
-  background:linear-gradient(to bottom, transparent, var(--bg-void) 92%);
-}
+/* There is no fade at the foot of the hero any more.
+
+   It existed to hide where the orbital canvas stopped, because that
+   canvas painted its own black and had a hard edge against the page. It
+   sat ABOVE the canvas at 22svh -- about 200px -- and washed out the
+   bottom fifth of whatever was drawn there.
+
+   The contour field has no edge to hide: it clears to the page's own
+   background, and it fades itself to nothing as you scroll. A gradient
+   from transparent to the colour already underneath it is not a blend,
+   it is a 200px smear over the artwork. */
 
 /* ---- the handoff ------------------------------------------------------
    As the hero leaves, the copy drifts up and fades and the scene dims.

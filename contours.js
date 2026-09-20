@@ -215,7 +215,24 @@
     var pxTarget = -1e5, pyTarget = -1e5, pStrTarget = 0;
     var px = -1e5, py = -1e5, pStr = 0;
 
-    /* ---- theme ------------------------------------------------------ */
+    /* ---- theme ------------------------------------------------------
+
+       Read every frame, never cached between them.
+
+       Caching this is the bug that made three heroes in a row look
+       broken. The obvious implementation reads the colours once and
+       re-reads them when data-theme changes -- but the theme swap is a
+       CSS transition, so the attribute flips at the START of it and a
+       read at that instant returns the colour being transitioned AWAY
+       from. The canvas then paints the old theme's ground for the rest
+       of the session: a cream hero sitting in a black page, with white
+       heading text on it, which is exactly what it looked like.
+
+       Reading per frame costs one getComputedStyle on one element and
+       makes the whole class of mistake impossible -- the canvas cannot
+       be out of step with the page because it never remembers what the
+       page used to be. It also makes the swap itself look right, since
+       the ground now interpolates along with everything else. */
     function readTheme() {
       ground = groundOf(host);
       groundCss = "rgb(" + Math.round(ground.r) + "," + Math.round(ground.g) + "," + Math.round(ground.b) + ")";
@@ -368,6 +385,7 @@
     /* ---- one frame --------------------------------------------------- */
     function step(dt) {
       t += dt;
+      readTheme();
 
       px += (pxTarget - px) * cfg.pointerEase;
       py += (pyTarget - py) * cfg.pointerEase;
@@ -524,6 +542,13 @@
     readTheme();
     resize();
     bind();
+    /* Paint one frame synchronously before handing over to the loop.
+       start() only SCHEDULES a frame, so the hero was blank until the
+       first callback arrived -- normally 16ms, but longer under load,
+       and forever in embedded viewers that suspend rAF. A hero that
+       flashes empty on load is worse than one that starts a frame
+       behind. */
+    step(0);
     if (isReduced()) drawStill(); else start();
 
     return { update: update, destroy: destroy, advance: advance, canvas: canvas };
