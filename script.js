@@ -22,6 +22,8 @@ const ICONS = {
   check: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L19 8"/></svg>',
   close: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
   arrow: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg>',
+  chevronLeft:  '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
+  chevronRight: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>',
   spark: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z"/></svg>',
   ppt:    '<svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="12" rx="1.5"/><path d="M8 21h8M12 17v4"/></svg>',
   essay:  '<svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h9l5 5v15a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M14 2v5h5M8 13h8M8 17h5"/></svg>',
@@ -1790,27 +1792,34 @@ function renderGalleryUnavailable(){
 
    Clicking one opens its dialog, exactly as a grid card does -- it
    reuses the same delegated handler by carrying the same data-id. */
-/* ---- the Trending rail ------------------------------------------------
+/* ---- the Trending carousel --------------------------------------------
    One renderer, two callers. The gallery has the full dataset and opens
    a prompt by its index; the home page never loads that dataset -- it is
-   112KB for a page that shows a couple of dozen entries -- so it gets
-   the same twelve out of prompts-trending.js and opens them by value.
-   The markup and the dialog are identical either way, which is the
-   point: two rows that are meant to look the same should not be two
-   pieces of code that can drift. */
+   112KB for a page showing a couple of dozen entries -- so it gets the
+   same twelve out of prompts-trending.js and opens them by value. The
+   markup, the dialog and the carousel are identical either way.
+
+   The track is a native scroller with snap points, so arrows, keyboard,
+   trackpad and touch all drive the same thing. There is no separate
+   index to keep in step with the DOM, which is where carousels usually
+   break: the scroll position IS the state.
+   ------------------------------------------------------------------ */
 function renderTrendingRow(rowId, stripId, picks, open){
   const row = document.getElementById(rowId);
   const strip = document.getElementById(stripId);
   if(!row || !strip || !picks.length) return;
 
   strip.innerHTML = picks.map((p, n) => `
-    <li class="trend-item swatch-${(p.i === undefined ? n : p.i) % 6}">
+    <li class="trend-item swatch-${(p.i === undefined ? n : p.i) % 6}" role="option" aria-selected="false">
       <button type="button" class="trend-card" data-trend="${n}" data-slug="${escapeHTML(p.slug)}"
               aria-label="${escapeHTML(p.style)}, ${escapeHTML(p.cat)}. Open prompt.">
         <span class="swatch-texture" aria-hidden="true"></span>
-        ${hasRender(p) ? `<img class="trend-img" src="images/${encodeURIComponent(p.slug)}.jpg" alt="" loading="lazy" decoding="async" width="400" height="400">` : ""}
+        ${hasRender(p) ? `<img class="trend-img" src="images/${encodeURIComponent(p.slug)}.jpg" alt="" loading="lazy" decoding="async" width="600" height="750">` : ""}
         <span class="trend-scrim" aria-hidden="true"></span>
-        <span class="trend-name">${escapeHTML(p.style)}</span>
+        <span class="trend-name">
+          <span class="trend-cat">${escapeHTML(p.cat)}</span>
+          ${escapeHTML(p.style)}
+        </span>
       </button>
     </li>`).join("");
 
@@ -1822,6 +1831,64 @@ function renderTrendingRow(rowId, stripId, picks, open){
     claimSharedName(card);
     open(picks[Number(card.dataset.trend)]);
   });
+
+  initCarousel(row, strip);
+}
+
+/* Arrows, keyboard and end-state, over whatever the track is already
+   doing. Touch and trackpad need no code: the scroller handles them. */
+function initCarousel(row, strip){
+  const arrows = row.querySelectorAll(".carousel-arrow");
+  if(arrows.length){
+    arrows.forEach((b) => { b.innerHTML = Number(b.dataset.dir) < 0 ? ICONS.chevronLeft : ICONS.chevronRight; });
+  }
+
+  /* A page is however many whole cards are currently visible, so the
+     arrows move by what you can see rather than by a number baked in
+     here that the breakpoints would then contradict. */
+  const page = () => {
+    const item = strip.querySelector(".trend-item");
+    if(!item) return strip.clientWidth;
+    const gap = parseFloat(getComputedStyle(strip).columnGap) || 0;
+    const step = item.getBoundingClientRect().width + gap;
+    /* n cards occupy n*width + (n-1)*gap, not n*(width+gap) -- the last
+       one has no trailing gap. Dividing by the step without adding that
+       gap back counts one card fewer than is actually on screen, so the
+       arrows moved by three when four were visible and left a stripe of
+       the previous page behind. */
+    const visible = Math.max(1, Math.floor((strip.clientWidth + gap) / step));
+    return visible * step;
+  };
+
+  const syncEnds = () => {
+    const max = strip.scrollWidth - strip.clientWidth;
+    arrows.forEach((b) => {
+      const back = Number(b.dataset.dir) < 0;
+      b.disabled = back ? strip.scrollLeft < 8 : strip.scrollLeft > max - 8;
+    });
+  };
+
+  arrows.forEach((b) => b.addEventListener("click", () => {
+    strip.scrollBy({ left: page() * Number(b.dataset.dir), behavior: prefersReducedMotion ? "auto" : "smooth" });
+  }));
+
+  strip.addEventListener("keydown", (e) => {
+    if(e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+    e.preventDefault();
+    strip.scrollBy({ left: page() * (e.key === "ArrowRight" ? 1 : -1), behavior: prefersReducedMotion ? "auto" : "smooth" });
+  });
+
+  let ticking = false;
+  strip.addEventListener("scroll", () => {
+    if(ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => { syncEnds(); ticking = false; });
+  }, { passive: true });
+
+  /* The width the arrows step by changes with the breakpoint, and so does
+     whether there is anything left to scroll to. */
+  if(window.ResizeObserver) new ResizeObserver(syncEnds).observe(strip);
+  syncEnds();
 }
 
 /* images.html: the whole dataset is present, so open by index. */
@@ -1839,8 +1906,7 @@ function initTrending(){
 
 /* index.html: the subset comes pre-ranked from prompts-trending.js. */
 function initHomeTrending(){
-  const picks = homeList("trendingPicks");
-  renderTrendingRow("homeTrending", "homeTrendingStrip", picks,
+  renderTrendingRow("homeTrending", "homeTrendingStrip", homeList("trendingPicks"),
     (p) => withTransition(() => openPromptModal(p)));
 }
 

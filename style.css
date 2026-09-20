@@ -384,19 +384,19 @@
    through a rotation, so the moon does not vanish before the sun arrives:
    the swap reads as one object turning. Both animated properties are
    composited. role=switch carries the state; the glyphs are decorative. */
+/* An icon, not an object. 38px keeps a comfortable target while dropping
+   the glass fill, the border and the inset highlight; the background
+   appears only on hover, so at rest it is just the glyph. */
 .theme-switch{
   position:relative; flex-shrink:0;
   display:inline-flex; align-items:center; justify-content:center;
-  width:44px; height:44px;
-  background:var(--glass-tint);
-  backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
-  border:1px solid var(--glass-border);
-  box-shadow:inset 0 1px 0 var(--glass-edge);
+  width:38px; height:38px;
+  background:transparent; border:1px solid transparent;
   border-radius:var(--radius-pill);
   color:var(--text-muted); cursor:pointer;
-  transition:color var(--dur-micro) var(--ease-out), border-color var(--dur-micro) var(--ease-out);
+  transition:color var(--dur-micro) var(--ease-out), background var(--dur-micro) var(--ease-out);
 }
-.theme-switch:hover{ color:var(--text-primary); border-color:var(--glass-border-hover); }
+.theme-switch:hover{ color:var(--text-primary); background:var(--surface); }
 .theme-switch:focus-visible{ outline:2px solid var(--focus-ring); outline-offset:3px; }
 .theme-icons{ position:relative; width:18px; height:18px; display:block; }
 .theme-icons .icon{
@@ -1297,7 +1297,7 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
    one place for the logic to live. */
 .nav-search{
   display:inline-flex; align-items:center; gap:var(--space-2);
-  height:40px; padding:0 var(--space-3) 0 var(--space-4);
+  height:38px; padding:0 var(--space-3) 0 var(--space-4);
   background:transparent; border:1px solid var(--border-subtle);
   border-radius:var(--radius-pill);
   font:inherit; font-size:var(--text-sm); color:var(--text-muted);
@@ -1616,14 +1616,16 @@ body.home .nav{ position:fixed; left:0; right:0; }
 
 /* Segmented control. The links sit in one inset track with a single moving
    indicator behind them, instead of each carrying its own background. */
+/* No container of its own. It used to be a glass pill with a border and
+   an inset highlight, sitting next to a second glass pill for the theme
+   switch and a third bordered pill for search -- three floating objects
+   on a bar rather than one bar. The links now sit directly on the nav
+   and the moving indicator is the only fill in the group, which is the
+   one piece of chrome that earns its place because it carries meaning. */
 .nav-links{
   position:relative;
   display:flex; align-items:center; gap:var(--space-1);
   padding:var(--space-1);
-  background:var(--glass-tint);
-  backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
-  border:1px solid var(--border-subtle);
-  box-shadow:inset 0 1px 0 var(--glass-edge);
   border-radius:var(--radius-pill);
 }
 
@@ -1759,95 +1761,142 @@ body.home .nav{ position:fixed; left:0; right:0; }
    entirely left white ink sitting on a pale swatch -- the pink one is
    1.5:1 -- so the foot keeps a gradient here too; it is just lighter,
    because there is no photograph for it to protect. */
-.gcard:not(:has(.gcard-img)) /* ---- the trending rail -----------------------------------------------
-   Twelve cards on one line at desktop, a snapping side-scroller on a
-   phone. Square, because the set spans portraits and objects and a
-   ragged rail reads as a mistake rather than as variety.
+.gcard:not(:has(.gcard-img)) /* ---- the Trending carousel -------------------------------------------
+   Four large cards at a time rather than twelve thumbnails. Twelve small
+   squares showed that a transformation exists; four big ones let you see
+   what it did, which is the only reason the row is there.
 
-   The rail is the only place on the page where a card is permanently
-   labelled: the grid reveals its caption on hover, but a rail you skim
-   has to say what each one IS without being touched. */
+   The track is a scroller with snap points, so the arrows, the keyboard,
+   a trackpad swipe and a phone drag are all the same mechanism -- there
+   is no separate "carousel position" to keep in step with the DOM, which
+   is where this kind of component usually goes wrong.
+   ------------------------------------------------------------------ */
 .trending{
   display:flex; flex-direction:column; gap:var(--space-4);
   padding-bottom:var(--space-2);
 }
-.trending-head{ display:flex; align-items:baseline; gap:var(--space-3); flex-wrap:wrap; }
+.trending-head{
+  display:flex; align-items:baseline; gap:var(--space-3); flex-wrap:wrap;
+}
 .trending-title{
   font-size:var(--text-lg); font-weight:500;
   letter-spacing:var(--track-heading); color:var(--text-primary);
 }
 .trending-sub{ font-size:var(--text-sm); color:var(--text-muted); }
 
+/* Pushed to the end of the header row, so the controls sit on the same
+   baseline as the title instead of floating over the cards. */
+.carousel-nav{ margin-left:auto; display:flex; gap:var(--space-2); }
+.carousel-arrow{
+  width:36px; height:36px; flex-shrink:0;
+  display:inline-flex; align-items:center; justify-content:center;
+  border-radius:var(--radius-pill);
+  border:1px solid var(--border-subtle);
+  background:transparent; color:var(--text-muted); cursor:pointer;
+  transition:color var(--dur-micro) var(--ease-out),
+             background var(--dur-micro) var(--ease-out),
+             border-color var(--dur-micro) var(--ease-out),
+             opacity var(--dur-micro) var(--ease-out);
+}
+.carousel-arrow:hover{ color:var(--text-primary); background:var(--surface); border-color:var(--border-strong); }
+.carousel-arrow:focus-visible{ outline:2px solid var(--focus-ring); outline-offset:3px; }
+/* Dimmed rather than removed at the ends: a control that vanishes makes
+   the row jump, and a disabled one still says which way it would go. */
+.carousel-arrow[disabled]{ opacity:.3; pointer-events:none; }
+.carousel-arrow .icon{ width:17px; height:17px; }
+
 .trending-strip{
   display:grid; grid-auto-flow:column;
-  grid-auto-columns:minmax(0,1fr);
-  gap:var(--space-3);
-  list-style:none; margin:0; padding:0;
+  /* Four across on a desktop, and the track scrolls rather than shrinking
+     them -- a card that gets smaller to fit more in defeats the point. */
+  grid-auto-columns:calc((100% - 3 * var(--space-4)) / 4);
+  gap:var(--space-4);
+  list-style:none; margin:0; padding:2px;
+  overflow-x:auto; overscroll-behavior-x:contain;
+  scroll-snap-type:x mandatory;
+  /* Deliberately NOT scroll-behavior:smooth. Setting it here makes even a
+     direct scrollLeft assignment animate, which means the track cannot be
+     positioned synchronously and reads back a stale value while the
+     animation runs. The arrows and the keyboard pass their own behavior
+     to scrollBy, which also lets them honour reduced motion; leaving the
+     property off keeps everything else predictable. */
+  scrollbar-width:none;
 }
-.trend-item{ min-width:0; }
+.trending-strip::-webkit-scrollbar{ display:none; }
+.trending-strip:focus-visible{ outline:2px solid var(--focus-ring); outline-offset:4px; border-radius:var(--radius); }
+.trend-item{ min-width:0; scroll-snap-align:start; }
 
 .trend-card{
   position:relative; display:block; width:100%;
-  aspect-ratio:1/1; overflow:hidden;
+  aspect-ratio:4/5; overflow:hidden;
   border:1px solid var(--border-subtle);
-  border-radius:var(--radius);
+  border-radius:var(--radius-lg);
   background:var(--surface);
   padding:0; cursor:pointer;
   transition:transform var(--dur-hover) var(--ease-out),
              border-color var(--dur-hover) var(--ease-out),
              box-shadow var(--dur-hover) var(--ease-out);
 }
-.trend-card:hover{
-  transform:translate3d(0,-3px,0);
+/* The hovered card grows and its neighbours give way. The give is done
+   with a transform on the siblings rather than by changing the track's
+   layout, so nothing reflows and the whole gesture stays on the
+   compositor. */
+.trend-card:hover,
+.trend-card:focus-visible{
+  transform:scale(1.045);
   border-color:var(--border-strong);
-  box-shadow:var(--shadow-lift);
+  box-shadow:var(--shadow-deep);
+  z-index:2;
+}
+.trend-item:has(.trend-card:hover) ~ .trend-item .trend-card,
+.trend-item:has(.trend-card:focus-visible) ~ .trend-item .trend-card{
+  transform:translate3d(2.2%,0,0);
 }
 .trend-card:focus-visible{ outline:2px solid var(--focus-ring); outline-offset:3px; }
+
 .trend-img{
   position:absolute; inset:0; width:100%; height:100%;
   object-fit:cover; display:block;
 }
-/* Always on, unlike the grid's: a permanent label needs permanent ground.
-   Sized so it never climbs past the lower third and hides the effect the
-   card exists to show. */
 .trend-scrim{
   position:absolute; inset:0; pointer-events:none;
-  background:linear-gradient(180deg, transparent 52%, rgba(6,6,7,.58) 78%, rgba(6,6,7,.92) 100%);
+  background:linear-gradient(180deg, transparent 46%, rgba(6,6,7,.52) 72%, rgba(6,6,7,.9) 100%);
 }
 .trend-name{
   position:absolute; left:0; right:0; bottom:0;
-  padding:var(--space-2) 10px 9px;
-  font-size:11px; font-weight:500; line-height:1.25;
-  letter-spacing:0; color:#fff; text-align:left;
-  text-shadow:0 1px 6px rgba(0,0,0,.75);
-  /* Two lines, then ellipsis. Twelve across at 1440 is a 108px card --
-     which is the point, since these are chosen for reading at thumbnail
-     size -- and "Toy Brick Minifigure" set solid took three lines and
-     covered the transformation it was labelling. */
-  display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2;
-  overflow:hidden;
+  padding:var(--space-4);
+  font-size:var(--text-base); font-weight:500; line-height:1.25;
+  letter-spacing:var(--track-heading);
+  color:#fff; text-align:left;
+  text-shadow:0 1px 8px rgba(0,0,0,.7);
+}
+.trend-cat{
+  display:block; margin-bottom:3px;
+  font-family:var(--font-label); text-transform:uppercase;
+  letter-spacing:var(--track-caps); font-size:var(--text-2xs);
+  color:rgba(255,255,255,.78);
 }
 
-/* Below the point where twelve squares would be 60px wide, the rail
-   scrolls instead of shrinking. Snap points so it lands on whole cards. */
-@media (max-width:1180px){
-  .trending-strip{
-    grid-auto-columns:minmax(132px,1fr);
-    overflow-x:auto; overscroll-behavior-x:contain;
-    scroll-snap-type:x proximity;
-    /* the gutter the page already has, so cards start flush with the text
-       above and the last one can still reach the left edge */
-    padding-bottom:var(--space-2);
-    scrollbar-width:thin;
-  }
-  .trend-item{ scroll-snap-align:start; }
+@media (max-width:1100px){
+  .trending-strip{ grid-auto-columns:calc((100% - 2 * var(--space-4)) / 3); }
 }
-@media (max-width:640px){
-  .trending-strip{ grid-auto-columns:minmax(124px,45vw); }
+@media (max-width:820px){
+  .trending-strip{ grid-auto-columns:calc((100% - var(--space-4)) / 2); }
+}
+@media (max-width:560px){
+  .trending-strip{ grid-auto-columns:82%; }
+  /* Thumb-driven at this size; the arrows would be smaller than the
+     gesture that replaces them. */
+  .carousel-nav{ display:none; }
 }
 @media (prefers-reduced-motion: reduce){
-  .trend-card{ transition:none; }
-  .trend-card:hover{ transform:none; }
+  .trend-card, .trend-item .trend-card{ transition:none; }
+  .trend-card:hover, .trend-card:focus-visible{ transform:none; }
+  .trend-item:has(.trend-card:hover) ~ .trend-item .trend-card{ transform:none; }
+  .trending-strip{ scroll-behavior:auto; }
+}
+
+
 }
 
 .gcard-scrim{

@@ -123,8 +123,13 @@ try {
       <div class="trending-head">
         <h3 class="trending-title" id="homeTrendingHeading">Trending</h3>
         <p class="trending-sub">The twelve that change a photo the most.</p>
+        <div class="carousel-nav">
+          <button type="button" class="carousel-arrow" data-dir="-1" aria-label="Previous prompts"></button>
+          <button type="button" class="carousel-arrow" data-dir="1" aria-label="Next prompts"></button>
+        </div>
       </div>
-      <ul class="trending-strip" id="homeTrendingStrip"></ul>
+      <ul class="trending-strip" id="homeTrendingStrip" tabindex="0" role="listbox"
+          aria-label="Trending prompts, use left and right arrow keys"></ul>
     </section>
 
     <div class="chip-row" id="homeChips" role="group" aria-label="Filter examples by category"></div>

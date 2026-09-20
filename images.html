@@ -100,8 +100,13 @@ try {
         <div class="trending-head">
           <h2 class="trending-title" id="trendingHeading">Trending</h2>
           <p class="trending-sub">The twelve that change a photo the most.</p>
+          <div class="carousel-nav">
+            <button type="button" class="carousel-arrow" data-dir="-1" aria-label="Previous prompts"></button>
+            <button type="button" class="carousel-arrow" data-dir="1" aria-label="Next prompts"></button>
+          </div>
         </div>
-        <ul class="trending-strip" id="trendingStrip"></ul>
+        <ul class="trending-strip" id="trendingStrip" tabindex="0" role="listbox"
+            aria-label="Trending prompts, use left and right arrow keys"></ul>
       </section>
 
       <div class="chip-row" id="galleryChips" role="group" aria-label="Filter prompts by category"></div>
