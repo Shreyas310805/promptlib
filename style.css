@@ -99,6 +99,11 @@
 
   --scrim:rgba(0,0,0,.82);
   --nav-bg:rgba(0,0,0,.55);
+  /* The denser state once content has scrolled under the bar. It was a
+     literal rgba(0,0,0,.72), which on a light page turned the nav into a
+     black band with dark ink on it -- the links simply vanished. */
+  --nav-bg-scrolled:rgba(0,0,0,.72);
+  --nav-shadow:0 1px 24px -12px rgba(0,0,0,.6);
   --shadow-card:0 12px 32px -12px rgba(0,0,0,.7);
   --shadow-modal:0 30px 80px -30px rgba(0,0,0,.85);
   --shadow-lift:0 26px 52px -26px rgba(0,0,0,.78);
@@ -307,6 +312,10 @@
 
   --scrim:rgba(40,36,30,.42);
   --nav-bg:rgba(247,245,241,.72);
+  --nav-bg-scrolled:rgba(247,245,241,.90);
+  /* Paper needs a far lighter hand: a 60% black glow under the bar reads
+     as dirt rather than as depth. */
+  --nav-shadow:0 1px 20px -14px rgba(60,50,35,.45);
   --shadow-card:0 10px 26px -14px rgba(60,50,35,.24);
   --shadow-modal:0 30px 70px -30px rgba(60,50,35,.32);
   --shadow-lift:0 18px 38px -22px rgba(60,50,35,.24);
@@ -1575,9 +1584,9 @@ body.home .nav{ position:fixed; left:0; right:0; }
 /* Denser once you are past the hero: more tint, a real edge. On the home
    page the section spy sets this; elsewhere it is the scroll state. */
 .nav.is-scrolled{
-  background:rgba(0,0,0,.72);
+  background:var(--nav-bg-scrolled);
   border-bottom-color:var(--border-subtle);
-  box-shadow:0 1px 24px -12px rgba(0,0,0,.6);
+  box-shadow:var(--nav-shadow);
 }
 /* A soft wash of the active section's colour across the top of the
    screen. It cross-fades on the same 350ms as the pill, so arriving in a
