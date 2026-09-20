@@ -6,13 +6,59 @@ Re-run this any time you add styles below:  python3 build_prompts.py
 """
 
 import json
+import os
+import re
+
+HERE = os.path.dirname(os.path.abspath(__file__))
 
 # (style name, descriptor injected into the prompt)
+# ---------------------------------------------------------------------------
+# The gallery's Trending row.
+#
+# Two different things wanted the word "trending" and only one of them is
+# this. The CATALOG key below called "Trending" is the small set of
+# multi-photo concept pieces, and it has always been LABELLED "Featured
+# Concepts" in the interface -- so that flag is now `featured`, matching
+# what a reader actually sees, and `trending` means this and only this.
+#
+# These twelve are picked on one criterion: how much the picture changes
+# at thumbnail size. Not by category, and not by how interesting the
+# technique is to read about -- a row of subtle grades is a row of
+# identical-looking faces. So the list spans drawn, sculpted, rendered,
+# lit and printed, and every one of them survives being 200px wide.
+# An ordered PREFERENCE list, not the row itself. The builder walks it and
+# takes the first TRENDING_SIZE that actually have a render on disk, so a
+# pick with no example never reaches the page as an empty coloured block.
+# The ones still waiting on the image run stay near the top and rejoin the
+# row automatically the moment their file appears -- no edit needed here.
+TRENDING_SIZE = 12
+TRENDING = [
+    "made-of-glass",             # the subject turns transparent
+    "action-figure-in-packaging",# boxed and carded  (awaiting render)
+    "amigurumi-crochet-doll",    # yarn texture      (awaiting render)
+    "toy-brick-minifigure",      # a shape nobody can mistake
+    "marble-bust",               # flesh to carved stone
+    "made-of-neon-tubes",        # self-lit, the only one that glows
+    "pencil-sketch",             # colour to graphite
+    "hand-painted-anime-film",   # photograph to drawing
+    "stained-glass",             # lead lines and lit panels
+    "80s-retro-portrait",        # datable on hair and colour alone
+    "y2k-chrome",                # liquid metal        (awaiting render)
+    "pixel-art",                 # resolution collapse
+    # the bench, in preference order, for whenever one above is missing
+    "made-of-gold",              # specular metal, high contrast
+    "cel-shaded-3d",             # flat shading and a hard outline
+    "watercolor-painting",       # paper grain and bleeding edges
+    "mosaic-tile",               # assembled from pieces
+    "linocut-print",             # carved, high contrast
+    "charcoal-drawing",          # smoky, deep blacks
+]
+
 CATALOG = {
     "Traditional Media": [
         ("Watercolor Painting", "a soft watercolor painting with bleeding edges, visible paper texture and translucent washes"),
         ("Oil Painting", "a rich oil painting with thick visible brushwork and deep layered colour"),
-        ("Impasto Oil", "a heavy impasto oil painting where the paint stands off the canvas in thick ridges"),
+        ("Impasto Oil", "a heavy impasto oil painting built with a palette knife, the paint standing off the canvas in ridges thick enough to cast their own small shadows, strokes so wide that fine detail is lost to the shape of the paint"),
         ("Acrylic Painting", "a bold acrylic painting with flat opaque colour blocks and crisp edges"),
         ("Gouache Illustration", "a gouache illustration with heavy matte pigment and deep saturated flats"),
         ("Pencil Sketch", "a graphite pencil sketch with visible hatching, construction lines and soft smudged shading"),
@@ -27,7 +73,7 @@ CATALOG = {
         ("Oil Pastel", "an oil pastel drawing with waxy blended strokes and rich saturated colour"),
         ("Crayon Drawing", "a childlike crayon drawing with waxy scribbled fill and shaky outlines"),
         ("Marker Illustration", "an alcohol marker illustration with flat streaky fills and clean ink linework"),
-        ("Airbrush Art", "a smooth airbrushed illustration with soft gradients and glossy highlights"),
+        ("Airbrush Art", "a smooth airbrushed illustration in which all photographic texture is gone, forms modelled entirely in soft sprayed gradients with hard mask edges where the frisket sat, and glossy highlights laid on top"),
         ("Scratchboard", "a scratchboard engraving with fine white lines scratched out of solid black"),
         ("Etching Print", "a copperplate etching print with fine engraved lines and aged paper tone"),
         ("Lithograph", "a vintage lithograph print with grainy tonal texture and limited ink colours"),
@@ -35,13 +81,13 @@ CATALOG = {
         ("Linocut Print", "a linocut print with bold blocky negative space and raw chiselled edges"),
         ("Screen Print", "a screen print with flat spot colours, slight registration offset and visible ink texture"),
         ("Risograph Print", "a risograph print with misaligned two-colour layers, visible grain and a limited palette"),
-        ("Halftone Print", "a coarse halftone print built from visible dot patterns and limited ink colours"),
+        ("Halftone Print", "a coarse halftone print in which every tone is made of visible ink dots on a rotated screen, coarse enough to count, with no continuous gradient anywhere and only a few ink colours overprinting"),
         ("Stained Glass", "a stained glass panel with bold black leading sealing glowing translucent colour"),
         ("Mosaic Tile", "a mosaic built from small irregular ceramic tiles with visible grout lines"),
-        ("Fresco Mural", "a cracked plaster fresco with faded historical pigment and worn patches"),
+        ("Fresco Mural", "a fresco painted into wet lime plaster on a wall, the pigment absorbed so edges bleed soft, colour chalky and faded, with craquelure and worn patches where the plaster has lost its skin entirely"),
         ("Tempera Panel", "an egg tempera panel painting with fine hatched brushwork and matte finish"),
-        ("Encaustic Wax", "an encaustic wax painting with translucent layered surfaces and fused texture"),
-        ("Paper Collage", "a torn paper collage with layered cut edges and mixed printed textures"),
+        ("Encaustic Wax", "an encaustic painting in pigmented beeswax, built in translucent layers that blur what lies under them, the surface scraped back and fused with heat so edges pool and run and detail sinks into the wax"),
+        ("Paper Collage", "a collage assembled from torn pieces of printed paper, every feature a separate flat shape with a visible torn white edge and its own small drop shadow, so the face reads as cut and glued rather than drawn"),
         ("Stencil Spray Art", "a multi-layer stencil spray painting with hard edges and overspray texture"),
         ("Graffiti Mural", "a spray-painted graffiti mural with bold outlines, drips and vivid fills"),
         ("Chalkboard Drawing", "a white chalk drawing on a dark textured chalkboard with dusty smudges"),
@@ -82,6 +128,9 @@ CATALOG = {
         ("Claymation Frame", "a claymation stop-motion frame with molded clay texture and visible fingerprints"),
         ("Papercraft Layers", "a layered papercraft scene built from flat cut-paper shapes casting soft shadows"),
         ("Silhouette Animation", "a cut-paper silhouette animation frame with solid black shapes against a glowing background"),
+        ("Bollywood Film Poster", "a hand-painted Bollywood film poster with the subject as the lead, saturated enamel-like colour, dramatic airbrushed rim light, bold display lettering blocked across the composition, and the slightly heightened painted likeness of the poster artists of that era"),
+        ("Feature Animation 3D", "a glossy feature-animation 3D character render of the person with large expressive eyes, softly subsurface-scattered skin, simplified but accurate facial structure, stylised hair sculpted in clean clumps, and warm cinematic key lighting with a soft rim"),
+        ("Tarot Card", "a tarot card with the person as the central figure, drawn in art nouveau line and flat symbolic colour, framed by an ornate border with a roman numeral above and a title panel below, surrounded by emblematic objects and stars"),
     ],
     "Photography & Camera": [
         ("4K Ultra Sharp", "an ultra-sharp 4K photograph with crisp micro-detail and clean natural colour"),
@@ -120,6 +169,9 @@ CATALOG = {
         ("Thermal Imaging", "a thermal camera image mapping heat to a blue-to-white gradient"),
         ("Night Vision", "a green-tinted night vision image with heavy sensor noise and glowing highlights"),
         ("X-Ray Scan", "an X-ray scan showing internal structure in translucent greyscale"),
+        ("Lo-Fi Phone Snapshot", "a deliberately imperfect phone snapshot with a harsh on-camera flash, slight motion blur, wrong white balance pulling everything green, crushed shadows and heavy sensor noise, framed a little carelessly as though taken quickly by someone who was actually there"),
+        ("2016 Filter Photo", "a mid-2010s social photo with a warm high-contrast filter, lifted milky blacks, a heavy vignette, slightly oversharpened detail and a thick white border on a square crop"),
+        ("Imagined Polaroid", "an instant film photograph with the wide white lower lip of the frame, soft low-contrast colour, a cyan cast through the shadows, visible chemical unevenness toward the edges, and a handwritten date and short caption in ballpoint on the white border"),
     ],
     "Digital & Glitch": [
         ("Glitch Art", "glitch art with corrupted digital artifacts, displaced scanlines and colour channel bleed"),
@@ -150,6 +202,7 @@ CATALOG = {
         ("Hologram Projection", "a translucent blue hologram projection with scanline flicker and edge glow"),
         ("Point Cloud Scan", "a 3D point cloud scan built from thousands of small floating dots"),
         ("Vector Trace", "a hard-edged vector trace with posterised flat colour regions"),
+        ("Y2K Chrome", "an early-2000s chrome aesthetic with liquid metal lettering, bevelled reflective surfaces, lens-flare sparkles, translucent plastic panels and a gradient techno backdrop of blue and silver"),
     ],
     "Art Movements": [
         ("Renaissance Oil", "a Renaissance oil painting with balanced composition, soft modelling and warm varnished tone"),
@@ -220,6 +273,15 @@ CATALOG = {
         ("Corporate Portrait", "a polished corporate portrait with even lighting and a blurred office background"),
         ("Passport Photo", "a formal passport photo with flat even lighting against a plain light background"),
         ("Yearbook Portrait", "a retro yearbook portrait with a mottled studio backdrop and soft warm lighting"),
+        # Four period looks. Each one has to be datable from the picture
+        # alone, so each leans on what actually separates the decades --
+        # the hair and the film stock, not just a colour grade. A person
+        # in 1985 and the same person in 1999 have to be told apart at
+        # thumbnail size, which is the whole point of the set.
+        ("80s Retro Portrait", "an authentic 1980s portrait with big volumised feathered hair, bold blue eyeshadow and blusher, a neon-lit backdrop of magenta and cyan, saturated Kodachrome colour, heavy film grain and a soft glamour-lens glow"),
+        ("90s Film Portrait", "a 1990s consumer film portrait shot on expired 35mm with a harsh on-camera flash, slightly green-shifted shadows, muted colour, visible grain and the flat washed look of a one-hour photo lab print"),
+        ("Y2K Portrait", "a year-2000 portrait with frosted lip gloss, thin plucked brows, butterfly clips and a metallic silver-blue wardrobe, shot on an early digital compact with a hard flash, blown highlights, chromatic fringing and low-resolution sharpening halos"),
+        ("Disco Portrait", "a 1977 discotheque portrait under a mirrorball with coloured spotlights raking across the frame, glitter and sequins catching the light, wide lapels and a feathered blowout, warm tungsten film with heavy halation around every highlight"),
         ("Royal Oil Portrait", "a formal royal oil portrait with rich fabrics, dark background and dramatic side light"),
         ("Marble Bust", "a carved white marble bust with polished stone surfaces and soft gallery lighting"),
         ("Bronze Statue", "a weathered bronze statue with green patina and hard outdoor light"),
@@ -244,6 +306,14 @@ CATALOG = {
         ("1920s Portrait", "a 1920s studio portrait with soft focus, art deco styling and sepia warmth"),
         ("1970s Film Portrait", "a 1970s film portrait with warm faded colour, soft grain and natural light"),
         ("Fashion Editorial", "a high-fashion editorial portrait with dramatic styling and hard studio light"),
+        ("Action Figure in Packaging", "a boxed collectible action figure of the person sealed in a clear blister on a printed cardboard backer, with invented brand lettering, a couple of small accessories moulded in the same plastic, and the subject's own face painted onto the figure's head so it is unmistakably them"),
+        ("Amigurumi Crochet Doll", "a hand-crocheted amigurumi doll of the person in soft yarn, built from visible rounds of single crochet with a faint spiral seam, safety eyes and a stitched smile, the hair worked in looped yarn of the right colour and the face shaped so the person is still recognisable"),
+        ("Gachapon Capsule Toy", "a tiny glossy PVC capsule-machine figure of the person, two inches tall with a slightly oversized head and simplified hands, standing beside its split clear plastic capsule, injection-moulded seams and a faint sprue mark visible, the face printed with just enough detail to stay recognisable"),
+        ("Bobblehead Figure", "a painted resin bobblehead of the person with an oversized head on a visible spring, mounted on a round base, hand-painted with slightly soft edges and a gloss varnish, the likeness exaggerated but clearly still the same person"),
+        ("Enamel Pin", "a hard enamel lapel pin of the person, polished metal borders separating flat areas of coloured enamel, the likeness reduced to bold clean shapes that still read as them, photographed on its printed backing card with the butterfly clutch beside it"),
+        ("Embroidered Patch", "an iron-on embroidered patch of the person with a dense satin-stitch face, a merrowed overlocked border, visible thread direction catching the light and a slight quilted relief where the stitching pulls the backing, simplified to a few thread colours but still recognisably them"),
+        ("Vintage Hand-Tinted Studio Portrait", "a mid-century studio portrait printed in warm monochrome and then hand-tinted with translucent photo oils, rosy applied colour on the cheeks and lips, a painted canvas backdrop with a soft vignette, and the slightly formal posing of a portrait studio of that era"),
+        ("Parallel-Life Portrait", "a documentary portrait of the same person living a different life, in the clothing, setting and props of another occupation entirely, shot as an honest environmental photograph in natural light, the face and build unchanged so both lives read as the same individual"),
     ],
     "Material & Sculpture": [
         ("Made of Glass", "sculpted from clear glass with refractive highlights and internal reflections"),
@@ -616,6 +686,299 @@ FEATURED = [
 ]
 
 
+
+# ---------------------------------------------------------------------------
+# DETAILED PROMPTS
+#
+# The catalogue above holds the irreducible part of each style: one hand
+# written descriptor naming the medium. That is the style core, and it is
+# reused verbatim. Everything around it is composed here, because the things
+# that make a prompt work on a real model -- say what to keep, describe the
+# medium in physical terms, fix the light, fix the palette, say how much
+# detail, and name the failure to avoid -- are properties of the FAMILY a
+# style belongs to, not of the style itself. A watercolour and a gouache want
+# the same advice about paper and pigment; a tilt-shift and a fisheye want the
+# same advice about focal length.
+#
+# So there are fourteen families, each with its own set of clauses, and each
+# clause rotates between variants so 273 prompts do not read as one template
+# filled in 273 times.
+#
+# The short original is kept on every entry as promptShort.
+# ---------------------------------------------------------------------------
+
+# Family is decided by slug, first match winning. Ordered most specific first.
+# Order matters: first match wins. The last entry is a catch-all that
+# says "painted medium", and a catch-all only stays honest if everything
+# that is NOT one is named above it. It had quietly collected 23 things
+# that are not paintings at all -- a daguerreotype, a thermal image, an
+# ASCII dump, a rainy street -- and handed each of them "finish it as a
+# complete painting, visible marks everywhere". The 80s portrait came
+# back as an oil sketch, which is how this was noticed.
+FAMILIES = [
+    ("mockup",    r"mockup|billboard|t-shirt|magazine-cover|album-cover|movie-poster|trading-card|vintage-advertisement|travel-poster|postage-stamp|framed-wall-art|storefront-window|museum-exhibit|vinyl-collectible|action-figure|snow-globe|wanted-poster"),
+    ("practical", r"remove-|upscale|restore|colorize|passport|corporate-portrait|white-background|real-estate|studio-backdrop|lifestyle-product|food-photography|professional-headshot|fashion-editorial|virtual-staging|background-removal"),
+    ("character", r"astronaut|wizard|samurai|pirate|cowboy|knight|steampunk|netrunner|superhero|caricature"),
+    ("light",     r"golden-hour|blue-hour|change-to-night|overcast|midday|dramatic-sky|thick-fog|season|water-reflection|cinematic-color|colour-grade|color-grade"),
+    # stained-glass and mosaic-tile are assembled out of pieces of a
+    # material and lit through or across the surface -- not painted. Left
+    # in the paint family they picked up its tail ("visible marks
+    # everywhere, genuinely re-drawn in paint"), which directly
+    # contradicts "bold black leading sealing glowing translucent
+    # colour", and the result was a painted portrait with no lead lines.
+    ("material",  r"^made-of-|marble-bust|bronze-statue|wax-figure|balloon-sculpture|gingerbread|plush-toy|toy-brick|papercraft|sand-art|cross-stitch|embroidery|claymation|stained-glass|mosaic-tile|paper-collage"),
+    ("glitch",    r"glitch|datamosh|pixel-sort|vhs|crt|jpeg|chromatic|deep-fried|falling-code|security-camera|night-vision|heat-map|x-ray|point-cloud|dashcam|thermal-receipt|dot-matrix|kaleidoscope|fractal|vaporwave|holographic|hologram|duotone|thermal-imaging|ascii|liquid-distortion|neon-outline|loading-screen|circuit-board|cyberpunk-neon"),
+    ("render3d",  r"low-poly|voxel|isometric|cel-shaded|wireframe|blueprint|topographic|miniature-diorama|concept-art"),
+    ("anime",     r"anime|manga|chibi|rubber-hose|western-cartoon|comic-book|graphic-novel|coloring-book|sticker|picture-book|silhouette-animation|character-sheet|storyboard|newspaper-comic|cartoon|cel-animation|2d-feature-animation"),
+    ("photo",     r"film-grain|bokeh|tilt-shift|long-exposure|fisheye|telephoto|macro|disposable|lomography|tintype|instant-photo|cross-processed|hdr|4k|8k|double-exposure|light-painting|underwater|drone|wide-angle|film-portrait|1920s|sepia|high-contrast-monochrome|film-noir|noir|infrared|anamorphic|daguerreotype|yearbook|80s-retro-portrait|y2k-portrait|disco-portrait"),
+    ("print",     r"woodblock|linocut|screen-print|risograph|lithograph|etching|halftone|stencil|banknote|engraving|blueprint|vector-trace|vector-flat|pixel-art|16-bit|line-art|op-art|brutalist-graphic"),
+    ("movement",  r"cubism|bauhaus|art-deco|art-nouveau|de-stijl|constructivist|dada|futurism|surrealism|pop-art|minimalism|pointillism|romanticism|rococo|neoclassical|baroque|renaissance|ukiyo-e|mughal|persian|warli|illuminated|impressionist|expressionism|fauvism|abstract"),
+    ("draw",      r"pencil|graphite|charcoal|conte|crayon|ink-pen|ink-wash|brush-pen|marker|chalkboard|scratchboard|sketch|tattoo|chinese-ink"),
+    ("scene",     r"desert|jungle|forest|village|ruins|rooftop|cherry-blossom|outer-space|infinite-field|cozy-room|medieval|snowy|heavy-rain|cyberpunk-city|floating-island"),
+    ("paint",     r"."),   # everything left is a painted medium
+]
+
+
+# Named outright where the patterns would get it wrong. The ordered list
+# is a good default and a bad argument: "action-figure-in-packaging"
+# matches the mockup rule because mockup owns "action-figure", when what
+# it actually needs is the material tail about how a surface takes light.
+# Naming the handful of exceptions beats reordering the list and moving
+# twenty other prompts by accident.
+FAMILY_OVERRIDE = {
+    # collectibles: the point is the material the figure is made of
+    "action-figure-in-packaging": "material",
+    "amigurumi-crochet-doll":     "material",
+    "gachapon-capsule-toy":       "material",
+    "bobblehead-figure":          "material",
+    "enamel-pin":                 "material",
+    "embroidered-patch":          "material",
+    # photographs, all of which would otherwise land in the paint catch-all
+    "lo-fi-phone-snapshot":              "photo",
+    "2016-filter-photo":                 "photo",
+    "imagined-polaroid":                 "photo",
+    "vintage-hand-tinted-studio-portrait": "photo",
+    "parallel-life-portrait":            "photo",
+    # a rendered character, not a painted one
+    "feature-animation-3d": "render3d",
+    # chrome and lens flare belong with the digital treatments
+    "y2k-chrome": "glitch",
+}
+
+
+def family_of(slug):
+    if slug in FAMILY_OVERRIDE:
+        return FAMILY_OVERRIDE[slug]
+    for name, pattern in FAMILIES:
+        if re.search(pattern, slug):
+            return name
+    return "paint"
+
+
+# What survives the edit. Split by whether the subject is a person, because
+# "keep the pose" means something different to a mug.
+KEEP_PERSON = [
+    "Keep the person's face, expression, pose and proportions clearly recognisable, and hold the original framing.",
+    "The subject must stay the same person throughout: same facial structure, same expression, same angle of the head, same crop.",
+    "Preserve identity above all else -- the same face, the same posture, the same position in frame.",
+]
+KEEP_THING = [
+    "Keep the subject, its position in frame and the original composition unchanged.",
+    "Hold the layout of the original: same subject, same placement, same crop.",
+    "The arrangement stays exactly as it is; only the treatment changes.",
+]
+
+LIGHT = {
+    "paint":     ["Light the scene the way the original was lit, but let the medium soften it: gentle directional light, no hard speculars.",
+                  "Keep the original light direction and let it read through the paint as broad soft modelling rather than photographic shading."],
+    "draw":      ["Read the original lighting as tone rather than colour, with the light source implied by where the paper is left bare.",
+                  "Translate the light into shading density alone: darkest where the original was in shadow, untouched paper where it was brightest."],
+    "print":     ["Flatten the lighting into a small number of tonal steps, since the process cannot hold a smooth gradient.",
+                  "Reduce the light to two or three flat values with no blending between them."],
+    "glitch":    ["Keep the underlying exposure of the original; the corruption sits on top of the image rather than relighting it.",
+                  "Do not relight the scene. The artefacts are a layer over the existing exposure."],
+    "photo":     ["Keep the original light direction and quality, and let the lens and stock change how it falls off rather than where it comes from.",
+                  "Same light source and direction as the original, rendered through the optical character described."],
+    "light":     ["This is the one thing that changes: relight the scene completely while leaving every object exactly where it is.",
+                  "Change only the light and the sky. Geometry, subject and framing are untouched."],
+    "material":  ["Light it as a studio object: one broad key from the upper left, soft fill, and a shadow that sits the form on its surface.",
+                  "Studio lighting, a single large soft key with gentle falloff, so the material's surface properties are legible."],
+    "render3d":  ["Use clean even three-point lighting typical of a rendered scene, with soft ambient occlusion in the crevices.",
+                  "Neutral render lighting: a key, a fill and a rim, with soft contact shadows."],
+    "anime":     ["Simplify the light into flat cel bands: one lit tone, one shadow tone, and a small bright highlight.",
+                  "Cel-style lighting with a hard-edged shadow shape rather than a gradient."],
+    "movement":  ["Handle light the way the movement did rather than the way a camera does.",
+                  "Let the period's own conventions govern the light instead of photographic realism."],
+    "character": ["Light the subject like a portrait made for this world: directional key, deep falloff, a touch of rim light to separate them.",
+                  "Cinematic portrait lighting, strong key from one side with the background falling into shadow."],
+    "practical": ["Even, neutral, unobtrusive lighting -- nothing about the light should draw attention to itself.",
+                  "Clean neutral lighting with no coloured cast and no dramatic shadow."],
+    "mockup":    ["Light the mock-up as a product photograph: soft key, gentle falloff, shadow consistent with the surface it sits on.",
+                  "Even commercial lighting with a believable contact shadow."],
+    "scene":     ["Light the new setting convincingly, and make the subject's own lighting match it in direction and warmth.",
+                  "The subject must sit in the scene's light, not carry the old light into it."],
+}
+
+COLOUR = {
+    "paint":     ["Keep the palette close to the original but let the pigment shift it slightly warm and unify the whole surface.",
+                  "Work in a coherent painterly palette drawn from the original colours, with [colour] leading."],
+    "draw":      ["Monochrome or near-monochrome throughout, carried by the drawing material's own colour.",
+                  "Restrict the palette to the drawing medium itself on [colour] paper."],
+    "print":     ["Limit the palette hard, to three or four flat inks with visible overlap where they meet.",
+                  "A restricted ink palette of [colour] and black, printed flat."],
+    "glitch":    ["Push channel separation and let the colour tear away from the form in places.",
+                  "Saturated RGB fringing against the original's otherwise unchanged colour."],
+    "photo":     ["Grade the colour the way the stock or process would: shifted highlights, tinted shadows, slightly off-neutral whites.",
+                  "Apply the characteristic colour cast of the process rather than a corrected neutral grade."],
+    "light":     ["Let the new light drive the entire palette -- the colour of everything follows the colour of the source.",
+                  "Recolour the scene to match the new light temperature throughout, including the shadows."],
+    "material":  ["Colour comes from the material itself, with whatever translucency, metallic response or surface tint it has.",
+                  "The palette is the material's own, in [colour], reading believably under the studio light."],
+    "render3d":  ["Flat, clean colour with a limited palette and no photographic noise.",
+                  "Simple material colours, slightly desaturated, with [colour] as the accent."],
+    "anime":     ["Bright, saturated, limited palette with clean separation between areas of colour.",
+                  "Flat saturated colour with a clear accent in [colour]."],
+    "movement":  ["Use the palette the movement is known for rather than the photograph's own colours.",
+                  "Adopt the period palette wholesale, even where it departs from the original colours."],
+    "character": ["Rich, slightly cinematic colour with the costume and setting leading the palette.",
+                  "A grounded palette built around the costume, with [colour] as the signature note."],
+    "practical": ["Accurate neutral colour with correct white balance and natural skin tones.",
+                  "True-to-life colour, properly white balanced, nothing stylised."],
+    "mockup":    ["Colour accurate to a printed or manufactured product, with the artwork reading clearly.",
+                  "Realistic product colour against a [background] background."],
+    "scene":     ["Let the setting's own palette dominate while keeping the subject's colours believable within it.",
+                  "Scene-led palette with the subject integrated rather than pasted on."],
+}
+
+CAMERA = {
+    "photo":     ["Render it as if shot on the appropriate focal length for the effect, with depth of field and perspective to match.",
+                  "Match the lens character the effect implies, including its depth of field and any distortion."],
+    "practical": ["Shoot it at a flattering portrait focal length, around 85mm equivalent, with a moderately shallow depth of field.",
+                  "Standard product or portrait perspective, no wide-angle distortion, background gently separated."],
+    "character": ["Frame it as a character portrait at a medium focal length, with the background compressed and soft.",
+                  "Medium telephoto framing with the background falling out of focus."],
+    "material":  ["Shoot it as a product would be shot: slightly above eye level, everything in focus, no distortion.",
+                  "Clean product angle with deep focus across the object."],
+    "mockup":    ["Photograph the mock-up in a believable setting at a natural angle, slightly off square.",
+                  "Realistic perspective on the object, artwork face-on and legible."],
+    "render3d":  ["Use an orthographic or near-orthographic view where the style calls for it, otherwise a neutral perspective.",
+                  "Clean render camera, no lens distortion, no depth-of-field blur."],
+    "scene":     ["Keep the camera where it was and rebuild the world around it.",
+                  "Same viewpoint and framing; only the surroundings change."],
+}
+
+FINISH = {
+    "paint":     "Finish it as a complete painting rather than a filtered photograph: visible marks everywhere, including the background.",
+    "draw":      "Leave it looking hand-made: uneven pressure, visible construction, and paper showing through in the lightest areas.",
+    "print":     "Include the small imperfections of the process -- slight misregistration, uneven ink, a visible substrate.",
+    "glitch":    "Keep the corruption believable and uneven rather than applied as a regular overlay.",
+    "photo":     "Hold photographic detail throughout, with the process's own grain or artefacts rather than digital sharpening.",
+    "light":     "Keep every surface, texture and edge from the original intact at full detail.",
+    "material":  "Model the surface properly: correct reflectivity, thickness, edge highlights and how light enters or bounces off it.",
+    "render3d":  "Keep geometry clean and deliberate, with consistent facet or voxel size across the whole image.",
+    "anime":     "Clean confident linework of even weight, with flat fills and no photographic texture anywhere.",
+    "movement":  "Commit fully to the style rather than blending it with the photograph underneath.",
+    "character": "High detail on costume, materials and props, with believable wear rather than a clean costume-shop look.",
+    "practical": "Sharp, clean and natural, with no visible editing artefacts, halos or over-smoothed skin.",
+    "mockup":    "Realistic materials and edges so it reads as a physical object that exists, not a flat paste-up.",
+    "scene":     "Build the setting to the same level of detail as the subject so neither looks cut out.",
+}
+
+AVOID = {
+    "paint":     "Avoid the common failure here, which is a photograph with a texture laid over it -- the image must be genuinely re-drawn in paint.",
+    "draw":      "Avoid a grey photographic desaturation pretending to be a drawing; it needs real marks, not a filter.",
+    "print":     "Avoid smooth gradients and photographic detail, which this process cannot produce.",
+    "glitch":    "Avoid a uniform overlay of noise; real corruption is patchy, directional and follows the data.",
+    "photo":     "Avoid an over-processed HDR look with crushed blacks and halos around edges.",
+    "light":     "Avoid changing the subject, moving anything, or letting the new light wash out detail.",
+    "material":  "Avoid a flat recolour; the object must genuinely look made of the material, with the right thickness and light response.",
+    "render3d":  "Avoid photographic textures and realistic lighting, which break the rendered look.",
+    "anime":     "Avoid semi-realistic shading or photographic skin texture, which reads as neither one thing nor the other.",
+    "movement":  "Avoid a token gesture toward the style applied over an unchanged photograph.",
+    "character": "Avoid a cheap costume look, and do not alter the underlying facial identity.",
+    "practical": "Avoid plastic over-retouched skin, visible cut-out edges and any loss of real detail.",
+    "mockup":    "Avoid artwork that floats, ignores the surface, or is distorted illegibly.",
+    "scene":     "Avoid a cut-and-paste composite where the subject's light and edges do not match the new setting.",
+}
+
+# Whether the "keep" clause should talk about a face or about a layout. Driven
+# by the category and the slug, never by the family: Practical Edits covers
+# both passport photos and background cleanup on a product shot.
+# Which prompts must hold a FACE, and which need only hold a composition.
+#
+# This used to be a keyword list, and a keyword list is the wrong shape
+# for it: every prompt not on the list quietly got the weaker "keep the
+# subject" clause, so six of the fifteen most recent additions -- a
+# character render OF somebody, a film poster with them as the lead,
+# three portrait photographs -- were told to preserve the layout and
+# never told to preserve the person.
+#
+# generate-images.js settled this question already: a portrait is the
+# default and an object or a place has to be argued for, which is why 271
+# of the 292 are pointed at a face. So the default here is now the same,
+# and the exceptions are named. These twenty-one are exactly the slugs
+# that file resolves to something other than a portrait; the two lists
+# have to agree, and a prompt appearing in one but not the other is the
+# bug to look for if a scene prompt starts talking about cheekbones.
+THING_SLUGS = {
+    # a place, or the weather and light over one
+    "drone-top-down", "drone-orbit-shot", "long-exposure", "topographic-map",
+    "change-to-golden-hour", "change-season-to-autumn", "change-season-to-winter",
+    "add-dramatic-sky", "add-water-reflection",
+    # a street
+    "security-camera", "dashcam-footage", "change-to-night", "90s-cyberpunk-cafe",
+    # a room
+    "real-estate-interior", "cozy-room", "virtual-staging", "remove-background-clutter",
+    # an actual product, and an actual meal
+    "white-background-product", "lifestyle-product-shot", "food-photography",
+    # the one that genuinely wants an animal
+    "underwater-photography",
+}
+
+
+OPENINGS = [
+    "Restyle the uploaded photograph as {d}.",
+    "Transform the uploaded photo into {d}.",
+    "Redraw the attached image as {d}.",
+    "Rework the supplied photograph into {d}.",
+    "Take the uploaded photo and render it as {d}.",
+]
+# The material descriptors are participles -- "sculpted from clear glass" --
+# so they need a frame that takes one.
+OPENINGS_MATERIAL = [
+    "Recreate the subject of the uploaded photo as if it were {d}.",
+    "Rebuild the subject from the attached photo as though {d}.",
+    "Remake the subject in the uploaded image as if {d}.",
+]
+
+
+def _pick(seq, i):
+    return seq[i % len(seq)]
+
+
+def detailed_prompt(name, desc, cat, slug, i):
+    """Compose one detailed prompt from the style core plus its family."""
+    fam = family_of(slug)
+    person = slug not in THING_SLUGS
+
+    opens = OPENINGS_MATERIAL if fam == "material" else OPENINGS
+    opening = _pick(opens, i).format(d=desc)
+    keep = _pick(KEEP_PERSON if person else KEEP_THING, i)
+
+    parts = [
+        opening,
+        keep,
+        _pick(LIGHT[fam], i),
+        _pick(COLOUR[fam], i + 1),
+    ]
+    cam = CAMERA.get(fam)
+    if cam:
+        parts.append(_pick(cam, i))
+    parts.append(FINISH[fam])
+    parts.append(AVOID[fam])
+    return " ".join(parts)
+
+
 def slugify(s):
     out = []
     for ch in s.lower():
@@ -628,21 +991,37 @@ def slugify(s):
 
 entries = []
 i = 0
+# Resolve the preference list against what is actually on disk.
+_HAVE = {f[:-4] for f in os.listdir(os.path.join(HERE, "images"))
+         if f.endswith(".jpg")} if os.path.isdir(os.path.join(HERE, "images")) else set()
+_picked = [sl for sl in TRENDING if sl in _HAVE][:TRENDING_SIZE]
+_skipped = [sl for sl in TRENDING[:TRENDING_SIZE] if sl not in _HAVE]
+TRENDING_RANK = {sl: n + 1 for n, sl in enumerate(_picked)}
+if _skipped:
+    print('  trending: %d preferred pick(s) have no render yet, '
+          'filled from the bench: %s' % (len(_skipped), ', '.join(_skipped)))
+
 for cat, styles in CATALOG.items():
     for name, desc in styles:
         wrapper_set = WRAPPERS.get(cat, DEFAULT_WRAPPERS)
         wrapper = wrapper_set[i % len(wrapper_set)]
-        prompt = wrapper.format(d=desc) + " " + PRESERVE[cat]
+        short = wrapper.format(d=desc) + " " + PRESERVE[cat]
         entries.append({
             "style": name,
             "cat": cat,
             "size": SIZES[i % len(SIZES)],
-            "prompt": prompt,
+            "prompt": detailed_prompt(name, desc, cat, slugify(name), i),
+            "promptShort": short,
             "slug": slugify(name),
             "search": search_term(name),
             "stock": name not in NO_STOCK,
             "input": "1 photo",
-            "trending": False,
+            "featured": False,
+            # RANK, not a boolean. The gallery shuffles its order on every
+            # load, and a curated row that reshuffles with it is not
+            # curated -- the twelve arrived in a different sequence each
+            # time. 0 means not in the row.
+            "trending": TRENDING_RANK.get(slugify(name), 0),
         })
         i += 1
 
@@ -659,11 +1038,13 @@ for f in FEATURED:
         "cat": "Featured Concepts",
         "size": SIZES[len(entries) % len(SIZES)],
         "prompt": f["prompt"],
+        "promptShort": f["prompt"],
         "slug": slugify(f["style"]),
         "search": search_term(f["style"]),
         "stock": False,
         "input": f["input"],
-        "trending": True,
+        "featured": True,
+        "trending": TRENDING_RANK.get(slugify(name), 0),
     })
 
 # sanity checks

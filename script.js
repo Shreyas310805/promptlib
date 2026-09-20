@@ -22,6 +22,8 @@ const ICONS = {
   check: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L19 8"/></svg>',
   close: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
   arrow: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg>',
+  chevronLeft:  '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
+  chevronRight: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>',
   spark: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z"/></svg>',
   ppt:    '<svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="12" rx="1.5"/><path d="M8 21h8M12 17v4"/></svg>',
   essay:  '<svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h9l5 5v15a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M14 2v5h5M8 13h8M8 17h5"/></svg>',
@@ -201,7 +203,7 @@ function copyText(text, btn){
    that throws on access (private mode, storage blocked) rather than taking
    the page down with it.
    ================================================================== */
-const STORE_KEYS = { saved:"promptlib-saved", shuffle:"promptlib-shuffle", motion:"promptlib-motion" };
+const STORE_KEYS = { saved:"promptlib-saved", shuffle:"promptlib-shuffle", motion:"promptlib-motion", vars:"promptlib-vars", view:"promptlib-view" };
 
 function readStore(key, fallback){
   try {
@@ -372,21 +374,10 @@ function initSettings(){
     });
   };
 
+
   bind(theme,
-    () => document.documentElement.getAttribute("data-theme") === "light",
-    (on) => {
-      const next = on ? "light" : "dark";
-      document.documentElement.classList.add("theme-transition");
-      setTimeout(() => document.documentElement.classList.remove("theme-transition"), 400);
-      document.documentElement.setAttribute("data-theme", next);
-      writeStore("promptlib-theme-raw", next);
-      try { localStorage.setItem("promptlib-theme", next); } catch(err){ /* ignore */ }
-      const navBtn = document.getElementById("themeToggle");
-      if(navBtn){
-        navBtn.setAttribute("aria-checked", String(on));
-      }
-      announce(on ? "Light theme enabled" : "Dark theme enabled");
-    });
+    () => currentTheme() === "light",
+    (on) => applyTheme(on ? "light" : "dark"));
 
   bind(shuffle,
     () => readStore(STORE_KEYS.shuffle, true) !== false,
@@ -456,7 +447,7 @@ function buildCmdkIndex(){
 
   /* Whatever the homepage happens to be showing is searchable from it. On
      images.html these are already in imagePrompts and get skipped. */
-  ["featurePrompts", "trendingPrompts", "pickPrompts"].forEach((key) => {
+  ["homeExamples", "featuredPrompts"].forEach((key) => {
     (Array.isArray(window[key]) ? window[key] : []).forEach((p) => {
       if(out.some((x) => x.kind === "prompt" && x.title === p.style)) return;
       out.push({ kind:"prompt", title:p.style, sub:p.cat, prompt:p.prompt });
@@ -642,18 +633,637 @@ function initCmdk(){
 }
 
 /* ==================================================================
+   VIEW MODES + SPATIAL TRANSITIONS
+
+   Three ways to read the same 273 prompts, because scanning for a look,
+   comparing wording, and actually reading one are different jobs:
+
+     GRID   the renders, at their own proportions. Scanning.
+     LIST   one row each, image beside the opening of the prompt. Comparing.
+     FOCUS  one column, large. Reading.
+
+   The switch is CSS only -- same DOM, same nodes, different rules -- so
+   changing mode never re-renders 273 cards or drops scroll position.
+
+   Both the mode change and opening a prompt run through the View
+   Transitions API when the browser has it, which is what makes a card
+   EXPAND into the detail view instead of a dialog appearing over it. The
+   shared name is put on one element at a time; leave it on all 273 and the
+   API has 273 candidates and refuses to animate. Browsers without the API
+   fall through to exactly the behaviour that was here before.
+   ================================================================== */
+/* A transition is a nicety; the state change is not. So the callback runs
+   either way, and three things are handled that the bare API does not:
+
+   - A second transition started while one is running throws
+     InvalidStateError. The running one is skipped first, which resolves it
+     cleanly and lets the new one take over.
+   - startViewTransition hands back .ready / .finished / .updateCallbackDone
+     promises. Any of them can reject -- an aborted transition, a hidden
+     document -- and an unattached rejection surfaces as an uncaught error in
+     the console. All three get a catch.
+   - The DOM update itself is never allowed to be skipped: if the API throws
+     synchronously, fn() still runs. */
+let activeTransition = null;
+function withTransition(fn){
+  if(prefersReducedMotion || !document.startViewTransition){ fn(); return; }
+  if(activeTransition){
+    try { activeTransition.skipTransition(); } catch(err){ /* already done */ }
+  }
+  let vt;
+  try {
+    vt = document.startViewTransition(fn);
+  } catch(err){
+    fn();
+    return;
+  }
+  activeTransition = vt;
+  /* The name has to be handed over, not shared. .modal-swatch .real-photo
+     declares prompt-shared in CSS, so once the update callback has run
+     BOTH it and the thumbnail carry the name in the new state and the
+     browser logs "Unexpected duplicate view-transition-name" and drops
+     the morph. Releasing it as soon as the DOM is updated leaves exactly
+     one claimant in each snapshot, which is what the API asks for. */
+  vt.updateCallbackDone.then(releaseSharedName, releaseSharedName);
+  const swallow = () => {};
+  vt.ready.catch(swallow);
+  vt.updateCallbackDone.catch(swallow);
+  vt.finished.catch(swallow).finally(() => {
+    if(activeTransition === vt) activeTransition = null;
+  });
+}
+
+function applyGalleryView(view){
+  const grid = document.getElementById("galleryGrid");
+  const sw = document.getElementById("viewSwitch");
+  if(!grid) return;
+  grid.dataset.view = view;
+  if(sw){
+    sw.querySelectorAll(".viewswitch-btn").forEach((b) => {
+      const on = b.dataset.view === view;
+      b.classList.toggle("active", on);
+      b.setAttribute("aria-checked", String(on));
+    });
+    /* The thumb is positioned by index, so it slides between cells rather
+       than each button carrying its own background. */
+    const i = ["grid", "list", "focus"].indexOf(view);
+    sw.style.setProperty("--i", i < 0 ? 0 : i);
+  }
+}
+
+function initViewSwitch(){
+  const sw = document.getElementById("viewSwitch");
+  if(!sw) return;
+
+  const stored = readStore(STORE_KEYS.view, "grid");
+  galleryState.view = ["grid", "list", "focus"].includes(stored) ? stored : "grid";
+  applyGalleryView(galleryState.view);
+
+  sw.addEventListener("click", (e) => {
+    const btn = e.target.closest(".viewswitch-btn");
+    if(!btn || btn.dataset.view === galleryState.view) return;
+    galleryState.view = btn.dataset.view;
+    writeStore(STORE_KEYS.view, galleryState.view);
+    withTransition(() => applyGalleryView(galleryState.view));
+    announce(`${galleryState.view} view`);
+  });
+
+  /* Arrow keys inside a radiogroup, as the pattern requires. */
+  sw.addEventListener("keydown", (e) => {
+    if(!/^Arrow(Left|Right|Up|Down)$/.test(e.key)) return;
+    e.preventDefault();
+    const order = ["grid", "list", "focus"];
+    const dir = /Left|Up/.test(e.key) ? -1 : 1;
+    const next = order[(order.indexOf(galleryState.view) + dir + order.length) % order.length];
+    galleryState.view = next;
+    writeStore(STORE_KEYS.view, next);
+    withTransition(() => applyGalleryView(next));
+    sw.querySelector(`.viewswitch-btn[data-view="${next}"]`).focus();
+  });
+}
+
+/* The card the modal grew out of, so its name can be taken back off. */
+let sharedCard = null;
+function claimSharedName(card){
+  releaseSharedName();
+  if(!card || prefersReducedMotion || !document.startViewTransition) return;
+  /* The trending rail uses its own class for its render, and looking only
+     for .gcard-img meant a card opened from the rail silently lost the
+     shared-element transition -- no error, just a dialog that appeared
+     instead of growing out of the thumbnail. */
+  const img = card.querySelector(".gcard-img, .trend-img");
+  if(!img) return;
+  img.style.viewTransitionName = "prompt-shared";
+  sharedCard = img;
+}
+function releaseSharedName(){
+  if(sharedCard){ sharedCard.style.viewTransitionName = ""; sharedCard = null; }
+}
+
+/* ==================================================================
+   VARIABLE TOKENS
+
+   Every one of the 456 writing templates is a fill-in-the-blank: 473
+   distinct [bracketed] slots across the set. Until now they were printed as
+   coloured text and you filled them in after pasting, somewhere else.
+
+   Here they become the interaction. A token is a real button; clicking it
+   opens an input in place; the value is written back into the prompt, into
+   every occurrence of that same variable at once, and the Copy button now
+   carries the FILLED text. Values persist per template, so coming back to a
+   prompt you have used before finds it the way you left it.
+
+   Everything degrades cleanly: with the store unavailable nothing is
+   remembered but everything still fills, and with JS off the prompt renders
+   as the plain bracketed template it has always been.
+   ================================================================== */
+const VAR_RE = /\[([^\]\n]{1,60})\]/g;
+
+function varStore(){
+  return readStore(STORE_KEYS.vars, {}) || {};
+}
+function varsFor(id){
+  const all = varStore();
+  return (all && typeof all === "object" && all[id]) || {};
+}
+function setVar(id, name, value){
+  const all = varStore();
+  const own = Object.assign({}, all[id]);
+  if(value) own[name] = value; else delete own[name];
+  if(Object.keys(own).length) all[id] = own; else delete all[id];
+  writeStore(STORE_KEYS.vars, all);
+}
+
+/* The prompt with every known value substituted. This is what Copy sends and
+   what the send-to-assistant buttons carry. */
+function resolvePrompt(text, values){
+  return text.replace(VAR_RE, (whole, name) => values[name] || whole);
+}
+
+function varNames(text){
+  return [...new Set([...text.matchAll(VAR_RE)].map((m) => m[1]))];
+}
+
+/* Renders the prompt with each slot as a token. Same escaping discipline as
+   everywhere else: the prompt is escaped, then the tokens are built from the
+   already-escaped name. */
+function tokenisePrompt(text, values){
+  let out = "";
+  let last = 0;
+  VAR_RE.lastIndex = 0;
+  let m;
+  while((m = VAR_RE.exec(text)) !== null){
+    out += escapeHTML(text.slice(last, m.index));
+    const name = m[1];
+    const val = values[name];
+    out += `<button type="button" class="vtok${val ? " is-filled" : ""}" data-var="${escapeHTML(name)}"` +
+           ` aria-label="${val ? `${escapeHTML(name)}: ${escapeHTML(val)}. Edit.` : `Fill in ${escapeHTML(name)}`}">` +
+           `${escapeHTML(val || name)}</button>`;
+    last = m.index + m[0].length;
+  }
+  out += escapeHTML(text.slice(last));
+  return out;
+}
+
+/* "5 slots" until you start, then "2 of 5 filled" — the count only becomes
+   a progress readout once there is progress to report. */
+function varStatusText(names, values){
+  if(!names.length) return "";
+  const filled = names.filter((n) => values[n]).length;
+  if(!filled) return `${names.length} slot${names.length === 1 ? "" : "s"} to fill`;
+  return `${filled} of ${names.length} filled`;
+}
+
+/* Repaints one card from the store: tokens, status, and the raw text every
+   action button carries. One function, so the copy payload can never drift
+   from what is on screen. */
+function refreshPromptCard(card){
+  const raw = card.dataset.template || "";
+  const id = card.dataset.promptId || "";
+  const values = varsFor(id);
+  const body = card.querySelector(".tdoc-body");
+  const status = card.querySelector(".tdoc-vars");
+  if(body) body.innerHTML = tokenisePrompt(raw, values);
+
+  const names = varNames(raw);
+  if(status){
+    status.textContent = varStatusText(names, values);
+    status.classList.toggle("is-active", names.some((n) => values[n]));
+  }
+
+  const resolved = resolvePrompt(raw, values);
+  card.querySelectorAll("[data-raw]").forEach((el) => { el.dataset.raw = resolved; });
+  card.classList.toggle("has-values", names.some((n) => values[n]));
+}
+
+/* Swaps a token for an input sized to its own content, so the line does not
+   reflow while you type. Commit on Enter or blur, abandon on Escape. */
+function editToken(tok, card){
+  if(tok.classList.contains("is-editing")) return;
+  const name = tok.dataset.var;
+  const id = card.dataset.promptId || "";
+  const current = varsFor(id)[name] || "";
+
+  const input = document.createElement("input");
+  input.type = "text";
+  input.className = "vtok-input";
+  input.value = current;
+  input.placeholder = name;
+  input.setAttribute("aria-label", `Value for ${name}`);
+  input.size = Math.max(name.length, current.length, 4) + 1;
+
+  tok.replaceWith(input);
+  input.focus();
+  input.select();
+
+  const grow = () => { input.size = Math.max(4, input.value.length + 1); };
+  input.addEventListener("input", grow);
+
+  let done = false;
+  const finish = (commit) => {
+    if(done) return;
+    done = true;
+    if(commit) setVar(id, name, input.value.trim());
+    refreshPromptCard(card);
+    /* Focus lands back on the token that replaced the input, so keyboard
+       users are never dropped at the top of the document. */
+    const next = card.querySelector(`.vtok[data-var="${CSS.escape(name)}"]`);
+    if(next) next.focus();
+  };
+
+  input.addEventListener("keydown", (e) => {
+    if(e.key === "Enter"){ e.preventDefault(); finish(true); }
+    else if(e.key === "Escape"){ e.preventDefault(); finish(false); }
+  });
+  input.addEventListener("blur", () => finish(true));
+}
+
+/* One delegated listener for a page of 114 cards. */
+function bindVariableTokens(root){
+  if(!root || root.dataset.varsBound) return;
+  root.dataset.varsBound = "1";
+  root.addEventListener("click", (e) => {
+    const tok = e.target.closest(".vtok");
+    if(!tok || !root.contains(tok)) return;
+    const card = tok.closest("[data-template]");
+    if(card) editToken(tok, card);
+  });
+  root.addEventListener("click", (e) => {
+    const clear = e.target.closest(".tdoc-clear");
+    if(!clear || !root.contains(clear)) return;
+    const card = clear.closest("[data-template]");
+    if(!card) return;
+    const all = varStore();
+    delete all[card.dataset.promptId];
+    writeStore(STORE_KEYS.vars, all);
+    refreshPromptCard(card);
+    announce("Cleared the values on this prompt");
+  });
+}
+
+/* ==================================================================
+   THEME
+
+   Dark is the identity; light is an override that persists per browser.
+   The stored value is applied by the inline bootstrap in <head>, before
+   the first paint, so the page never renders one theme and swaps to the
+   other. This only handles the toggling.
+   ================================================================== */
+function currentTheme(){
+  return document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
+}
+
+function applyTheme(next){
+  const root = document.documentElement;
+  /* The class is added only for the length of the swap. */
+  if(!prefersReducedMotion){
+    root.classList.add("theme-transition");
+    setTimeout(() => root.classList.remove("theme-transition"), 400);
+  }
+  root.setAttribute("data-theme", next);
+  try { localStorage.setItem("promptlib-theme", next); } catch(err){ /* private mode */ }
+
+  const on = next === "light";
+  const navBtn = document.getElementById("themeToggle");
+  if(navBtn){
+    navBtn.setAttribute("aria-checked", String(on));
+    navBtn.setAttribute("aria-label", on ? "Dark theme" : "Light theme");
+  }
+  const setBtn = document.getElementById("setTheme");
+  if(setBtn) setBtn.setAttribute("aria-checked", String(on));
+
+  /* The nav pill is positioned in pixels, and the palette swap can change
+     link weight, so remeasure once the transition has settled. */
+  if(navSettle) setTimeout(navSettle, 60);
+  announce(on ? "Light theme" : "Dark theme");
+}
+
+function initThemeToggle(){
+  const btn = document.getElementById("themeToggle");
+  const on = currentTheme() === "light";
+  if(btn){
+    btn.setAttribute("aria-checked", String(on));
+    btn.setAttribute("aria-label", on ? "Dark theme" : "Light theme");
+    btn.addEventListener("click", () => applyTheme(currentTheme() === "light" ? "dark" : "light"));
+  }
+
+  /* Follow the OS only while the visitor has never chosen for themselves. */
+  if(window.matchMedia){
+    const sys = window.matchMedia("(prefers-color-scheme: light)");
+    sys.addEventListener("change", (e) => {
+      let stored = null;
+      try { stored = localStorage.getItem("promptlib-theme"); } catch(err){ /* ignore */ }
+      if(stored === "light" || stored === "dark") return;
+      document.documentElement.setAttribute("data-theme", e.matches ? "light" : "dark");
+    });
+  }
+}
+
+/* ==================================================================
+   GLASS
+
+   Two jobs, both cheap.
+
+   1. THE SPECULAR HIGHLIGHT. Every glass surface carries a soft bright
+      spot that follows the pointer, positioned by --mx/--my. One
+      delegated pointermove for the whole document, coalesced into a
+      single rAF, writing two custom properties on at most one element.
+      No per-element listeners, nothing re-rendered, and the properties
+      only ever change on the surface actually under the cursor.
+
+   2. THE LIQUID PROBE. url() inside backdrop-filter genuinely refracts
+      what is behind a button, which over a starfield looks like thick
+      glass. Only Chromium implements it. Rather than sniffing the
+      browser, this sets the declaration on a throwaway element and asks
+      whether it survived: a browser that cannot parse it drops it, and
+      the computed value comes back without "url". Only on a pass does
+      <html> get .has-liquid, so everywhere else the plain glass stands.
+   ================================================================== */
+function initGlass(){
+  const SEL = ".glass, .glass-panel, .glass-card, .btn-ghost";
+  let pending = false;
+  let last = null;
+  let ev = null;
+
+  const paint = () => {
+    pending = false;
+    if(!ev) return;
+    const el = ev.target.closest ? ev.target.closest(SEL) : null;
+    if(el !== last && last){
+      last.style.removeProperty("--mx");
+      last.style.removeProperty("--my");
+    }
+    last = el;
+    if(!el) return;
+    const r = el.getBoundingClientRect();
+    el.style.setProperty("--mx", ((ev.clientX - r.left) / r.width * 100).toFixed(1) + "%");
+    el.style.setProperty("--my", ((ev.clientY - r.top) / r.height * 100).toFixed(1) + "%");
+  };
+
+  document.addEventListener("pointermove", (e) => {
+    /* A coarse pointer has no hover, so there is no highlight to track. */
+    if(e.pointerType === "touch") return;
+    ev = e;
+    if(pending) return;
+    pending = true;
+    requestAnimationFrame(paint);
+  }, { passive:true });
+
+  /* ---- liquid probe ---- */
+  if(prefersReducedMotion) return;
+  const probe = document.createElement("div");
+  probe.style.cssText = "position:absolute;width:1px;height:1px;backdrop-filter:blur(1px) url(#liquid-glass)";
+  document.body.appendChild(probe);
+  const survived = /url\(/.test(getComputedStyle(probe).backdropFilter || "");
+  probe.remove();
+  if(survived && document.getElementById("liquid-glass")){
+    document.documentElement.classList.add("has-liquid");
+  }
+}
+
+/* ==================================================================
+   ATMOSPHERE
+
+   One rAF loop for the whole environment. It writes two custom properties
+   on the atmosphere element and nothing else:
+
+     --px / --py   pointer position, 0..1, eased toward the real cursor so
+                   the light glides instead of tracking
+     --depth       scroll progress, 0..1, deepening the vignette and firming
+                   up the column rules as you go down the page
+
+   CSS turns those into gradient positions and opacities. No layout is read
+   inside the loop except one cheap scroll value, no element is animated on
+   a timer, and the loop parks itself the moment nothing is changing -- so on
+   a still page this costs nothing at all.
+   ================================================================== */
+function initAtmosphere(){
+  const atmos = document.getElementById("atmos");
+  if(!atmos || prefersReducedMotion) return;
+
+  /* Target vs current: the gap between them is what makes the light drift
+     rather than snap, and it is also the loop's stopping condition. */
+  let tx = 0.5, ty = 0.4, cx = 0.5, cy = 0.4, depth = 0, cd = 0;
+  let running = false;
+
+  const readScroll = () => {
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    depth = max > 0 ? Math.min(1, window.scrollY / max) : 0;
+  };
+
+  const frame = () => {
+    /* Exponential ease. 0.06 is slow enough to read as atmosphere and fast
+       enough not to feel laggy. */
+    cx += (tx - cx) * 0.06;
+    cy += (ty - cy) * 0.06;
+    cd += (depth - cd) * 0.08;
+
+    atmos.style.setProperty("--px", cx.toFixed(4));
+    atmos.style.setProperty("--py", cy.toFixed(4));
+    atmos.style.setProperty("--depth", cd.toFixed(4));
+
+    /* Park when everything has settled. Restarted by the next input. */
+    if(Math.abs(tx - cx) + Math.abs(ty - cy) + Math.abs(depth - cd) < 0.001){
+      running = false;
+      return;
+    }
+    requestAnimationFrame(frame);
+  };
+
+  const wake = () => {
+    if(running) return;
+    running = true;
+    requestAnimationFrame(frame);
+  };
+
+  window.addEventListener("pointermove", (e) => {
+    tx = e.clientX / window.innerWidth;
+    ty = e.clientY / window.innerHeight;
+    wake();
+  }, { passive:true });
+
+  window.addEventListener("scroll", () => { readScroll(); wake(); }, { passive:true });
+  window.addEventListener("resize", () => { readScroll(); wake(); }, { passive:true });
+
+  readScroll();
+  wake();
+}
+
+/* ==================================================================
+   SECTION TABS  (index.html)
+
+   The nav links double as tabs for the home page's four sections. As you
+   scroll, the active tab follows whichever section is crossing the
+   middle of the viewport, and the same pill initNavIndicator already
+   owns slides across and takes on that section's colour.
+
+   Detection is ONE IntersectionObserver with a rootMargin that collapses
+   the root to a zero-height band at the exact middle of the viewport.
+   Exactly one section can contain that line at a time, so there is no
+   tie to break and no flicker at the boundaries, and it fires going up
+   as readily as going down. No scroll handler is involved.
+
+   Clicking a tab is the one case the observer gets wrong: a smooth
+   scroll from the hero to the builder crosses images and text on the
+   way, and the pill would chase it through both. So a click pauses
+   detection, puts the pill straight on the clicked tab, and resumes when
+   the scroll actually ends -- scrollend where it exists, a timer where
+   it does not.
+   ================================================================== */
+function initSectionTabs(){
+  const nav = document.querySelector(".nav");
+  const row = document.getElementById("navLinks");
+  if(!nav || !row) return;
+
+  /* Only a page that actually has the sections. Everywhere else the nav
+     stays a set of page links and setActiveNav has already marked one. */
+  const links = Array.from(row.querySelectorAll(".nav-link[data-section]"))
+    .filter((l) => document.getElementById(l.dataset.section));
+  if(links.length < 2) return;
+
+  const sections = links.map((l) => document.getElementById(l.dataset.section));
+  const label = document.getElementById("navCurrent");
+  const reduced = () => prefersReducedMotion || document.documentElement.classList.contains("reduce-motion");
+
+  /* In-page navigation, so the links become anchors. Done here rather
+     than in the markup: with JavaScript off these stay real page links
+     and still go somewhere useful. */
+  links.forEach((l) => { l.setAttribute("href", "#" + l.dataset.section); });
+
+  let current = null;
+  let paused = false;
+  let resumeTimer = 0;
+
+  const setActive = (id) => {
+    if(id === current) return;
+    current = id;
+
+    links.forEach((l) => {
+      const on = l.dataset.section === id;
+      l.classList.toggle("active", on);
+      if(on) l.setAttribute("aria-current", "true");
+      else l.removeAttribute("aria-current");
+    });
+
+    /* The pill and the glow behind the nav take the section's own
+       accent, read off the section rather than from a second copy of the
+       colour map here. */
+    const section = document.getElementById(id);
+    if(section){
+      const accent = getComputedStyle(section).getPropertyValue("--accent").trim();
+      if(accent) nav.style.setProperty("--accent", accent);
+    }
+    nav.dataset.section = id;
+
+    /* Denser chrome once the hero is behind you. */
+    nav.classList.toggle("is-scrolled", id !== links[0].dataset.section);
+
+    if(label) label.textContent = (links.find((l) => l.dataset.section === id) || {}).textContent || "";
+    if(navSettle) navSettle();
+
+    /* replaceState, so following the page does not fill the back button
+       with four entries per visit, and setting a hash this way never
+       jumps the scroll position. */
+    const url = id === links[0].dataset.section
+      ? location.pathname + location.search
+      : "#" + id;
+    try { history.replaceState(null, "", url); } catch(err){ /* file:// */ }
+  };
+
+  /* Zero-height band across the middle of the viewport. */
+  const spy = new IntersectionObserver((entries) => {
+    if(paused) return;
+    for(const entry of entries){
+      if(entry.isIntersecting){ setActive(entry.target.id); break; }
+    }
+  }, { rootMargin: "-50% 0px -50% 0px", threshold: 0 });
+  sections.forEach((s) => spy.observe(s));
+
+  const resumeWhenSettled = () => {
+    clearTimeout(resumeTimer);
+    const done = () => { paused = false; };
+    if("onscrollend" in window){
+      window.addEventListener("scrollend", done, { once: true });
+      /* A smooth scroll that is interrupted may never fire scrollend. */
+      resumeTimer = setTimeout(done, 1400);
+    } else {
+      resumeTimer = setTimeout(done, 800);
+    }
+  };
+
+  row.addEventListener("click", (e) => {
+    const link = e.target.closest(".nav-link[data-section]");
+    if(!link) return;
+    const target = document.getElementById(link.dataset.section);
+    if(!target) return;
+    e.preventDefault();
+
+    paused = true;
+    setActive(link.dataset.section);
+    target.scrollIntoView({ behavior: reduced() ? "auto" : "smooth", block: "start" });
+    resumeWhenSettled();
+
+    /* Close the mobile sheet, if that is how we got here. */
+    const links_ = document.getElementById("navLinks");
+    const toggle = document.getElementById("navToggle");
+    if(links_ && links_.classList.contains("open")){
+      links_.classList.remove("open");
+      if(toggle){ toggle.classList.remove("open"); toggle.setAttribute("aria-expanded", "false"); }
+    }
+  });
+
+  /* The in-page scroll cue and any other same-page anchor get the same
+     treatment, or clicking it would leave the pill behind. */
+  document.querySelectorAll('a[href^="#"]:not(.nav-link)').forEach((a) => {
+    const id = a.getAttribute("href").slice(1);
+    if(!document.getElementById(id)) return;
+    a.addEventListener("click", (e) => {
+      e.preventDefault();
+      paused = true;
+      setActive(id);
+      document.getElementById(id).scrollIntoView({ behavior: reduced() ? "auto" : "smooth", block: "start" });
+      resumeWhenSettled();
+    });
+  });
+
+  /* Arriving at index.html#text: the browser has already jumped, so just
+     adopt whatever the observer reports on its first callback. Until then
+     mark the first tab so the pill has somewhere to sit. */
+  const fromHash = links.find((l) => "#" + l.dataset.section === location.hash);
+  setActive(fromHash ? fromHash.dataset.section : links[0].dataset.section);
+}
+
+/* ==================================================================
    HOMEPAGE  (index.html)
 
-   Rendered from prompts-trending.js, a ~12KB generated module carrying the
-   exact subset the page shows plus counted totals. index.html never loads
-   the 112KB image dataset.
+   Three previews under the hero, each rendered from prompts-trending.js
+   -- a ~12KB generated module carrying exactly the subset this page
+   shows plus counted totals. index.html never loads the 112KB image
+   dataset or the 96KB text one.
 
-   Nothing here is invented: titles, categories, counts and renders all come
-   from the data. A prompt with an image on disk gets the image treatment;
-   one without gets the document treatment rather than a placeholder.
-
-   Every renderer returns early when its container is missing, so this file
-   keeps working on the seven pages that have none of this markup.
+   Nothing here is invented. Titles, categories and counts all come out
+   of the data; the ten image examples are the ten that have a render on
+   disk, chosen one per category in rotation.
    ================================================================== */
 const homeCategories = Array.isArray(window.libraryCategories) ? window.libraryCategories : [];
 const homeStats = window.libraryStats || null;
@@ -661,310 +1271,194 @@ const homeList = (name) => (Array.isArray(window[name]) ? window[name] : []);
 
 const SAVE_ICON = `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 3.8h11a1 1 0 0 1 1 1v15.4l-6.5-4-6.5 4V4.8a1 1 0 0 1 1-1z"/></svg>`;
 
-/* Deep link into the gallery: category filter plus the style as the query,
-   which lands on that one prompt. Both params are already read by
-   readStateFromUrl(), so this needs nothing new on images.html. */
-function promptHref(p){
-  return `images.html?cat=${encodeURIComponent(p.cat)}&q=${encodeURIComponent(p.style)}`;
-}
-function thumbHTML(p, cls, sizes, eager){
-  const load = eager ? 'loading="eager" fetchpriority="high"' : 'loading="lazy"';
-  return `<img class="${cls}" src="images/${escapeHTML(p.slug)}.jpg" alt="Example output for the ${escapeHTML(p.style)} prompt" ${load} decoding="async" sizes="${sizes}" width="900" height="700">`;
-}
+/* ---- the hero scene --------------------------------------------------
+   Sun pushed right with the copy on a darkened left edge; on a phone
+   there is no room for that, so the whole thing turns through 90 degrees
+   -- art low, copy high, veil from the top -- and the star field and
+   bloom come down because the text is most of the screen there. */
+/* Which hero scene runs: "contour" or "orbital". Both files are loaded
+   while the new one is on trial, so switching back is this word. */
+const HERO_SCENE = "contour";
 
-/* Compact round controls for the image tiles. The full-width Copy/Save
-   buttons would fight the photograph they sit on. */
-function iconActionsHTML(p){
-  const id = `img:${p.slug}`;
-  const on = isSaved(id);
-  return `
-    <button type="button" class="icon-btn btn-copy" data-raw="${escapeHTML(p.prompt)}" aria-label="Copy the ${escapeHTML(p.style)} prompt">${ICONS.copy}</button>
-    <button type="button" class="icon-btn btn-save" data-save-id="${escapeHTML(id)}" data-save-name="${escapeHTML(p.style)}" data-raw="${escapeHTML(p.prompt)}" aria-pressed="${on}" aria-label="${on ? "Remove from" : "Add to"} saved prompts">${SAVE_ICON}</button>`;
-}
-
-/* One delegated copy handler per container, matching how the gallery and the
-   category pages already do it. */
-function bindCopy(root){
-  if(!root || root.dataset.copyBound) return;
-  root.dataset.copyBound = "1";
-  root.addEventListener("click", (e) => {
-    const btn = e.target.closest(".btn-copy");
-    if(btn && root.contains(btn)) copyText(btn.dataset.raw || "", btn);
-  });
-}
-
-/* ---- hero ---------------------------------------------------------- */
-function renderHeroQuick(){
-  const host = document.getElementById("heroQuick");
-  if(!host || !homeCategories.length) return;
-  host.innerHTML = homeCategories.slice(0, 5)
-    .map((c) => `<a href="${escapeHTML(c.href)}">${escapeHTML(c.name)}</a>`).join("");
-}
-
-/* The shortcut shown is the one the visitor's platform actually uses. */
-function renderSearchKbd(){
-  const kbd = document.getElementById("heroSearchKbd");
-  if(!kbd) return;
-  const mac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || "");
-  kbd.textContent = mac ? "\u2318K" : "Ctrl K";
-}
-
-function renderHeroStats(){
-  const host = document.getElementById("heroStats");
-  if(!host || !homeStats) return;
-
-  /* Counted in build_pages.py from the data files and the images/ directory.
-     The final figure is written into the markup, not a zero, so a failure in
-     initCountUp leaves the real number rather than a permanent 0. */
-  const rows = [
-    ["Prompts", homeStats.prompts],
-    ["Image styles", homeStats.images],
-    ["Writing templates", homeStats.text],
-    ["Categories", homeStats.categories],
-    ["Example renders", homeStats.thumbnails]
-  ].filter(([, n]) => typeof n === "number");
-
-  host.innerHTML = rows.map(([label, n]) => `
-    <div class="meta-item">
-      <dt class="meta-label">${escapeHTML(label)}</dt>
-      <dd class="meta-value" data-count-to="${n}">${n.toLocaleString()}</dd>
-    </div>`).join("");
-}
-
-/* ---- featured composition -------------------------------------------
-   Five tiles in fixed roles: [0] dominant, [1][2] secondary, [3][4]
-   supporting. The role decides the grid area, and the grid decides the
-   size -- no tile carries a position of its own. */
-function renderFeature(){
-  const host = document.getElementById("featureGrid");
-  const items = homeList("featurePrompts").filter((p) => p.thumb).slice(0, 5);
-  if(!host || items.length < 3) return;
-
-  const ROLE = ["fcard--lead", "fcard--sec", "fcard--sec", "fcard--sup", "fcard--sup"];
-  const SIZES = [
-    "(max-width:900px) 100vw, 58vw",
-    "(max-width:900px) 50vw, 40vw",
-    "(max-width:900px) 50vw, 40vw",
-    "(max-width:900px) 50vw, 32vw",
-    "(max-width:900px) 50vw, 24vw"
-  ];
-
-  host.innerHTML = items.map((p, i) => `
-    <figure class="fcard ${ROLE[i]}">
-      <span class="fcard-frame">
-        ${thumbHTML(p, "fcard-img", SIZES[i], i === 0)}
-        <span class="fcard-scrim" aria-hidden="true"></span>
-        <figcaption class="fcard-meta">
-          <span>
-            <span class="fcard-cat">${escapeHTML(p.cat)}</span>
-            <span class="fcard-name"><a href="${promptHref(p)}">${escapeHTML(p.style)}</a></span>
-          </span>
-          <span class="fcard-act">${iconActionsHTML(p)}</span>
-        </figcaption>
-      </span>
-    </figure>`).join("");
-
-  bindCopy(host);
-  bindSaveButtons(host);
-}
-
-/* ---- category index -------------------------------------------------- */
-function renderCategoryIndex(){
-  const list = document.getElementById("categoryIndex");
-  const canvas = document.getElementById("indexCanvas");
-  if(!list || !homeCategories.length) return;
-
-  /* One image per category that has a render. The writing categories have
-     none, so hovering those clears the canvas rather than showing something
-     borrowed from a different category. */
-  if(canvas){
-    canvas.innerHTML = homeCategories.filter((c) => c.cover).map((c) =>
-      `<img class="index-shot" data-for="${escapeHTML(c.name)}" src="images/${escapeHTML(c.cover)}.jpg" alt="" loading="lazy" decoding="async">`
-    ).join("");
-  }
-
-  list.innerHTML = homeCategories.map((c, i) => `
-    <li class="index-row">
-      <a class="index-link" href="${escapeHTML(c.href)}" data-cat="${escapeHTML(c.name)}">
-        <span class="index-num">${String(i + 1).padStart(2, "0")}</span>
-        <span class="index-name">${escapeHTML(c.name)}</span>
-        <span class="index-count">${c.count} ${c.kind === "image" ? "styles" : "templates"}</span>
-        <svg class="index-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg>
-      </a>
-    </li>`).join("");
-
-  if(!canvas) return;
-  const shots = canvas.querySelectorAll(".index-shot");
-  const show = (name) => shots.forEach((img) => img.classList.toggle("is-live", img.dataset.for === name));
-  const clear = () => shots.forEach((img) => img.classList.remove("is-live"));
-
-  /* Pointer AND focus, so the reveal is not a mouse-only feature. */
-  list.addEventListener("pointerover", (e) => {
-    const link = e.target.closest(".index-link");
-    if(link) show(link.dataset.cat);
-  });
-  list.addEventListener("pointerleave", clear);
-  list.addEventListener("focusin", (e) => {
-    const link = e.target.closest(".index-link");
-    if(link) show(link.dataset.cat);
-  });
-  list.addEventListener("focusout", clear);
-}
-
-/* ---- trending -------------------------------------------------------- */
-function docHTML(p, i, opts){
-  const small = opts && opts.small;
-  const id = `img:${p.slug}`;
-  return `
-    <article class="doc${small ? " doc--sm" : ""}">
-      ${small ? "" : `<span class="doc-ghost" aria-hidden="true">${String(i + 1).padStart(2, "0")}</span>`}
-      <header class="doc-head">
-        <span class="doc-cat">${escapeHTML(p.cat)}</span>
-        <span class="doc-badge">${escapeHTML(p.input || "no photo")}</span>
-      </header>
-      <h3 class="doc-title">${escapeHTML(p.style)}</h3>
-      ${small ? "" : `<div class="doc-rule" aria-hidden="true"></div>`}
-      <p class="doc-body">${escapeHTML(p.prompt)}</p>
-      <footer class="doc-foot">
-        <button type="button" class="btn ${small ? "btn-ghost" : "btn-primary"} btn-sm btn-copy" data-raw="${escapeHTML(p.prompt)}">${copyButtonHTML("Copy prompt")}</button>
-        ${small ? "" : saveButtonHTML(id, p.style, p.prompt)}
-      </footer>
-    </article>`;
-}
-
-function renderTrending(){
-  const host = document.getElementById("trendingFeed");
-  const items = homeList("trendingPrompts");
+function initHero(){
+  const host = document.getElementById("top");
   if(!host) return;
 
-  if(!items.length){
-    host.innerHTML = `<p class="feed-empty">Trending prompts are unavailable right now. <a href="images.html">Browse the full library</a> instead.</p>`;
+  const narrow = window.matchMedia("(max-width: 767px)");
+
+  if(HERO_SCENE === "contour" && typeof mountContourField === "function"){
+    /* A phone gets a coarser grid -- the same cell size over a third of
+       the width is three times the line density -- and a tighter, softer
+       pointer hill, since a finger covers far more of the frame. */
+    /* featuresDown counts noise features across the hero's short side, so
+       it is already independent of the window shape -- a phone needs a
+       slightly busier field only because its short side is so much
+       smaller in absolute terms. */
+    const field = () => narrow.matches
+      ? { cell:14, featuresDown:2.4, pointerRadius:120, levels:7 }
+      : { cell:13, featuresDown:3,   pointerRadius:165, levels:9 };
+    const scene = mountContourField(host, field());
+    window.heroScene = scene;
+    narrow.addEventListener("change", () => scene.update(field()));
     return;
   }
 
-  /* One lead plus three supporting. Four cells fill the grid exactly. */
-  const [lead, ...rest] = items;
-  host.innerHTML = docHTML(lead, 0)
-    + rest.slice(0, 3).map((p, i) => docHTML(p, i + 1, { small:true })).join("");
+  if(typeof mountOrbital !== "function") return;
+  const settings = () => narrow.matches
+    ? { focus:[0.5, 0.86], scrim:"top",  scrimStrength:0.94, viewRadius:2.1, lead:0.05, glow:0.5, starCount:600,
+        /* A finger is blunter than a cursor and the frame is smaller, so
+           the same swing reads as twice as violent here. */
+        pointerSwing:16, pointerTilt:10 }
+    : { focus:[0.74, 0.42], scrim:"left", scrimStrength:0.92, viewRadius:3.1, lead:0.12, glow:1,   starCount:1500 };
 
-  bindCopy(host);
-  bindSaveButtons(host);
+  const scene = mountOrbital(host, settings());
+  narrow.addEventListener("change", () => scene.update(settings()));
 }
 
-/* ---- editor's picks --------------------------------------------------
-   One large image card, then a stack of smaller ones beside it. */
-function pickImageHTML(p){
-  return `
-    <figure class="pick">
-      <span class="pick-frame">${thumbHTML(p, "pick-img", "(max-width:900px) 100vw, 52vw")}</span>
-      <figcaption class="pick-body">
-        <span>
-          <span class="pick-cat">${escapeHTML(p.cat)}</span>
-          <span class="pick-name"><a href="${promptHref(p)}">${escapeHTML(p.style)}</a></span>
-          <span class="pick-meta">${escapeHTML(p.input || "no photo")}</span>
-        </span>
-        <span class="pick-act">${iconActionsHTML(p)}</span>
+/* ---- image preview ---------------------------------------------------- */
+function exampleHref(p){
+  return `images.html?cat=${encodeURIComponent(p.cat)}&q=${encodeURIComponent(p.style)}`;
+}
+
+function renderExamples(filter){
+  const host = document.getElementById("homeExamples");
+  const empty = document.getElementById("homeEmpty");
+  if(!host) return;
+
+  const all = homeList("homeExamples");
+  const items = filter && filter !== "All" ? all.filter((p) => p.cat === filter) : all;
+
+  if(empty) empty.hidden = items.length > 0;
+  host.innerHTML = items.map((p) => `
+    <figure class="example glass-card">
+      <span class="example-frame">
+        <img class="example-img" src="images/${escapeHTML(p.slug)}.jpg"
+             alt="Example output for the ${escapeHTML(p.style)} prompt"
+             loading="lazy" decoding="async" width="600" height="600">
+        <span class="example-veil" aria-hidden="true"></span>
+        <span class="example-cue glass">View prompt</span>
+      </span>
+      <figcaption class="example-meta">
+        <span class="example-name">${escapeHTML(p.style)}</span>
+        <span class="example-cat">${escapeHTML(p.cat)}</span>
       </figcaption>
-    </figure>`;
+      <button type="button" class="example-open" data-open-slug="${escapeHTML(p.slug)}"
+              aria-label="${escapeHTML(p.style)}, ${escapeHTML(p.cat)}. Open prompt."></button>
+    </figure>`).join("");
 }
 
-/* A writing prompt carries no title in the data, only a filename and a tag,
-   so the card leads with the tag and the prompt itself rather than inventing
-   a name for it. */
-function pickTextHTML(t, i){
-  const id = `${t.key}:${t.filename}`;
-  return `
-    <article class="doc doc--sm">
-      <header class="doc-head">
-        <span class="doc-cat">${escapeHTML(t.cat)}</span>
-        <span class="doc-badge">${String(i + 1).padStart(2, "0")}</span>
-      </header>
-      <h3 class="doc-title">${escapeHTML(t.tag || t.cat)}</h3>
-      <p class="doc-body">${highlightVars(t.prompt)}</p>
-      <footer class="doc-foot">
-        <button type="button" class="btn btn-ghost btn-sm btn-copy" data-raw="${escapeHTML(t.prompt)}">${copyButtonHTML("Copy")}</button>
-        ${saveButtonHTML(id, t.filename, t.prompt)}
-      </footer>
-    </article>`;
+function renderChips(){
+  const row = document.getElementById("homeChips");
+  if(!row) return;
+  const cats = ["All", ...new Set(homeList("homeExamples").map((p) => p.cat))];
+  row.innerHTML = cats.map((c, i) =>
+    `<button type="button" class="chip glass-card${i === 0 ? " active" : ""}" data-cat="${escapeHTML(c)}" aria-pressed="${i === 0}">${escapeHTML(c)}</button>`
+  ).join("");
+
+  row.addEventListener("click", (e) => {
+    const chip = e.target.closest(".chip");
+    if(!chip) return;
+    row.querySelectorAll(".chip").forEach((c) => {
+      const on = c === chip;
+      c.classList.toggle("active", on);
+      c.setAttribute("aria-pressed", String(on));
+    });
+    renderExamples(chip.dataset.cat);
+  });
 }
 
-function renderPicks(){
-  const host = document.getElementById("editorsPicks");
-  const imgs = homeList("pickPrompts").filter((p) => p.thumb);
-  const texts = homeList("textPicks");
-  if(!host || (!imgs.length && !texts.length)) return;
+/* ---- writing preview --------------------------------------------------
+   Four tiles, and not four clones: the two with the most templates get a
+   sample line and a wider cell, so the group has a reading order. */
+const TILE_ICON = {
+  "Slides & decks": '<svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="1.6"/><path d="M8 20h8M12 16v4"/></svg>',
+  "Essays":         '<svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
+  "Reports":        '<svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2h9l5 5v15a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M14 2v5h5M9 13h6M9 17h4"/></svg>',
+  "Emails":         '<svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>'
+};
 
-  const cells = [];
-  if(imgs[0]) cells.push(pickImageHTML(imgs[0]));
-  texts.slice(0, 3).forEach((t, i) => cells.push(pickTextHTML(t, i)));
+function renderTiles(){
+  const host = document.getElementById("homeTiles");
+  if(!host) return;
+  const cats = homeCategories.filter((c) => c.kind === "text");
+  if(!cats.length) return;
 
-  host.innerHTML = cells.join("");
-  bindCopy(host);
-  bindSaveButtons(host);
+  const picks = homeList("textPicks");
+  host.innerHTML = cats.map((c, i) => {
+    const pick = picks.find((t) => t.cat === c.name);
+    const lead = i < 2;
+    return `
+      <a class="tile glass-card${lead ? " tile-lead" : ""}" href="${escapeHTML(c.href)}">
+        <span class="tile-icon" aria-hidden="true">${TILE_ICON[c.name] || ""}</span>
+        <span class="tile-name">${escapeHTML(c.name)}</span>
+        <span class="tile-count">${c.count} templates</span>
+        ${lead && pick ? `<span class="tile-sample">${escapeHTML(pick.prompt.slice(0, 110))}&hellip;</span>` : ""}
+      </a>`;
+  }).join("");
+}
+
+/* ---- counted figures in the hero line ---------------------------------
+   The numbers are written into the markup by build_pages.py, so they are
+   right with JavaScript off. This only corrects them if the generated
+   data is newer than the page. */
+function syncHeroCounts(){
+  if(!homeStats) return;
+  document.querySelectorAll("[data-count]").forEach((el) => {
+    const n = homeStats[el.dataset.count];
+    if(typeof n === "number") el.textContent = n.toLocaleString();
+  });
+}
+
+/* ---- the shared reveal dialog ----------------------------------------- */
+function initHomeDialog(){
+  const grid = document.getElementById("homeExamples");
+  if(!grid) return;
+
+  const bySlug = (slug) => homeList("homeExamples").find((p) => p.slug === slug);
+
+  grid.addEventListener("click", (e) => {
+    const open = e.target.closest(".example-open");
+    if(!open) return;
+    const p = bySlug(open.dataset.openSlug);
+    if(p) withTransition(() => openPromptModal(p));
+  });
+
+  /* The dialog's own controls are wired once, the same way images.html
+     does it. */
+  const closeBtn = document.getElementById("modalClose");
+  const backdrop = document.getElementById("modalBackdrop");
+  const copyBtn = document.getElementById("modalCopyBtn");
+  if(closeBtn){
+    closeBtn.innerHTML = ICONS.close;
+    closeBtn.addEventListener("click", closeModal);
+  }
+  if(backdrop) backdrop.addEventListener("click", (e) => { if(e.target === backdrop) closeModal(); });
+  if(copyBtn){
+    copyBtn.innerHTML = copyButtonHTML("Copy prompt");
+    copyBtn.addEventListener("click", function(){ copyText(this.dataset.raw, this); });
+  }
 }
 
 function initHome(){
-  renderSearchKbd();
-  renderHeroQuick();
-  renderHeroStats();
-  renderFeature();
-  renderCategoryIndex();
-  renderTrending();
-  renderPicks();
+  if(!document.getElementById("homeExamples") && !document.getElementById("top")) return;
+  initHero();
+  syncHeroCounts();
+  renderChips();
+  renderExamples("All");
+  renderTiles();
+  initHomeDialog();
+
+  const clear = document.querySelector("[data-clear-chips]");
+  if(clear){
+    clear.addEventListener("click", () => {
+      const first = document.querySelector("#homeChips .chip");
+      if(first) first.click();
+    });
+  }
+
   /* The sections were rendered after boot, so the observer has to be told
      about the markup that just appeared. */
   observeReveals();
-}
-
-/* ==================================================================
-   COUNT-UP STATS (index.html)
-
-   Runs when the figure scrolls into view, once. Eases out so it decelerates
-   into the final number instead of arriving at a constant rate, and writes
-   through requestAnimationFrame rather than setInterval so it stays on the
-   compositor's clock.
-   ================================================================== */
-function initCountUp(){
-  const figures = document.querySelectorAll("[data-count-to]");
-  if(!figures.length) return;
-
-  const render = (el, value) => {
-    const prefix = el.dataset.countPrefix || "";
-    el.textContent = prefix + value.toLocaleString();
-  };
-
-  /* Reduced motion: no tally, just the number. */
-  if(prefersReducedMotion || !("IntersectionObserver" in window)){
-    figures.forEach((el) => render(el, Number(el.dataset.countTo)));
-    return;
-  }
-
-  const run = (el) => {
-    const target = Number(el.dataset.countTo) || 0;
-    if(target === 0){ render(el, 0); return; }
-
-    const duration = 1100;
-    let start = null;
-    const step = (now) => {
-      if(start === null) start = now;
-      const t = Math.min((now - start) / duration, 1);
-      /* easeOutExpo — fast off the mark, long settle. */
-      const eased = t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
-      render(el, Math.round(target * eased));
-      if(t < 1) requestAnimationFrame(step);
-    };
-    requestAnimationFrame(step);
-  };
-
-  const io = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      if(!entry.isIntersecting) return;
-      io.unobserve(entry.target);
-      run(entry.target);
-    });
-  }, { threshold: 0.4 });
-
-  figures.forEach((el) => io.observe(el));
 }
 
 /* ==================================================================
@@ -1075,52 +1569,8 @@ function setActiveNav(){
     const target = link.dataset.page;
     const isActive = target === file || (target === "text.html" && textGroup.includes(file));
     link.classList.toggle("active", isActive);
-  });
-}
-
-/* Dark is the default and the site's identity; the toggle is an override that
-   persists per browser. The stored value is applied by the inline bootstrap in
-   <head> so the page never paints one theme then swaps to the other. */
-function initThemeToggle(){
-  const btn = document.getElementById("themeToggle");
-  if(!btn) return;
-
-  const current = () => document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
-
-  /* Paint the swap over --dur-3 instead of flashing. The class is removed once
-     the transition has run, so no element keeps an all-properties transition. */
-  let fadeTimer;
-  const crossFade = () => {
-    const root = document.documentElement;
-    root.classList.add("theme-transition");
-    clearTimeout(fadeTimer);
-    fadeTimer = setTimeout(() => root.classList.remove("theme-transition"), 400);
-  };
-
-  const apply = (theme) => {
-    document.documentElement.setAttribute("data-theme", theme);
-    /* role=switch, so state is aria-checked. The label names what the switch
-       controls, not what pressing it would do — the state carries that. */
-    btn.setAttribute("aria-checked", String(theme === "light"));
-    btn.setAttribute("aria-label", "Light theme");
-    /* The panel has a switch for the same setting; keep them in agreement. */
-    const panelSwitch = document.getElementById("setTheme");
-    if(panelSwitch) panelSwitch.setAttribute("aria-checked", String(theme === "light"));
-  };
-
-  apply(current());
-
-  btn.addEventListener("click", () => {
-    const next = current() === "light" ? "dark" : "light";
-    crossFade();
-    apply(next);
-    try {
-      localStorage.setItem("promptlib-theme", next);
-    } catch(err){
-      /* Storage can throw in private mode. The switch still works for this
-         page; it just will not be remembered. */
-    }
-    announce(next === "light" ? "Light theme enabled" : "Dark theme enabled");
+    if(isActive) link.setAttribute("aria-current", "page");
+    else link.removeAttribute("aria-current");
   });
 }
 
@@ -1131,6 +1581,10 @@ function initThemeToggle(){
    The active link is already styled by weight and colour, so if this never
    runs — JS off, or a viewport where the indicator is display:none — the nav
    still reads correctly. */
+/* Set by initNavIndicator so initSectionTabs can move the same pill
+   instead of building a second one. */
+let navSettle = null;
+
 function initNavIndicator(){
   const row = document.getElementById("navLinks");
   const bar = document.getElementById("navIndicator");
@@ -1148,6 +1602,7 @@ function initNavIndicator(){
   };
 
   const settle = () => moveTo(active());
+  navSettle = settle;
 
   /* Fonts land after first paint and change link widths, so measure again
      once they are ready rather than freezing a stale position. */
@@ -1235,7 +1690,7 @@ function initPageTransitions(){
 /* ==================================================================
    IMAGE GALLERY + MODAL (images.html only)
    ================================================================== */
-let galleryState = { cat: "All", input: "All", query: "" };
+let galleryState = { cat: "All", input: "All", query: "", view: "grid" };
 const GALLERY_SAVE_ICON = `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 3.8h11a1 1 0 0 1 1 1v15.4l-6.5-4-6.5 4V4.8a1 1 0 0 1 1-1z"/></svg>`;
 
 /* ---- URL state -------------------------------------------------------
@@ -1327,6 +1782,136 @@ function renderGalleryUnavailable(){
       Try reloading. If it keeps happening, regenerate it with
       <code>python3 build_prompts.py</code>.</p>
     </div>`;
+}
+
+/* ---- the trending strip ----------------------------------------------
+   A horizontal rail of the twelve flagged trending:true, above the
+   category chips.
+
+   It is a rail and not a grid on purpose. The twelve are meant to be
+   glanced along and jumped into, not compared; a grid of twelve at the
+   top of a page of 277 reads as the page starting twice. On a phone it
+   scrolls sideways with snap points, so it costs one screen of height
+   instead of six.
+
+   Clicking one opens its dialog, exactly as a grid card does -- it
+   reuses the same delegated handler by carrying the same data-id. */
+/* ---- the Trending carousel --------------------------------------------
+   One renderer, two callers. The gallery has the full dataset and opens
+   a prompt by its index; the home page never loads that dataset -- it is
+   112KB for a page showing a couple of dozen entries -- so it gets the
+   same twelve out of prompts-trending.js and opens them by value. The
+   markup, the dialog and the carousel are identical either way.
+
+   The track is a native scroller with snap points, so arrows, keyboard,
+   trackpad and touch all drive the same thing. There is no separate
+   index to keep in step with the DOM, which is where carousels usually
+   break: the scroll position IS the state.
+   ------------------------------------------------------------------ */
+function renderTrendingRow(rowId, stripId, picks, open){
+  const row = document.getElementById(rowId);
+  const strip = document.getElementById(stripId);
+  if(!row || !strip || !picks.length) return;
+
+  strip.innerHTML = picks.map((p, n) => `
+    <li class="trend-item swatch-${(p.i === undefined ? n : p.i) % 6}" role="option" aria-selected="false">
+      <button type="button" class="trend-card" data-trend="${n}" data-slug="${escapeHTML(p.slug)}"
+              aria-label="${escapeHTML(p.style)}, ${escapeHTML(p.cat)}. Open prompt.">
+        <span class="swatch-texture" aria-hidden="true"></span>
+        ${hasRender(p) ? `<img class="trend-img" src="images/${encodeURIComponent(p.slug)}.jpg" alt="" loading="lazy" decoding="async" width="600" height="750">` : ""}
+        <span class="trend-scrim" aria-hidden="true"></span>
+        <span class="trend-name">
+          <span class="trend-cat">${escapeHTML(p.cat)}</span>
+          ${escapeHTML(p.style)}
+        </span>
+      </button>
+    </li>`).join("");
+
+  row.hidden = false;
+
+  strip.addEventListener("click", (e) => {
+    const card = e.target.closest(".trend-card");
+    if(!card) return;
+    claimSharedName(card);
+    open(picks[Number(card.dataset.trend)]);
+  });
+
+  initCarousel(row, strip);
+}
+
+/* Arrows, keyboard and end-state, over whatever the track is already
+   doing. Touch and trackpad need no code: the scroller handles them. */
+function initCarousel(row, strip){
+  const arrows = row.querySelectorAll(".carousel-arrow");
+  if(arrows.length){
+    arrows.forEach((b) => { b.innerHTML = Number(b.dataset.dir) < 0 ? ICONS.chevronLeft : ICONS.chevronRight; });
+  }
+
+  /* A page is however many whole cards are currently visible, so the
+     arrows move by what you can see rather than by a number baked in
+     here that the breakpoints would then contradict. */
+  const page = () => {
+    const item = strip.querySelector(".trend-item");
+    if(!item) return strip.clientWidth;
+    const gap = parseFloat(getComputedStyle(strip).columnGap) || 0;
+    const step = item.getBoundingClientRect().width + gap;
+    /* n cards occupy n*width + (n-1)*gap, not n*(width+gap) -- the last
+       one has no trailing gap. Dividing by the step without adding that
+       gap back counts one card fewer than is actually on screen, so the
+       arrows moved by three when four were visible and left a stripe of
+       the previous page behind. */
+    const visible = Math.max(1, Math.floor((strip.clientWidth + gap) / step));
+    return visible * step;
+  };
+
+  const syncEnds = () => {
+    const max = strip.scrollWidth - strip.clientWidth;
+    arrows.forEach((b) => {
+      const back = Number(b.dataset.dir) < 0;
+      b.disabled = back ? strip.scrollLeft < 8 : strip.scrollLeft > max - 8;
+    });
+  };
+
+  arrows.forEach((b) => b.addEventListener("click", () => {
+    strip.scrollBy({ left: page() * Number(b.dataset.dir), behavior: prefersReducedMotion ? "auto" : "smooth" });
+  }));
+
+  strip.addEventListener("keydown", (e) => {
+    if(e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+    e.preventDefault();
+    strip.scrollBy({ left: page() * (e.key === "ArrowRight" ? 1 : -1), behavior: prefersReducedMotion ? "auto" : "smooth" });
+  });
+
+  let ticking = false;
+  strip.addEventListener("scroll", () => {
+    if(ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => { syncEnds(); ticking = false; });
+  }, { passive: true });
+
+  /* The width the arrows step by changes with the breakpoint, and so does
+     whether there is anything left to scroll to. */
+  if(window.ResizeObserver) new ResizeObserver(syncEnds).observe(strip);
+  syncEnds();
+}
+
+/* images.html: the whole dataset is present, so open by index. */
+function initTrending(){
+  if(!Array.isArray(window.imagePrompts)) return;
+  /* p.trending is a RANK, not a flag: the gallery shuffles its order on
+     every load and a curated row has to survive that. */
+  const picks = window.imagePrompts
+    .map((p, i) => ({ ...p, i }))
+    .filter((p) => p.trending > 0)
+    .sort((a, b) => a.trending - b.trending);
+  renderTrendingRow("trendingRow", "trendingStrip", picks,
+    (p) => withTransition(() => openModal(p.i)));
+}
+
+/* index.html: the subset comes pre-ranked from prompts-trending.js. */
+function initHomeTrending(){
+  renderTrendingRow("homeTrending", "homeTrendingStrip", homeList("trendingPicks"),
+    (p) => withTransition(() => openPromptModal(p)));
 }
 
 function initGallery(){
@@ -1469,7 +2054,14 @@ function renderGallery(){
   const hasThumb = (slug) => known === null || known.has(slug);
 
   /* p.i (stamped in initGallery) is the index into imagePrompts, carried on the
-     card so the modal can find the original entry while a filter is active. */
+     card so the modal can find the original entry while a filter is active.
+
+     width/height come off p.size, the one shape hint the data carries. They
+     are not the real dimensions and are not meant to be: they give the
+     browser a box to reserve before the file decodes, which is the whole
+     difference between a column that settles and 273 cards that were 2px
+     tall until their image arrived. height:auto in the CSS means the real
+     ratio still wins once it is known. */
   /* A real <button>, not a div+click: keyboard reachable, Enter/Space activate
      it for free, and it is exposed to assistive tech as an actionable control.
      Children are spans because <button> only admits phrasing content. The img
@@ -1480,13 +2072,14 @@ function renderGallery(){
     return `
     <figure class="gcard reveal swatch-${p.i % 6}" style="animation-delay:${(i % 4) * 50}ms">
       <span class="swatch-texture"></span>
-      ${hasThumb(p.slug) ? `<img class="gcard-img" src="images/${encodeURIComponent(p.slug)}.jpg" alt="" loading="lazy" decoding="async">` : ""}
-      <button type="button" class="gcard-open" data-id="${p.i}" aria-label="${escapeHTML(p.style)}, ${escapeHTML(p.cat)}. Open prompt."></button>
+      ${hasThumb(p.slug) ? `<img class="gcard-img" src="images/${encodeURIComponent(p.slug)}.jpg" alt="" loading="lazy" decoding="async" width="600" height="${p.size === "tall" ? 800 : p.size === "short" ? 450 : 600}">` : ""}
+      <button type="button" class="gcard-open" data-id="${p.i}" data-slug="${escapeHTML(p.slug)}" aria-label="${escapeHTML(p.style)}, ${escapeHTML(p.cat)}. Open prompt."></button>
       <span class="gcard-scrim" aria-hidden="true"></span>
       <figcaption class="gcard-meta">
         <span class="gcard-text">
           <span class="gcard-cat">${escapeHTML(p.cat)}</span>
           <span class="gcard-name">${escapeHTML(p.style)}</span>
+          <span class="gcard-excerpt">${escapeHTML(p.prompt)}</span>
         </span>
         <span class="gcard-act">
           <button type="button" class="icon-btn btn-copy" data-raw="${escapeHTML(p.prompt)}" aria-label="Copy the ${escapeHTML(p.style)} prompt">${ICONS.copy}</button>
@@ -1502,7 +2095,13 @@ function renderGallery(){
     grid.dataset.cardBound = "1";
     grid.addEventListener("click", (e) => {
       const open = e.target.closest(".gcard-open");
-      if(open){ openModal(Number(open.dataset.id)); return; }
+      if(open){
+        /* The card's render carries the shared name for the length of the
+           transition, so it visibly grows into the dialog's image. */
+        claimSharedName(open.closest(".gcard"));
+        withTransition(() => openModal(Number(open.dataset.id)));
+        return;
+      }
       const copy = e.target.closest(".btn-copy");
       if(copy) copyText(copy.dataset.raw || "", copy);
     });
@@ -1541,19 +2140,56 @@ function onModalKeydown(e){
   }
 }
 
-function openModal(id){
-  const p = imagePrompts[id];
-  const modalSwatch = document.getElementById("modalSwatch");
-  modalSwatch.className = `modal-swatch swatch-${id % 6}`;
-  /* alt="" — the name is in the heading and in .modal-swatch-name already. */
+/* A stable colour per prompt, from the slug rather than from a list
+   position, so the same prompt gets the same swatch on every page. */
+function slugTint(slug){
+  let h = 0;
+  for(let i = 0; i < slug.length; i++) h = (h * 31 + slug.charCodeAt(i)) >>> 0;
+  return h % 6;
+}
+
+/* Does this prompt have a render on disk? images.html ships a manifest;
+   the generated home data carries a per-prompt flag. Seven of the 273
+   have no example image, and they must show a clean text-only dialog
+   rather than a broken frame. */
+function hasRender(p){
+  if(typeof p.thumb === "boolean") return p.thumb;
   const manifest = window.imageManifest;
-  const hasThumb = !Array.isArray(manifest) || manifest.includes(p.slug);
-  const thumb = hasThumb ? `<img class="real-photo" src="images/${encodeURIComponent(p.slug)}.jpg" alt="">` : "";
+  return !Array.isArray(manifest) || manifest.includes(p.slug);
+}
+
+function openModal(id){ openPromptModal(imagePrompts[id]); }
+
+function openPromptModal(p){
+  if(!p) return;
+  const modalSwatch = document.getElementById("modalSwatch");
+  if(!modalSwatch) return;
+  const withRender = hasRender(p);
+  modalSwatch.className = `modal-swatch swatch-${slugTint(p.slug)}${withRender ? "" : " is-textonly"}`;
+  /* alt="" — the name is in the heading and in .modal-swatch-name already. */
+  const thumb = withRender ? `<img class="real-photo" src="images/${encodeURIComponent(p.slug)}.jpg" alt="">` : "";
   modalSwatch.innerHTML = `<div class="swatch-texture"></div>${thumb}<span class="modal-swatch-name">${escapeHTML(p.style)}</span>`;
   document.getElementById("modalStyleName").textContent = p.style;
   document.getElementById("modalModel").textContent = p.cat;
   const inputEl = document.getElementById("modalInput");
   if(inputEl) inputEl.textContent = p.input || "no photo";
+
+  /* The one-line gist above the full text. promptShort is the original
+     single-sentence version of every prompt, kept for exactly this. */
+  const summary = document.getElementById("modalSummary");
+  if(summary) summary.textContent = p.promptShort || "";
+
+  const meta = document.getElementById("modalPromptMeta");
+  if(meta){
+    const words = (p.prompt || "").trim().split(/\s+/).filter(Boolean).length;
+    const slots = new Set((p.prompt || "").match(/\[([^\]\n]{1,60})\]/g) || []).size;
+    meta.textContent = `${words} words${slots ? ` \u00b7 ${slots} to fill in` : ""}`;
+  }
+
+  /* A reopened dialog should start at the top of the prompt, not wherever
+     the last one was left. */
+  const scroller = document.querySelector(".modal-prompt-scroll");
+  if(scroller) scroller.scrollTop = 0;
   document.getElementById("modalPromptText").innerHTML = highlightVars(p.prompt);
   document.getElementById("modalCopyBtn").dataset.raw = p.prompt;
 
@@ -1564,7 +2200,9 @@ function openModal(id){
     bindSaveButtons(sendRow);
   }
 
-  modalReturnFocus = document.querySelector(`.gcard-open[data-id="${id}"]`) || document.activeElement;
+  modalReturnFocus = document.querySelector(`[data-open-slug="${CSS.escape(p.slug)}"]`)
+    || document.querySelector(`.gcard-open[data-slug="${CSS.escape(p.slug)}"]`)
+    || document.activeElement;
 
   document.getElementById("modalBackdrop").classList.add("open");
   document.body.style.overflow = "hidden";
@@ -1575,6 +2213,9 @@ function openModal(id){
 }
 
 function closeModal(){
+  /* Nothing to hand back to once the dialog is gone. */
+  const finish = () => releaseSharedName();
+  setTimeout(finish, 0);
   const backdrop = document.getElementById("modalBackdrop");
   if(!backdrop || !backdrop.classList.contains("open")) return;
 
@@ -1690,19 +2331,30 @@ function initCategoryPage(){
        has no image and no title in the data -- only a filename and a tag --
        so the tag leads, the running number gives the list a spine, and the
        prompt text itself is the body copy. Nothing invented. */
-    list.innerHTML = items.map((p, i) => `
-    <article class="tdoc reveal" style="animation-delay:${(i % 3) * 60}ms">
+    list.innerHTML = items.map((p, i) => {
+      const id = category + ":" + p.filename;
+      const values = varsFor(id);
+      const names = varNames(p.prompt);
+      const resolved = resolvePrompt(p.prompt, values);
+      const touched = names.some((n) => values[n]);
+      return `
+    <article class="tdoc reveal${touched ? " has-values" : ""}" data-prompt-id="${escapeHTML(id)}" data-template="${escapeHTML(p.prompt)}" style="animation-delay:${(i % 3) * 60}ms">
       <header class="tdoc-head">
         <span class="tdoc-tag">${escapeHTML(p.tag || visual.label)}</span>
         <span class="tdoc-num">${String(i + 1).padStart(3, "0")}</span>
       </header>
-      <p class="tdoc-body">${highlightVars(p.prompt)}</p>
+      <p class="tdoc-body">${tokenisePrompt(p.prompt, values)}</p>
+      <div class="tdoc-status">
+        <span class="tdoc-vars${touched ? " is-active" : ""}">${escapeHTML(varStatusText(names, values))}</span>
+        <button type="button" class="tdoc-clear" aria-label="Clear the values on this prompt">Reset</button>
+      </div>
       <footer class="tdoc-foot">
-        <button type="button" class="btn btn-primary btn-copy btn-sm" data-raw="${escapeHTML(p.prompt)}">${copyButtonHTML("Copy prompt")}</button>
-        <div class="send-row">${saveButtonHTML(category + ":" + p.filename, p.filename, p.prompt)}${sendRowHTML(p.prompt)}</div>
+        <button type="button" class="btn btn-primary btn-copy btn-sm" data-raw="${escapeHTML(resolved)}">${copyButtonHTML("Copy prompt")}</button>
+        <div class="send-row">${saveButtonHTML(id, p.filename, resolved)}${sendRowHTML(resolved)}</div>
       </footer>
-    </article>
-  `).join("");
+    </article>`;
+    }).join("");
+    bindVariableTokens(list);
 
     list.querySelectorAll(".btn-copy").forEach((btn) => {
       btn.addEventListener("click", function(){ copyText(this.dataset.raw, this); });
@@ -1743,12 +2395,15 @@ function initBuilder(){
 
   fields.forEach((field) => {
     const select = document.getElementById(`builder-${field}`);
+    if(!select) return;
     select.innerHTML = `<option value="">— none —</option>` +
       builderOptions[field].map((opt) => `<option value="${escapeHTML(opt)}">${escapeHTML(opt)}</option>`).join("");
   });
 
   const ratioSelect = document.getElementById("builder-ratio");
-  ratioSelect.innerHTML = builderRatios.map((r) => `<option value="${escapeHTML(r)}">${escapeHTML(r)}</option>`).join("");
+  if(ratioSelect){
+    ratioSelect.innerHTML = builderRatios.map((r) => `<option value="${escapeHTML(r)}">${escapeHTML(r)}</option>`).join("");
+  }
 
   /* The centre panel lists what is currently switched on, and clicking a
      chip switches that component back off. It reads the same selects the
@@ -1794,22 +2449,27 @@ function initBuilder(){
      to — swallow Enter rather than letting it reload the page. */
   form.addEventListener("submit", (e) => e.preventDefault());
 
-  document.getElementById("builderRandomBtn").addEventListener("click", () => {
+  const randomBtn = document.getElementById("builderRandomBtn");
+  if(randomBtn) randomBtn.addEventListener("click", () => {
     fields.forEach((field) => {
+      const select = document.getElementById(`builder-${field}`);
+      if(!select) return;
       const opts = builderOptions[field];
-      document.getElementById(`builder-${field}`).value = opts[Math.floor(Math.random() * opts.length)];
+      select.value = opts[Math.floor(Math.random() * opts.length)];
     });
     update();
   });
 
   /* Native reset() restores every control to its first/blank option, which for
      the six style selects is the "— none —" entry rendered above. */
-  document.getElementById("builderResetBtn").addEventListener("click", () => {
+  const resetBtn = document.getElementById("builderResetBtn");
+  if(resetBtn) resetBtn.addEventListener("click", () => {
     form.reset();
     update();
   });
 
   const copyBtn = document.getElementById("builderCopyBtn");
+  if(!copyBtn) return update();
   copyBtn.innerHTML = copyButtonHTML("Copy prompt");
   copyBtn.addEventListener("click", function(){
     const text = document.getElementById("builderOutput").dataset.raw || "";
@@ -1822,7 +2482,13 @@ function initBuilder(){
 /* Assembles the prompt from whatever is filled in. Empty fields are skipped,
    so a subject alone still produces something valid. */
 function buildPrompt(){
-  const val = (id) => (document.getElementById(id).value || "").trim();
+  /* Returns "" for a field this page does not have. The home page shows a
+     subset of the controls, and the assembled prompt simply omits what is
+     not on screen. */
+  const val = (id) => {
+    const el = document.getElementById(id);
+    return el ? (el.value || "").trim() : "";
+  };
 
   const subject = val("builder-subject");
   const model = val("builder-model");
@@ -1882,16 +2548,21 @@ function boot(name, fn){
   }
 }
 
+boot("themeToggle", initThemeToggle);
+boot("glass", initGlass);
+boot("atmosphere", initAtmosphere);
 boot("setActiveNav", setActiveNav);
 boot("navIndicator", initNavIndicator);
 boot("navScrollState", initNavScrollState);
-boot("themeToggle", initThemeToggle);
+boot("sectionTabs", initSectionTabs);
 boot("mobileNav", initMobileNav);
 boot("pageTransitions", initPageTransitions);
 boot("gallery", initGallery);
+boot("trending", initTrending);
+boot("homeTrending", initHomeTrending);
+boot("viewSwitch", initViewSwitch);
 boot("cmdk", initCmdk);
 boot("home", initHome);
-boot("countUp", initCountUp);
 boot("pane", initPane);
 boot("categoryPage", initCategoryPage);
 boot("builder", initBuilder);

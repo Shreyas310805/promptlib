@@ -50,16 +50,18 @@ BLOCK_RE = re.compile(
 )
 
 
-COUNT_RE = re.compile(r'(data-count-to=")(\d+)(")')
+COUNT_RE = re.compile(r'(<span data-count="(?P<key>[a-z]+)">)([\d,]+)(</span>)')
 
 
 def live_counts():
-    """Read the real figures out of the generated data files.
+    """Read the real figures out of the data files.
 
-    The homepage prints these as headline numbers, and nothing else on that
-    page loads the datasets (they were dropped from index.html to save 96KB),
-    so without this they would silently drift the first time a prompt is
-    added or a category renamed.
+    The homepage prints these in its opening line, and nothing on that page
+    loads the datasets (they were dropped from index.html to save 200KB), so
+    without this they would silently drift the first time a prompt is added.
+
+    They are written into the MARKUP, not filled in by script, so the numbers
+    are right with JavaScript off.
     """
     def read(name):
         path = os.path.join(BASE, name)
@@ -67,33 +69,46 @@ def live_counts():
 
     img = read("prompts-image.js")
     txt = read("prompts-text.js")
+    return {
+        "images": img.count('"slug":'),
+        "text": txt.count('"filename":'),
+    }
 
-    image_prompts = img.count('"slug":')
-    text_templates = txt.count('"filename":')
-    image_cats = len(set(re.findall(r'"cat": "([^"]+)"', img)))
 
-    # Per category, not globally: 'Structure' is a tag under both ppt and
-    # report, and they are separate filters on separate pages. A global set
-    # would merge them and undercount what a visitor can actually filter by.
-    text_tags = 0
-    for block in re.findall(r"^  (\w+): \[(.*?)^  \]", txt, re.S | re.M):
-        text_tags += len(set(re.findall(r'"tag": "([^"]+)"', block[1])))
-
-    return [image_prompts, text_templates, image_cats + text_tags]
+# Figures that cannot be wrapped in a span because they live in an
+# attribute or in running prose. Each pattern keeps the number in its own
+# group so only the digits are replaced.
+COUNT_ATTRS = [
+    # Anchored on the gallery input specifically. An unanchored
+    # placeholder="Search N prompts" also matches the text CATEGORY pages,
+    # whose N is 114 per category and has nothing to do with the image
+    # total -- it rewrote all four to 273 the first time it ran.
+    ("images", re.compile(r'(id="gallerySearch"[^>]*placeholder="Search )([\d,]+)( prompts)')),
+    ("images", re.compile(r'(first &mdash; )([\d,]+)( image transformations)')),
+    ("text",   re.compile(r'( and )([\d,]+)( fill-in-the-blank text templates)')),
+]
 
 
 def sync_counts(text, counts):
-    """Rewrite data-count-to values in document order, leaving any extras
-    (the $0 cost figure) untouched."""
-    it = iter(counts)
+    """Rewrite every printed figure from the real data.
+
+    Spans first, then the ones that cannot be spans: a placeholder lives in
+    an attribute, and the about panel says the number in a sentence. Those
+    two had drifted to 266 -- the count of thumbnails on disk, which is not
+    the count of prompts -- and stayed wrong precisely because the sync only
+    ever looked at spans.
+    """
 
     def swap(m):
-        try:
-            return m.group(1) + str(next(it)) + m.group(3)
-        except StopIteration:
-            return m.group(0)
+        n = counts.get(m.group("key"))
+        return m.group(0) if n is None else m.group(1) + f"{n:,}" + m.group(4)
 
-    return COUNT_RE.sub(swap, text)
+    text = COUNT_RE.sub(swap, text)
+    for key, pat in COUNT_ATTRS:
+        n = counts.get(key)
+        if n is not None:
+            text = pat.sub(lambda m, n=n: m.group(1) + f"{n:,}" + m.group(3), text)
+    return text
 
 
 TRENDING_OUT = "prompts-trending.js"
@@ -173,14 +188,22 @@ for(let i=0;;i++){
   if(!any) break;
 }
 
-/* Five for the featured composition -- one dominant, two secondary, two
-   supporting -- and three more for the picks. Taken from the rotation, so
-   no two neighbours come from the same category. */
-const feature   = rota.slice(0,5).map(slim);
-const pickImgs  = rota.slice(5,8).map(slim);
+/* Ten examples for the home page's image preview, taken from the
+   rotation so no two neighbours come from the same category. Every one
+   has a render on disk -- the preview is the shop window, so it is not
+   the place for the seven with no example image yet. */
+const examples = rota.slice(0,10).map(slim);
 
 /* ---- trending --------------------------------------------------------- */
-const trending = img.filter(p=>p.trending===true).map(slim);
+const featured = img.filter(p=>p.featured===true).map(slim);
+
+/* The gallery's Trending row, carried to the home page so both show the
+   same twelve. index.html never loads the 112KB image dataset, so the
+   subset it needs is emitted here -- which also means the two rows
+   cannot drift: they are the same flag, ranked, read from one file. */
+const trending = img.filter(p=>p.trending>0)
+                    .sort((a,b)=>a.trending-b.trending)
+                    .map(p=>Object.assign(slim(p), { trending:p.trending }));
 
 /* ---- text picks -------------------------------------------------------
    One from each writing category. A text prompt has no title in the data,
@@ -201,7 +224,7 @@ const totals = {
 };
 
 process.stdout.write(JSON.stringify({
-  trending, imageCats, textCats, totals, feature, pickImgs, textPicks
+  featured, trending, imageCats, textCats, totals, examples, textPicks
 }));
 """
     dump = subprocess.run(["node", "-e", script],
@@ -243,13 +266,18 @@ process.stdout.write(JSON.stringify({
     emit("libraryCategories", data.get("imageCats", []) + data.get("textCats", []),
          "/* Ordered by size. `cover` is a prompt in that category that has a\n"
          "   render on disk, so the hover reveal shows real output. */")
-    emit("featurePrompts", data.get("feature", []),
-         "/* The featured composition: [0] is the dominant tile, [1] and [2]\n"
-         "   the secondary pair, [3] and [4] the supporting row. */")
-    emit("trendingPrompts", data.get("trending", []),
-         "/* Flagged trending:true in prompts-image.js. */")
-    emit("pickPrompts", data.get("pickImgs", []),
-         "/* Editor's picks — image half. */")
+    emit("homeExamples", data.get("examples", []),
+         "/* The home page's image preview. Ten renders, one per category\n"
+         "   in rotation. */")
+    emit("trendingPicks", data.get("trending", []),
+         "/* The Trending row, ranked. The same twelve the gallery shows:\n"
+         "   both rows read the trending rank out of prompts-image.js, so\n"
+         "   they cannot drift apart. */")
+    emit("featuredPrompts", data.get("featured", []),
+         "/* Flagged featured:true in prompts-image.js -- the multi-photo\n"
+         "   concept pieces the interface labels Featured Concepts. NOT the\n"
+         "   gallery Trending row: that is a separate flag, read straight\n"
+         "   out of prompts-image.js by images.html. */")
     emit("textPicks", data.get("textPicks", []),
          "/* Editor's picks — writing half, one per category. */")
 
@@ -298,6 +326,7 @@ def main():
         p for p in glob.glob(os.path.join(BASE, "*.html"))
     )
     changed, unmarked = [], []
+    counts = live_counts()
 
     for path in pages:
         name = os.path.basename(path)
@@ -309,8 +338,11 @@ def main():
             continue
 
         updated = apply_to(original, partials, name)
-        if COUNT_RE.search(updated):
-            updated = sync_counts(updated, live_counts())
+        # Unconditional. This used to be gated on the page containing a
+        # data-count span, which meant the pages whose only figures live in
+        # an attribute or a sentence were never synced at all -- which is
+        # how the gallery came to advertise "Search 266 prompts" over 273.
+        updated = sync_counts(updated, counts)
         if updated == original:
             continue
 

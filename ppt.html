@@ -8,25 +8,42 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230e1013'/%3E%3Cpath d='M10 10l7 6-7 6' stroke='%234d8dff' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=Archivo+Narrow:wght@500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <script>
-/* Bootstrap — keep inline and keep it tiny. Sets html.js for the few rules
-   that legitimately need to know JS is running, and applies the stored theme
-   before first paint so switching never flashes.
+/* Bootstrap — keep inline and keep it tiny. Sets html.js for the few
+   rules that legitimately need to know JS is running.
 
-   It no longer reveals the page: that is a pure CSS animation now, so page
-   visibility does not depend on this script, on script.js, or on either of
-   them running without throwing. */
+   It does not reveal the page: that is a pure CSS animation, so page
+   visibility depends on neither this script nor script.js.
+
+   It also restores the saved theme before paint, which is the one thing
+   that genuinely cannot wait for script.js: applying it later means a
+   visible flash of the wrong theme on every load. */
 document.documentElement.classList.add("js");
+/* Applied before the first paint, or the page renders dark and then snaps
+   to light a frame later. Stored choice wins; with none, follow the OS. */
 try {
   var t = localStorage.getItem("promptlib-theme");
-  if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
-} catch (e) { /* private mode / storage blocked — dark default is fine */ }
+  if (t !== "light" && t !== "dark") {
+    t = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+  }
+  document.documentElement.setAttribute("data-theme", t);
+} catch (e) { document.documentElement.setAttribute("data-theme", "dark"); }
 </script>
 <!-- @end head -->
 </head>
 <body>
+
+<!-- @partial atmos -->
+<div class="atmos" id="atmos" aria-hidden="true">
+  <div class="atmos-aurora"></div>
+  <div class="atmos-rules"></div>
+  <div class="atmos-grain"></div>
+  <div class="atmos-vignette"></div>
+</div>
+<!-- @end atmos -->
+
 
 <!-- @partial nav -->
 <nav class="nav">
@@ -35,25 +52,26 @@ try {
       <svg class="logo-mark" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="7" fill="#161a1f"/><path d="M10 10l7 6-7 6" stroke="#4d8dff" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span class="logo-word">promptlib</span>
     </a>
+    <span class="nav-current" id="navCurrent" aria-hidden="true"></span>
     <button class="nav-toggle" id="navToggle" aria-label="Toggle menu" aria-expanded="false"><span></span><span></span><span></span></button>
     <div class="nav-cluster">
     <div class="nav-links" id="navLinks">
       <span class="nav-indicator" id="navIndicator" aria-hidden="true"></span>
-      <a href="index.html" class="nav-link" data-page="index.html">home</a>
-      <a href="images.html" class="nav-link" data-page="images.html">images</a>
-      <a href="text.html" class="nav-link" data-page="text.html">text</a>
-      <a href="builder.html" class="nav-link" data-page="builder.html">builder</a>
+      <a href="index.html" class="nav-link" data-page="index.html" data-section="top">home</a>
+      <a href="images.html" class="nav-link" data-page="images.html" data-section="images">images</a>
+      <a href="text.html" class="nav-link" data-page="text.html" data-section="text">text</a>
+      <a href="builder.html" class="nav-link" data-page="builder.html" data-section="builder">builder</a>
     </div>
-    <button type="button" class="nav-search" data-cmdk-open aria-label="Search prompts">
-      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg>
-      <span class="nav-search-label">Search</span>
-      <kbd class="nav-search-kbd">/</kbd>
-    </button>
     <button type="button" class="theme-switch" id="themeToggle" role="switch" aria-checked="false" aria-label="Light theme">
       <span class="theme-icons" aria-hidden="true">
         <svg class="icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.7 6.7 0 0 0 10.5 10.5z"/></svg>
         <svg class="icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.4v2.2M12 19.4v2.2M4.2 4.2l1.6 1.6M18.2 18.2l1.6 1.6M2.4 12h2.2M19.4 12h2.2M4.2 19.8l1.6-1.6M18.2 5.8l1.6-1.6"/></svg>
       </span>
+    </button>
+    <button type="button" class="nav-search" data-cmdk-open aria-label="Search prompts">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg>
+      <span class="nav-search-label">Search</span>
+      <kbd class="nav-search-kbd">/</kbd>
     </button>
     </div>
   </div>
@@ -142,7 +160,7 @@ try {
 
     <section class="pane-section" aria-labelledby="aboutHeading">
       <h3 class="pane-heading" id="aboutHeading">About</h3>
-      <p class="pane-body">PromptLib is a browsable library of prompts that have been run against a real model first &mdash; 266 image transformations and 456 fill-in-the-blank text templates.</p>
+      <p class="pane-body">PromptLib is a browsable library of prompts that have been run against a real model first &mdash; 292 image transformations and 456 fill-in-the-blank text templates.</p>
       <p class="pane-body">Everything runs in your browser. No account, no tracking, no key required. Saved prompts stay on this device.</p>
     </section>
   </div>
