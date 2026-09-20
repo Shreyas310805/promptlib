@@ -1790,22 +1790,22 @@ function renderGalleryUnavailable(){
 
    Clicking one opens its dialog, exactly as a grid card does -- it
    reuses the same delegated handler by carrying the same data-id. */
-function initTrending(){
-  const row = document.getElementById("trendingRow");
-  const strip = document.getElementById("trendingStrip");
-  if(!row || !strip || !Array.isArray(window.imagePrompts)) return;
+/* ---- the Trending rail ------------------------------------------------
+   One renderer, two callers. The gallery has the full dataset and opens
+   a prompt by its index; the home page never loads that dataset -- it is
+   112KB for a page that shows a couple of dozen entries -- so it gets
+   the same twelve out of prompts-trending.js and opens them by value.
+   The markup and the dialog are identical either way, which is the
+   point: two rows that are meant to look the same should not be two
+   pieces of code that can drift. */
+function renderTrendingRow(rowId, stripId, picks, open){
+  const row = document.getElementById(rowId);
+  const strip = document.getElementById(stripId);
+  if(!row || !strip || !picks.length) return;
 
-  /* p.trending is a RANK, not a flag: the gallery shuffles its order on
-     every load and a curated row has to survive that. */
-  const picks = window.imagePrompts
-    .map((p, i) => ({ ...p, i }))
-    .filter((p) => p.trending > 0)
-    .sort((a, b) => a.trending - b.trending);
-  if(!picks.length) return;
-
-  strip.innerHTML = picks.map((p) => `
-    <li class="trend-item swatch-${p.i % 6}">
-      <button type="button" class="trend-card gcard-open" data-id="${p.i}" data-slug="${escapeHTML(p.slug)}"
+  strip.innerHTML = picks.map((p, n) => `
+    <li class="trend-item swatch-${(p.i === undefined ? n : p.i) % 6}">
+      <button type="button" class="trend-card" data-trend="${n}" data-slug="${escapeHTML(p.slug)}"
               aria-label="${escapeHTML(p.style)}, ${escapeHTML(p.cat)}. Open prompt.">
         <span class="swatch-texture" aria-hidden="true"></span>
         ${hasRender(p) ? `<img class="trend-img" src="images/${encodeURIComponent(p.slug)}.jpg" alt="" loading="lazy" decoding="async" width="400" height="400">` : ""}
@@ -1817,11 +1817,31 @@ function initTrending(){
   row.hidden = false;
 
   strip.addEventListener("click", (e) => {
-    const open = e.target.closest(".gcard-open");
-    if(!open) return;
-    claimSharedName(open);
-    withTransition(() => openModal(Number(open.dataset.id)));
+    const card = e.target.closest(".trend-card");
+    if(!card) return;
+    claimSharedName(card);
+    open(picks[Number(card.dataset.trend)]);
   });
+}
+
+/* images.html: the whole dataset is present, so open by index. */
+function initTrending(){
+  if(!Array.isArray(window.imagePrompts)) return;
+  /* p.trending is a RANK, not a flag: the gallery shuffles its order on
+     every load and a curated row has to survive that. */
+  const picks = window.imagePrompts
+    .map((p, i) => ({ ...p, i }))
+    .filter((p) => p.trending > 0)
+    .sort((a, b) => a.trending - b.trending);
+  renderTrendingRow("trendingRow", "trendingStrip", picks,
+    (p) => withTransition(() => openModal(p.i)));
+}
+
+/* index.html: the subset comes pre-ranked from prompts-trending.js. */
+function initHomeTrending(){
+  const picks = homeList("trendingPicks");
+  renderTrendingRow("homeTrending", "homeTrendingStrip", picks,
+    (p) => withTransition(() => openPromptModal(p)));
 }
 
 function initGallery(){
@@ -2469,6 +2489,7 @@ boot("mobileNav", initMobileNav);
 boot("pageTransitions", initPageTransitions);
 boot("gallery", initGallery);
 boot("trending", initTrending);
+boot("homeTrending", initHomeTrending);
 boot("viewSwitch", initViewSwitch);
 boot("cmdk", initCmdk);
 boot("home", initHome);

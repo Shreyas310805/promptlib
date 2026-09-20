@@ -197,6 +197,14 @@ const examples = rota.slice(0,10).map(slim);
 /* ---- trending --------------------------------------------------------- */
 const featured = img.filter(p=>p.featured===true).map(slim);
 
+/* The gallery's Trending row, carried to the home page so both show the
+   same twelve. index.html never loads the 112KB image dataset, so the
+   subset it needs is emitted here -- which also means the two rows
+   cannot drift: they are the same flag, ranked, read from one file. */
+const trending = img.filter(p=>p.trending>0)
+                    .sort((a,b)=>a.trending-b.trending)
+                    .map(p=>Object.assign(slim(p), { trending:p.trending }));
+
 /* ---- text picks -------------------------------------------------------
    One from each writing category. A text prompt has no title in the data,
    only a filename and a tag, so the view leads with the tag and the prompt
@@ -216,7 +224,7 @@ const totals = {
 };
 
 process.stdout.write(JSON.stringify({
-  featured, imageCats, textCats, totals, examples, textPicks
+  featured, trending, imageCats, textCats, totals, examples, textPicks
 }));
 """
     dump = subprocess.run(["node", "-e", script],
@@ -261,6 +269,10 @@ process.stdout.write(JSON.stringify({
     emit("homeExamples", data.get("examples", []),
          "/* The home page's image preview. Ten renders, one per category\n"
          "   in rotation. */")
+    emit("trendingPicks", data.get("trending", []),
+         "/* The Trending row, ranked. The same twelve the gallery shows:\n"
+         "   both rows read the trending rank out of prompts-image.js, so\n"
+         "   they cannot drift apart. */")
     emit("featuredPrompts", data.get("featured", []),
          "/* Flagged featured:true in prompts-image.js -- the multi-photo\n"
          "   concept pieces the interface labels Featured Concepts. NOT the\n"

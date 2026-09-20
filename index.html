@@ -95,7 +95,7 @@ try {
   <div class="orbital-content hero-inner">
     <div class="hero-copy">
       <h1 class="hero-h" id="heroHeading">Every result starts with a prompt</h1>
-      <p class="hero-lede">Browse <span data-count="images">277</span> photo transformations and <span data-count="text">456</span> writing templates. Open any example to see the exact prompt, then copy it.</p>
+      <p class="hero-lede">Browse <span data-count="images">292</span> photo transformations and <span data-count="text">456</span> writing templates. Open any example to see the exact prompt, then copy it.</p>
       <div class="hero-actions">
         <a class="btn btn-lg glass liquid" href="images.html"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.4"/><rect x="14" y="3" width="7" height="7" rx="1.4"/><rect x="3" y="14" width="7" height="7" rx="1.4"/><rect x="14" y="14" width="7" height="7" rx="1.4"/></svg><span>Browse image prompts</span></a>
         <a class="btn btn-lg btn-ghost glass" href="builder.html"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Open the builder</span></a>
@@ -113,6 +113,20 @@ try {
   <div class="shell" data-reveal>
     <h2 class="band-h" id="imagesHeading">Restyle your own photo</h2>
     <p class="band-lede">Pick a look, copy its prompt, and use it with your photo in your image model of choice.</p>
+    <!-- The same twelve as the gallery's Trending row, above the chips
+         for the same reason: it is not a filter, it is the answer to
+         "just show me the good ones", which is what most people want
+         before they know what the categories mean. Hidden until script
+         fills it, so with JS off the page shows the examples below
+         rather than an empty heading. -->
+    <section class="trending" id="homeTrending" aria-labelledby="homeTrendingHeading" hidden>
+      <div class="trending-head">
+        <h3 class="trending-title" id="homeTrendingHeading">Trending</h3>
+        <p class="trending-sub">The twelve that change a photo the most.</p>
+      </div>
+      <ul class="trending-strip" id="homeTrendingStrip"></ul>
+    </section>
+
     <div class="chip-row" id="homeChips" role="group" aria-label="Filter examples by category"></div>
     <div class="example-grid" id="homeExamples"></div>
     <p class="band-empty" id="homeEmpty" hidden>No examples match that category. <button type="button" class="linklike" data-clear-chips>Clear filters</button></p>
@@ -257,7 +271,7 @@ try {
 
     <section class="pane-section" aria-labelledby="aboutHeading">
       <h3 class="pane-heading" id="aboutHeading">About</h3>
-      <p class="pane-body">PromptLib is a browsable library of prompts that have been run against a real model first &mdash; 277 image transformations and 456 fill-in-the-blank text templates.</p>
+      <p class="pane-body">PromptLib is a browsable library of prompts that have been run against a real model first &mdash; 292 image transformations and 456 fill-in-the-blank text templates.</p>
       <p class="pane-body">Everything runs in your browser. No account, no tracking, no key required. Saved prompts stay on this device.</p>
     </section>
   </div>

@@ -24,18 +24,18 @@ import re
 # identical-looking faces. So the list spans drawn, sculpted, rendered,
 # lit and printed, and every one of them survives being 200px wide.
 TRENDING = [
-    "made-of-glass",          # the whole subject turns transparent
-    "hand-painted-anime-film",# photograph to drawing, unmistakable
-    "pencil-sketch",          # colour to graphite
-    "marble-bust",            # flesh to carved stone
-    "cel-shaded-3d",          # flat shading and a hard outline
-    "made-of-neon-tubes",     # self-lit on black
-    "watercolor-painting",    # paper grain and bleeding edges
-    "80s-retro-portrait",     # datable on hair and colour alone
-    "toy-brick-minifigure",   # a silhouette nobody can mistake
-    "stained-glass",          # lead lines and lit panels
-    "made-of-gold",           # specular metal, high contrast
-    "pixel-art",              # resolution collapse, legible anywhere
+    "made-of-glass",             # the subject turns transparent
+    "action-figure-in-packaging",# boxed, carded, unmistakable silhouette
+    "amigurumi-crochet-doll",    # yarn texture reads even very small
+    "toy-brick-minifigure",      # a shape nobody can mistake
+    "marble-bust",               # flesh to carved stone
+    "made-of-neon-tubes",        # self-lit, the only one that glows
+    "pencil-sketch",             # colour to graphite
+    "hand-painted-anime-film",   # photograph to drawing
+    "stained-glass",             # lead lines and lit panels
+    "80s-retro-portrait",        # datable on hair and colour alone
+    "y2k-chrome",                # liquid metal and lens flare
+    "pixel-art",                 # resolution collapse
 ]
 
 CATALOG = {
@@ -112,6 +112,9 @@ CATALOG = {
         ("Claymation Frame", "a claymation stop-motion frame with molded clay texture and visible fingerprints"),
         ("Papercraft Layers", "a layered papercraft scene built from flat cut-paper shapes casting soft shadows"),
         ("Silhouette Animation", "a cut-paper silhouette animation frame with solid black shapes against a glowing background"),
+        ("Bollywood Film Poster", "a hand-painted Bollywood film poster with the subject as the lead, saturated enamel-like colour, dramatic airbrushed rim light, bold display lettering blocked across the composition, and the slightly heightened painted likeness of the poster artists of that era"),
+        ("Feature Animation 3D", "a glossy feature-animation 3D character render of the person with large expressive eyes, softly subsurface-scattered skin, simplified but accurate facial structure, stylised hair sculpted in clean clumps, and warm cinematic key lighting with a soft rim"),
+        ("Tarot Card", "a tarot card with the person as the central figure, drawn in art nouveau line and flat symbolic colour, framed by an ornate border with a roman numeral above and a title panel below, surrounded by emblematic objects and stars"),
     ],
     "Photography & Camera": [
         ("4K Ultra Sharp", "an ultra-sharp 4K photograph with crisp micro-detail and clean natural colour"),
@@ -150,6 +153,9 @@ CATALOG = {
         ("Thermal Imaging", "a thermal camera image mapping heat to a blue-to-white gradient"),
         ("Night Vision", "a green-tinted night vision image with heavy sensor noise and glowing highlights"),
         ("X-Ray Scan", "an X-ray scan showing internal structure in translucent greyscale"),
+        ("Lo-Fi Phone Snapshot", "a deliberately imperfect phone snapshot with a harsh on-camera flash, slight motion blur, wrong white balance pulling everything green, crushed shadows and heavy sensor noise, framed a little carelessly as though taken quickly by someone who was actually there"),
+        ("2016 Filter Photo", "a mid-2010s social photo with a warm high-contrast filter, lifted milky blacks, a heavy vignette, slightly oversharpened detail and a thick white border on a square crop"),
+        ("Imagined Polaroid", "an instant film photograph with the wide white lower lip of the frame, soft low-contrast colour, a cyan cast through the shadows, visible chemical unevenness toward the edges, and a handwritten date and short caption in ballpoint on the white border"),
     ],
     "Digital & Glitch": [
         ("Glitch Art", "glitch art with corrupted digital artifacts, displaced scanlines and colour channel bleed"),
@@ -180,6 +186,7 @@ CATALOG = {
         ("Hologram Projection", "a translucent blue hologram projection with scanline flicker and edge glow"),
         ("Point Cloud Scan", "a 3D point cloud scan built from thousands of small floating dots"),
         ("Vector Trace", "a hard-edged vector trace with posterised flat colour regions"),
+        ("Y2K Chrome", "an early-2000s chrome aesthetic with liquid metal lettering, bevelled reflective surfaces, lens-flare sparkles, translucent plastic panels and a gradient techno backdrop of blue and silver"),
     ],
     "Art Movements": [
         ("Renaissance Oil", "a Renaissance oil painting with balanced composition, soft modelling and warm varnished tone"),
@@ -283,6 +290,14 @@ CATALOG = {
         ("1920s Portrait", "a 1920s studio portrait with soft focus, art deco styling and sepia warmth"),
         ("1970s Film Portrait", "a 1970s film portrait with warm faded colour, soft grain and natural light"),
         ("Fashion Editorial", "a high-fashion editorial portrait with dramatic styling and hard studio light"),
+        ("Action Figure in Packaging", "a boxed collectible action figure of the person sealed in a clear blister on a printed cardboard backer, with invented brand lettering, a couple of small accessories moulded in the same plastic, and the subject's own face painted onto the figure's head so it is unmistakably them"),
+        ("Amigurumi Crochet Doll", "a hand-crocheted amigurumi doll of the person in soft yarn, built from visible rounds of single crochet with a faint spiral seam, safety eyes and a stitched smile, the hair worked in looped yarn of the right colour and the face shaped so the person is still recognisable"),
+        ("Gachapon Capsule Toy", "a tiny glossy PVC capsule-machine figure of the person, two inches tall with a slightly oversized head and simplified hands, standing beside its split clear plastic capsule, injection-moulded seams and a faint sprue mark visible, the face printed with just enough detail to stay recognisable"),
+        ("Bobblehead Figure", "a painted resin bobblehead of the person with an oversized head on a visible spring, mounted on a round base, hand-painted with slightly soft edges and a gloss varnish, the likeness exaggerated but clearly still the same person"),
+        ("Enamel Pin", "a hard enamel lapel pin of the person, polished metal borders separating flat areas of coloured enamel, the likeness reduced to bold clean shapes that still read as them, photographed on its printed backing card with the butterfly clutch beside it"),
+        ("Embroidered Patch", "an iron-on embroidered patch of the person with a dense satin-stitch face, a merrowed overlocked border, visible thread direction catching the light and a slight quilted relief where the stitching pulls the backing, simplified to a few thread colours but still recognisably them"),
+        ("Vintage Hand-Tinted Studio Portrait", "a mid-century studio portrait printed in warm monochrome and then hand-tinted with translucent photo oils, rosy applied colour on the cheeks and lips, a painted canvas backdrop with a soft vignette, and the slightly formal posing of a portrait studio of that era"),
+        ("Parallel-Life Portrait", "a documentary portrait of the same person living a different life, in the clothing, setting and props of another occupation entirely, shot as an honest environmental photograph in natural light, the face and build unchanged so both lives read as the same individual"),
     ],
     "Material & Sculpture": [
         ("Made of Glass", "sculpted from clear glass with refractive highlights and internal reflections"),
@@ -708,7 +723,36 @@ FAMILIES = [
 ]
 
 
+# Named outright where the patterns would get it wrong. The ordered list
+# is a good default and a bad argument: "action-figure-in-packaging"
+# matches the mockup rule because mockup owns "action-figure", when what
+# it actually needs is the material tail about how a surface takes light.
+# Naming the handful of exceptions beats reordering the list and moving
+# twenty other prompts by accident.
+FAMILY_OVERRIDE = {
+    # collectibles: the point is the material the figure is made of
+    "action-figure-in-packaging": "material",
+    "amigurumi-crochet-doll":     "material",
+    "gachapon-capsule-toy":       "material",
+    "bobblehead-figure":          "material",
+    "enamel-pin":                 "material",
+    "embroidered-patch":          "material",
+    # photographs, all of which would otherwise land in the paint catch-all
+    "lo-fi-phone-snapshot":              "photo",
+    "2016-filter-photo":                 "photo",
+    "imagined-polaroid":                 "photo",
+    "vintage-hand-tinted-studio-portrait": "photo",
+    "parallel-life-portrait":            "photo",
+    # a rendered character, not a painted one
+    "feature-animation-3d": "render3d",
+    # chrome and lens flare belong with the digital treatments
+    "y2k-chrome": "glitch",
+}
+
+
 def family_of(slug):
+    if slug in FAMILY_OVERRIDE:
+        return FAMILY_OVERRIDE[slug]
     for name, pattern in FAMILIES:
         if re.search(pattern, slug):
             return name
@@ -844,12 +888,36 @@ AVOID = {
 # Whether the "keep" clause should talk about a face or about a layout. Driven
 # by the category and the slug, never by the family: Practical Edits covers
 # both passport photos and background cleanup on a product shot.
-PERSON_CATS = {"Portrait Makeover"}
-PERSON_HINT = re.compile(
-    r"portrait|headshot|face|selfie|passport|caricature|wizard|samurai|pirate"
-    r"|cowboy|knight|astronaut|netrunner|steampunk|corporate|fashion|1920s"
-    r"|film-portrait|superhero|character-sheet"
-)
+# Which prompts must hold a FACE, and which need only hold a composition.
+#
+# This used to be a keyword list, and a keyword list is the wrong shape
+# for it: every prompt not on the list quietly got the weaker "keep the
+# subject" clause, so six of the fifteen most recent additions -- a
+# character render OF somebody, a film poster with them as the lead,
+# three portrait photographs -- were told to preserve the layout and
+# never told to preserve the person.
+#
+# generate-images.js settled this question already: a portrait is the
+# default and an object or a place has to be argued for, which is why 271
+# of the 292 are pointed at a face. So the default here is now the same,
+# and the exceptions are named. These twenty-one are exactly the slugs
+# that file resolves to something other than a portrait; the two lists
+# have to agree, and a prompt appearing in one but not the other is the
+# bug to look for if a scene prompt starts talking about cheekbones.
+THING_SLUGS = {
+    # a place, or the weather and light over one
+    "drone-top-down", "drone-orbit-shot", "long-exposure", "topographic-map",
+    "change-to-golden-hour", "change-season-to-autumn", "change-season-to-winter",
+    "add-dramatic-sky", "add-water-reflection",
+    # a street
+    "security-camera", "dashcam-footage", "change-to-night", "90s-cyberpunk-cafe",
+    # a room
+    "real-estate-interior", "cozy-room", "virtual-staging", "remove-background-clutter",
+    # an actual product, and an actual meal
+    "white-background-product", "lifestyle-product-shot", "food-photography",
+    # the one that genuinely wants an animal
+    "underwater-photography",
+}
 
 
 OPENINGS = [
@@ -875,7 +943,7 @@ def _pick(seq, i):
 def detailed_prompt(name, desc, cat, slug, i):
     """Compose one detailed prompt from the style core plus its family."""
     fam = family_of(slug)
-    person = cat in PERSON_CATS or fam == "character" or bool(PERSON_HINT.search(slug))
+    person = slug not in THING_SLUGS
 
     opens = OPENINGS_MATERIAL if fam == "material" else OPENINGS
     opening = _pick(opens, i).format(d=desc)
