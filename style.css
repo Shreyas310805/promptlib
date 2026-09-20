@@ -960,19 +960,14 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-
    ============================================ */
 .shell{ max-width:var(--container); margin:0 auto; padding-inline:var(--gutter); }
 
-/* ---- the scroll journey ----------------------------------------------
-   Proximity, never mandatory: the sections below the hero are taller
-   than the viewport, and mandatory snap on a tall section traps the
-   page. Proximity only settles a scroll that already came to rest near
-   a boundary, which is exactly the hero-to-images handoff. */
-html{
-  scroll-snap-type:y proximity;
-  scroll-padding-top:var(--nav-h);
-}
-.hero,
-.band{ scroll-snap-align:start; }
-@media (prefers-reduced-motion: reduce){
-  html{ scroll-snap-type:none; }
+/* There is no scroll snapping any more.
+
+   It was set to proximity rather than mandatory precisely because the
+   sections are taller than the viewport and mandatory would trap the
+   page -- but proximity on a 28-screen document still means the scroll
+   quietly changes its mind near every section boundary, and that is
+   indistinguishable from stutter. Nothing here needs the page to come
+   to rest in a particular place; the sections are read, not paged. */
 }
 
 /* ============================================
@@ -1866,6 +1861,22 @@ body.home .nav{ position:fixed; left:0; right:0; }
   opacity:0;
   transition:opacity var(--dur-hover) var(--ease-out);
 }
+/* The gallery renders all 292 cards at once -- 28 screens of content, of
+   which one is on screen -- and without containment the browser styles,
+   lays out and paints every one of them on every recalc. Measured on a
+   1440x900 window: 277 cards, 269 of them off screen, 5,244 elements.
+
+   content-visibility:auto lets it skip all three for anything outside
+   the viewport, and contain-intrinsic-size gives the skipped card a
+   placeholder height so the scrollbar stays honest. `auto` there means
+   the real size is remembered once measured, so a card that has been
+   seen keeps its true height rather than snapping back to the guess. */
+.gcard,
+.example{
+  content-visibility:auto;
+  contain-intrinsic-size:auto 340px;
+}
+
 .gcard-meta{
   position:absolute; left:0; right:0; bottom:0; z-index:3;
   display:flex; align-items:flex-end; justify-content:space-between; gap:var(--space-3);

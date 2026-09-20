@@ -6,7 +6,10 @@ Re-run this any time you add styles below:  python3 build_prompts.py
 """
 
 import json
+import os
 import re
+
+HERE = os.path.dirname(os.path.abspath(__file__))
 
 # (style name, descriptor injected into the prompt)
 # ---------------------------------------------------------------------------
@@ -23,10 +26,16 @@ import re
 # technique is to read about -- a row of subtle grades is a row of
 # identical-looking faces. So the list spans drawn, sculpted, rendered,
 # lit and printed, and every one of them survives being 200px wide.
+# An ordered PREFERENCE list, not the row itself. The builder walks it and
+# takes the first TRENDING_SIZE that actually have a render on disk, so a
+# pick with no example never reaches the page as an empty coloured block.
+# The ones still waiting on the image run stay near the top and rejoin the
+# row automatically the moment their file appears -- no edit needed here.
+TRENDING_SIZE = 12
 TRENDING = [
     "made-of-glass",             # the subject turns transparent
-    "action-figure-in-packaging",# boxed, carded, unmistakable silhouette
-    "amigurumi-crochet-doll",    # yarn texture reads even very small
+    "action-figure-in-packaging",# boxed and carded  (awaiting render)
+    "amigurumi-crochet-doll",    # yarn texture      (awaiting render)
     "toy-brick-minifigure",      # a shape nobody can mistake
     "marble-bust",               # flesh to carved stone
     "made-of-neon-tubes",        # self-lit, the only one that glows
@@ -34,8 +43,15 @@ TRENDING = [
     "hand-painted-anime-film",   # photograph to drawing
     "stained-glass",             # lead lines and lit panels
     "80s-retro-portrait",        # datable on hair and colour alone
-    "y2k-chrome",                # liquid metal and lens flare
+    "y2k-chrome",                # liquid metal        (awaiting render)
     "pixel-art",                 # resolution collapse
+    # the bench, in preference order, for whenever one above is missing
+    "made-of-gold",              # specular metal, high contrast
+    "cel-shaded-3d",             # flat shading and a hard outline
+    "watercolor-painting",       # paper grain and bleeding edges
+    "mosaic-tile",               # assembled from pieces
+    "linocut-print",             # carved, high contrast
+    "charcoal-drawing",          # smoky, deep blacks
 ]
 
 CATALOG = {
@@ -975,6 +991,16 @@ def slugify(s):
 
 entries = []
 i = 0
+# Resolve the preference list against what is actually on disk.
+_HAVE = {f[:-4] for f in os.listdir(os.path.join(HERE, "images"))
+         if f.endswith(".jpg")} if os.path.isdir(os.path.join(HERE, "images")) else set()
+_picked = [sl for sl in TRENDING if sl in _HAVE][:TRENDING_SIZE]
+_skipped = [sl for sl in TRENDING[:TRENDING_SIZE] if sl not in _HAVE]
+TRENDING_RANK = {sl: n + 1 for n, sl in enumerate(_picked)}
+if _skipped:
+    print('  trending: %d preferred pick(s) have no render yet, '
+          'filled from the bench: %s' % (len(_skipped), ', '.join(_skipped)))
+
 for cat, styles in CATALOG.items():
     for name, desc in styles:
         wrapper_set = WRAPPERS.get(cat, DEFAULT_WRAPPERS)
@@ -995,7 +1021,7 @@ for cat, styles in CATALOG.items():
             # load, and a curated row that reshuffles with it is not
             # curated -- the twelve arrived in a different sequence each
             # time. 0 means not in the row.
-            "trending": (TRENDING.index(slugify(name)) + 1) if slugify(name) in TRENDING else 0,
+            "trending": TRENDING_RANK.get(slugify(name), 0),
         })
         i += 1
 
@@ -1018,7 +1044,7 @@ for f in FEATURED:
         "stock": False,
         "input": f["input"],
         "featured": True,
-        "trending": (TRENDING.index(slugify(name)) + 1) if slugify(name) in TRENDING else 0,
+        "trending": TRENDING_RANK.get(slugify(name), 0),
     })
 
 # sanity checks
