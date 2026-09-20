@@ -348,94 +348,25 @@
 :root[data-theme="light"] .gcard-name,
 :root[data-theme="light"] .example-cue{ color:#fff; }
 
-/* ---- dark islands on a light page -------------------------------------
-   The hero is a black plate whatever the theme: the orbital canvas paints
-   its own night sky and cannot follow a token. So on a light page there
-   is a region where every ink token is the wrong way round, and the ones
-   that go wrong are whichever ones nobody happened to list.
+/* ---- the hero's own colours ------------------------------------------
+   The hero used to be a black plate in both themes, because the orbital
+   canvas painted its own night sky and could not follow a token. That
+   forced a whole scope of inverted tokens to live inside it, and every
+   element anybody forgot to list came out dark-on-black.
 
-   That is how this was found: .band-h, .example-name and .tile-name were
-   patched one at a time, and the hero lede, its two buttons and the search
-   kbd were still dark-on-black afterwards, because a per-selector fix only
-   ever covers the selectors somebody thought of.
+   The contour field takes its colours from the page instead, so all of
+   that is gone: the hero is void in dark and paper in light, like every
+   other section, and the copy inside it is ordinary --text-primary.
 
-   So the scope re-declares the DARK token set instead. Anything inside a
-   dark island resolves --text-* and the glass values as if the page were
-   in dark mode, and anything added inside one later is right by default.
-   ------------------------------------------------------------------ */
-:root[data-theme="light"] .hero,
-:root[data-theme="light"] body.home .nav:not(.is-scrolled){
-  --surface:rgba(255,255,255,.045);
-  --surface-2:rgba(255,255,255,.075);
-  --bg-panel:var(--surface);
-  --bg-panel-hover:var(--surface-2);
-  --border-subtle:rgba(255,255,255,.12);
-  --border-strong:rgba(255,255,255,.24);
-
-  --text-primary:#ffffff;
-  --text-muted:rgba(255,255,255,.70);
-  --text-placeholder:rgba(255,255,255,.50);
-
-  --focus-ring:#ffffff;
-  --on-accent:#000000;
-  --well:rgba(0,0,0,.35);
-  --panel-solid:#121211;
-
-  /* The raw five as well, not just the accent roles. The light theme
-     darkens these so they survive as TEXT on paper -- --sun becomes
-     #B8860B -- which is the wrong end of the scale for anything drawn on
-     a black plate. The flow field reads them straight to colour its
-     strokes, and on paper values it came out muddy olive instead of the
-     lit palette the hero is designed around. */
-  --sun:#FFF2CC;
-  --amber:#FFA62E;
-  --ice:#5FD8FF;
-  --deep:#3F7DFF;
-
-  --glass-tint:linear-gradient(135deg, rgba(255,255,255,.16), rgba(255,255,255,.04));
-  --glass-flat:rgba(255,255,255,.08);
-  --glass-edge:rgba(255,255,255,.35);
-  --glass-border:rgba(255,255,255,.18);
-  --glass-border-hover:rgba(255,255,255,.30);
-
-  color:var(--text-primary);
+   These two are what the canvas reads. They are deliberately strong --
+   a hero that is too faint to see is the failure this replaced. */
+.hero{
+  --hero-line:rgba(255,255,255,.52);
+  --hero-line-accent:rgba(255,242,204,.82);
 }
-/* The accents too: the -ink values above are measured against paper and go
-   muddy on black, so inside an island they return to the true hues, which
-   is what they were picked for. */
-:root[data-theme="light"] .hero.accent-sun,
-:root[data-theme="light"] body.home .nav:not(.is-scrolled){ --accent:#FFF2CC; --accent-ink:#FFF2CC; }
-:root[data-theme="light"] .hero.accent-amber{ --accent:#FFA62E; --accent-ink:#FFA62E; }
-:root[data-theme="light"] .hero.accent-ice{   --accent:#5FD8FF; --accent-ink:#5FD8FF; }
-:root[data-theme="light"] .hero.accent-deep{  --accent:#3F7DFF; --accent-ink:#3F7DFF; }
-
-/* ---- the hero join ----------------------------------------------------
-   The orbital canvas paints its own black and cannot follow the theme, so
-   on a light page the hero is a dark plate on paper. The first attempt
-   faded it to the page colour over 22svh, which on paper is a 200px
-   black-to-white smear: it reads as a broken gradient, not as a design.
-
-   A dark plate against paper wants an EDGE, not a dissolve. The canvas is
-   already pure black along its foot, so the hero simply ends, and a
-   hairline marks the boundary as deliberate. The fade stays in dark mode,
-   where black into black is invisible and does its actual job of hiding
-   where the canvas stops. */
 :root[data-theme="light"] .hero{
-  background:#000;
-  border-bottom:1px solid rgba(26,25,23,.18);
-}
-:root[data-theme="light"] .hero-fade{ display:none; }
-:root[data-theme="light"] body.home .nav:not(.is-scrolled){
-  background:rgba(0,0,0,.34);
-  border-bottom-color:transparent;
-}
-:root[data-theme="light"] body.home .nav:not(.is-scrolled) .nav-link{ color:var(--text-muted); }
-:root[data-theme="light"] body.home .nav:not(.is-scrolled) .nav-link.active,
-:root[data-theme="light"] body.home .nav:not(.is-scrolled) .logo,
-:root[data-theme="light"] body.home .nav:not(.is-scrolled) .nav-search,
-:root[data-theme="light"] body.home .nav:not(.is-scrolled) .theme-switch{ color:var(--text-primary); }
-:root[data-theme="light"] body.home .nav:not(.is-scrolled) .nav-links{
-  background:rgba(255,255,255,.10); border-color:rgba(255,255,255,.20);
+  --hero-line:rgba(26,25,23,.40);
+  --hero-line-accent:rgba(180,97,10,.72);
 }
 
 /* ---- theme switch -----------------------------------------------------
@@ -1063,14 +994,14 @@ html{
 .hero-h{
   font-size:clamp(2.5rem,6.2vw,4.5rem); font-weight:300;
   line-height:1.04; letter-spacing:-0.035em;
-  color:#fff; text-wrap:balance;
+  color:var(--text-primary); text-wrap:balance;
 }
 .hero-lede{
   margin-top:var(--space-6); max-width:34rem;
   font-size:var(--text-md); line-height:var(--leading-body);
   color:var(--text-muted);
 }
-.hero-lede [data-count]{ color:#fff; font-variant-numeric:tabular-nums; }
+.hero-lede [data-count]{ color:var(--text-primary); font-variant-numeric:tabular-nums; }
 .hero-actions{ margin-top:var(--space-8); display:flex; flex-wrap:wrap; gap:var(--space-3); }
 
 /* Round, icon only, and pinned to the bottom of the hero. 44px so it is
@@ -1080,7 +1011,7 @@ html{
   transform:translateX(-50%);
   display:inline-flex; align-items:center; justify-content:center;
   width:44px; height:44px; border-radius:var(--radius-pill);
-  color:#fff;
+  color:var(--text-primary);
 }
 .scroll-cue:active{ transform:translateX(-50%) scale(.96); }
 @media (prefers-reduced-motion: no-preference){

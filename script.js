@@ -1274,11 +1274,30 @@ const SAVE_ICON = `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="cur
    there is no room for that, so the whole thing turns through 90 degrees
    -- art low, copy high, veil from the top -- and the star field and
    bloom come down because the text is most of the screen there. */
+/* Which hero scene runs: "contour" or "orbital". Both files are loaded
+   while the new one is on trial, so switching back is this word. */
+const HERO_SCENE = "contour";
+
 function initHero(){
   const host = document.getElementById("top");
-  if(!host || typeof mountOrbital !== "function") return;
+  if(!host) return;
 
   const narrow = window.matchMedia("(max-width: 767px)");
+
+  if(HERO_SCENE === "contour" && typeof mountContourField === "function"){
+    /* A phone gets a coarser grid -- the same cell size over a third of
+       the width is three times the line density -- and a tighter, softer
+       pointer hill, since a finger covers far more of the frame. */
+    const field = () => narrow.matches
+      ? { cell:15, fieldScale:0.0038, pointerRadius:120, levels:7 }
+      : { cell:13, fieldScale:0.0021, pointerRadius:165, levels:9 };
+    const scene = mountContourField(host, field());
+    window.heroScene = scene;
+    narrow.addEventListener("change", () => scene.update(field()));
+    return;
+  }
+
+  if(typeof mountOrbital !== "function") return;
   const settings = () => narrow.matches
     ? { focus:[0.5, 0.86], scrim:"top",  scrimStrength:0.94, viewRadius:2.1, lead:0.05, glow:0.5, starCount:600,
         /* A finger is blunter than a cursor and the frame is smaller, so
